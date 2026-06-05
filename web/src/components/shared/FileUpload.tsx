@@ -7,9 +7,11 @@ import { Button } from "@/components/ui/button";
 export function FileUpload({
   accept = ".pdf,.doc,.docx",
   onFile,
+  disabled = false,
 }: {
   accept?: string;
   onFile?: (file: File) => void;
+  disabled?: boolean;
 }) {
   const [file, setFile] = React.useState<File | null>(null);
   const [dragging, setDragging] = React.useState(false);
@@ -24,19 +26,23 @@ export function FileUpload({
     <div>
       <div
         onDragOver={(e) => {
-          e.preventDefault();
-          setDragging(true);
+          if (!disabled) {
+            e.preventDefault();
+            setDragging(true);
+          }
         }}
         onDragLeave={() => setDragging(false)}
         onDrop={(e) => {
-          e.preventDefault();
-          setDragging(false);
-          handle(e.dataTransfer.files?.[0] ?? null);
+          if (!disabled) {
+            e.preventDefault();
+            setDragging(false);
+            handle(e.dataTransfer.files?.[0] ?? null);
+          }
         }}
-        onClick={() => inputRef.current?.click()}
+        onClick={() => !disabled && inputRef.current?.click()}
         className={cn(
           "flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 text-center transition-colors",
-          dragging ? "border-primary bg-accent" : "border-border hover:border-primary/50"
+          disabled ? "cursor-not-allowed opacity-50 border-border" : dragging ? "border-primary bg-accent" : "border-border hover:border-primary/50"
         )}
       >
         <UploadCloud className="mb-3 h-10 w-10 text-muted-foreground" />
@@ -46,6 +52,7 @@ export function FileUpload({
           ref={inputRef}
           type="file"
           accept={accept}
+          disabled={disabled}
           className="hidden"
           onChange={(e) => handle(e.target.files?.[0] ?? null)}
         />

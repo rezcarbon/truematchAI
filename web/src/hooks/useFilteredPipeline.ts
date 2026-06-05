@@ -27,6 +27,8 @@ export interface FilteredCandidate {
   capabilityScore?: number;
   source?: string;
   appliedAt?: string;
+  resumeId: string;
+  tags?: string[];
 }
 
 interface UseFilteredPipelineResult {

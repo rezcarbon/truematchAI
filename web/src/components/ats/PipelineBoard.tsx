@@ -232,7 +232,6 @@ export function PipelineBoard({
                           </p>
                         </div>
                       </div>
-                      </div>
 
                       {/* Scores with three-signal visualization */}
                       {(candidate.keywordScore || candidate.semanticScore || candidate.capabilityScore) && (

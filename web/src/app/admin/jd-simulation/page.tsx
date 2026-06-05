@@ -57,7 +57,7 @@ export default function AdminJDSimulationPage() {
         <JDSimulationForm
           onSubmit={handleSubmit}
           loading={loading}
-          error={error}
+          error={error || undefined}
         />
       </div>
     </div>

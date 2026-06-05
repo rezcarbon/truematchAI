@@ -50,11 +50,23 @@ export function JDSimulationResults({
             <CardTitle>Simulation Results for {positionTitle}</CardTitle>
           </CardHeader>
           <CardContent>
-            <JDQualityCard
-              title=""
-              score={jdQuality.score}
-              issues={jdQuality.flags}
-            />
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold">JD Quality Score</h3>
+                <Badge variant="secondary">{jdQuality.score}/100</Badge>
+              </div>
+              {jdQuality.flags.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm font-medium">Issues Found</p>
+                  {jdQuality.flags.map((flag, idx) => (
+                    <div key={idx} className="text-sm p-2 bg-muted rounded">
+                      <p className="font-medium">{flag.text}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{flag.type}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </CardContent>
         </Card>
 

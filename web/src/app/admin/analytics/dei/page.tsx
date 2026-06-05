@@ -318,7 +318,7 @@ export default function DEIAnalyticsPage() {
           <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
             <p className="text-sm font-medium text-blue-900">Audit Trail</p>
             <p className="text-xs text-blue-700 mt-1">
-              Last audited: {new Date(analytics.compliance.last_audit).toLocaleDateString()}
+              Status: {analytics.compliance.audit_trail_complete ? 'Complete' : 'In Progress'}
             </p>
           </div>
         </CardContent>

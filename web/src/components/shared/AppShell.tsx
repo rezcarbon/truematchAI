@@ -19,6 +19,7 @@ export interface NavItem {
   icon?: React.ElementType;
   badge?: number;
   divider?: boolean;
+  indent?: boolean;
 }
 
 const ICONS: Record<string, React.ElementType> = {
@@ -41,12 +42,13 @@ function NavLink({ item, active }: { item: NavItem; active: boolean }) {
       href={item.href}
       className={cn(
         "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all",
+        item.indent && "pl-8",
         active
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-muted-foreground hover:bg-accent hover:text-accent-foreground"
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      {!item.indent && <Icon className="h-4 w-4 shrink-0" />}
       <span className="flex-1">{item.label}</span>
       {item.badge !== undefined && item.badge > 0 && (
         <span className={cn(
@@ -96,7 +98,7 @@ export function AppShell({
             const active =
               item.href === `/${role}/dashboard`
                 ? pathname === item.href
-                : item.href && pathname.startsWith(item.href);
+                : !!(item.href && pathname.startsWith(item.href));
             return <NavLink key={item.href || `nav-${idx}`} item={item} active={active} />;
           })}
         </nav>
@@ -127,7 +129,7 @@ export function AppShell({
           <div className="flex items-center gap-2 text-sm text-muted-foreground md:flex flex-1">
             <span className="capitalize font-medium text-foreground">
               {nav.find((n) =>
-                pathname === n.href || (n.href !== `/${role}/dashboard` && pathname.startsWith(n.href))
+                pathname === n.href || (n.href && n.href !== `/${role}/dashboard` && pathname.startsWith(n.href))
               )?.label ?? "Dashboard"}
             </span>
           </div>
@@ -147,7 +149,7 @@ export function AppShell({
                 const active =
                   item.href === `/${role}/dashboard`
                     ? pathname === item.href
-                    : item.href && pathname.startsWith(item.href);
+                    : !!(item.href && pathname.startsWith(item.href));
                 return <NavLink key={item.href || `nav-${idx}`} item={item} active={active} />;
               })}
             </nav>

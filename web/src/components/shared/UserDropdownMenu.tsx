@@ -6,7 +6,7 @@ import { useSession, signOut } from 'next-auth/react';
 import { ChevronDown, User, Settings, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-function getInitials(name?: string | null, email?: string): string {
+function getInitials(name?: string | null | undefined, email?: string | null | undefined): string {
   if (name && name.trim()) {
     const parts = name.trim().split(' ');
     return (parts[0][0] + (parts[1]?.[0] || '')).toUpperCase();

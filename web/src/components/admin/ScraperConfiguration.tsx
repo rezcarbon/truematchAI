@@ -108,7 +108,7 @@ export function ScraperConfiguration({
             <CardContent className="flex flex-col items-center justify-center py-8">
               <Globe className="mb-2 h-8 w-8 text-muted-foreground" />
               <p className="text-muted-foreground">No scrapers configured yet</p>
-              <Button onClick={onCreate} variant="link" size="sm" className="mt-2">
+              <Button onClick={onCreate} variant="ghost" size="sm" className="mt-2">
                 Add your first scraper
               </Button>
             </CardContent>

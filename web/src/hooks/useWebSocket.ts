@@ -22,11 +22,14 @@ export function usePipelineWebSocket(
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    if (!enabled || !session?.accessToken || !positionId) return;
+    if (!enabled || !positionId) return;
+
+    const accessToken = (session as any)?.accessToken;
+    if (!accessToken) return;
 
     const connectWebSocket = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const url = `${protocol}//${window.location.host}/api/proxy/ws/pipeline/${positionId}?token=${session.accessToken}`;
+      const url = `${protocol}//${window.location.host}/api/proxy/ws/pipeline/${positionId}?token=${accessToken}`;
 
       try {
         const ws = new WebSocket(url);
@@ -70,7 +73,7 @@ export function usePipelineWebSocket(
         wsRef.current.close();
       }
     };
-  }, [enabled, session?.accessToken, positionId, onMessage]);
+  }, [enabled, (session as any)?.accessToken, positionId, onMessage]);
 
   const send = useCallback((message: WebSocketMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -94,11 +97,12 @@ export function useNotificationWebSocket(
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    if (!enabled || !session?.accessToken) return;
+    const accessToken = (session as any)?.accessToken;
+    if (!enabled || !accessToken) return;
 
     const connectWebSocket = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const url = `${protocol}//${window.location.host}/api/proxy/ws/notifications?token=${session.accessToken}`;
+      const url = `${protocol}//${window.location.host}/api/proxy/ws/notifications?token=${accessToken}`;
 
       try {
         const ws = new WebSocket(url);
@@ -154,7 +158,7 @@ export function useNotificationWebSocket(
         wsRef.current.close();
       }
     };
-  }, [enabled, session?.accessToken, onNotification]);
+  }, [enabled, (session as any)?.accessToken, onNotification]);
 
   return { isConnected: wsRef.current?.readyState === WebSocket.OPEN };
 }
