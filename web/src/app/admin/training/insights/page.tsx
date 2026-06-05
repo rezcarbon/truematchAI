@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useSession } from 'next-auth/react';
 import { PageHeader } from '@/components/shared/AppShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +19,7 @@ import {
 import { AlertCircle, Brain, TrendingUp, Target, Lightbulb } from 'lucide-react';
 
 export default function InsightsAnalyticsPage() {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
   const [insights, setInsights] = useState<TrainingInsight[]>([]);
   const [progress, setProgress] = useState<TrainingProgress[]>([]);
   const [patterns, setPatterns] = useState<SuccessPattern[]>([]);
@@ -29,8 +29,9 @@ export default function InsightsAnalyticsPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const token = await getToken();
-        if (!token) throw new Error('Not authenticated');
+        if (!session) throw new Error('Not authenticated');
+
+        const token = session?.user?.email || 'session-token';
 
         const [insightsData, progressData, patternsData] = await Promise.all([
           getTrainingInsights(token),
@@ -48,8 +49,10 @@ export default function InsightsAnalyticsPage() {
       }
     };
 
-    loadData();
-  }, [getToken]);
+    if (session) {
+      loadData();
+    }
+  }, [session]);
 
   if (loading) {
     return (

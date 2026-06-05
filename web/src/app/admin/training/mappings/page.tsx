@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useSession } from 'next-auth/react';
 import { PageHeader } from '@/components/shared/AppShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ import { AlertCircle, Zap, TrendingUp, Eye, EyeOff, ThumbsUp, ThumbsDown } from 
 import { input as inputClass } from '@/components/ui/input';
 
 export default function CapabilityMappingsPage() {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
   const [mappings, setMappings] = useState<CapabilityMapping[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -23,9 +23,9 @@ export default function CapabilityMappingsPage() {
   useEffect(() => {
     const loadMappings = async () => {
       try {
-        const token = await getToken();
-        if (!token) throw new Error('Not authenticated');
+        if (!session) throw new Error('Not authenticated');
 
+        const token = session?.user?.email || 'session-token';
         const data = await getCapabilityMappings(token);
         setMappings(data);
       } catch (err) {
@@ -35,8 +35,10 @@ export default function CapabilityMappingsPage() {
       }
     };
 
-    loadMappings();
-  }, [getToken]);
+    if (session) {
+      loadMappings();
+    }
+  }, [session]);
 
   const filtered = mappings
     .filter(

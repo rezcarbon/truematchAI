@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useSession } from 'next-auth/react';
 import { PageHeader } from '@/components/shared/AppShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,7 +12,7 @@ import { getTrainingStats, getVirtualBrainState, TrainingStats, VirtualBrainStat
 import { AlertCircle, TrendingUp, Brain, Database, CheckCircle2 } from 'lucide-react';
 
 export default function TrainingSystemDashboard() {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
   const [stats, setStats] = useState<TrainingStats | null>(null);
   const [brainState, setBrainState] = useState<VirtualBrainState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -21,8 +21,10 @@ export default function TrainingSystemDashboard() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const token = await getToken();
-        if (!token) throw new Error('Not authenticated');
+        if (!session) throw new Error('Not authenticated');
+
+        // For next-auth, pass a dummy token since the API will use session cookies
+        const token = session?.user?.email || 'session-token';
 
         const [statsData, brainData] = await Promise.all([
           getTrainingStats(token),
@@ -38,8 +40,10 @@ export default function TrainingSystemDashboard() {
       }
     };
 
-    loadData();
-  }, [getToken]);
+    if (session) {
+      loadData();
+    }
+  }, [session]);
 
   if (loading) {
     return (

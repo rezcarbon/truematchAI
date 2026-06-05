@@ -3,7 +3,7 @@
 export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useSession } from 'next-auth/react';
 import { PageHeader } from '@/components/shared/AppShell';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,7 @@ const FEEDBACK_TYPE_COLORS: Record<string, { bg: string; text: string }> = {
 };
 
 export default function TrainingFeedbackPage() {
-  const { getToken } = useAuth();
+  const { data: session } = useSession();
   const [feedback, setFeedback] = useState<TrainingFeedback[]>([]);
   const [selectedType, setSelectedType] = useState<string>('');
   const [loading, setLoading] = useState(true);
@@ -29,9 +29,9 @@ export default function TrainingFeedbackPage() {
   useEffect(() => {
     const loadFeedback = async () => {
       try {
-        const token = await getToken();
-        if (!token) throw new Error('Not authenticated');
+        if (!session) throw new Error('Not authenticated');
 
+        const token = session?.user?.email || 'session-token';
         const data = await getTrainingFeedback(token, selectedType || undefined);
         setFeedback(data.items);
       } catch (err) {
@@ -41,8 +41,10 @@ export default function TrainingFeedbackPage() {
       }
     };
 
-    loadFeedback();
-  }, [getToken, selectedType]);
+    if (session) {
+      loadFeedback();
+    }
+  }, [session, selectedType]);
 
   const feedbackTypes = ['hire', 'reject', 'applied', 'interested', 'not_interested', 'maybe'];
   const typeCounts = feedbackTypes.reduce((acc, type) => {
