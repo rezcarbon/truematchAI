@@ -366,14 +366,27 @@ async def get_pipeline_analytics(
     hired_apps = [a for a in apps_list if a.stage == PipelineStage.hired]
     times_to_hire = [
         (a.updated_at - a.applied_at).days for a in hired_apps
+        if a.applied_at and a.updated_at
     ]
     avg_time_to_hire = sum(times_to_hire) / len(times_to_hire) if times_to_hire else 0
+
+    # Calculate conversion rates between stages
+    conversion_rates = {}
+    all_stages = [s for s in PipelineStage]
+    for i, stage in enumerate(all_stages[:-1]):
+        current_stage_apps = [a for a in apps_list if a.stage == stage]
+        next_stage = all_stages[i + 1]
+        converted_apps = [a for a in apps_list if a.stage == next_stage]
+
+        if current_stage_apps:
+            rate = (len(converted_apps) / len(current_stage_apps)) * 100
+            conversion_rates[f"{stage.value}_to_{next_stage.value}"] = round(rate, 2)
 
     return PipelineAnalyticsResponse(
         position_id=position_id,
         total_applications=len(apps_list),
         by_stage=by_stage,
-        conversion_rates={},  # TODO: calculate conversion rates
+        conversion_rates=conversion_rates,
         average_time_to_hire=avg_time_to_hire,
     )
 
@@ -392,28 +405,41 @@ async def get_source_analytics(
     applications = await db.scalars(query)
     apps_list = list(applications)
 
-    # Group by source
+    # Group by source and calculate metrics
     by_source = {}
     for app in apps_list:
         source = app.source or "unknown"
         if source not in by_source:
-            by_source[source] = {"applications": 0, "hires": 0}
+            by_source[source] = {
+                "applications": 0,
+                "hires": 0,
+                "times_to_hire": [],
+            }
         by_source[source]["applications"] += 1
         if app.stage == PipelineStage.hired:
             by_source[source]["hires"] += 1
+            # Calculate time to hire for this application
+            if app.applied_at and app.updated_at:
+                time_to_hire_days = (app.updated_at - app.applied_at).days
+                by_source[source]["times_to_hire"].append(time_to_hire_days)
 
-    # Calculate metrics
+    # Calculate metrics per source
     source_metrics = []
     for source, data in by_source.items():
         hire_rate = (data["hires"] / data["applications"] * 100) if data["applications"] > 0 else 0
-        # TODO: calculate average time to hire by source
+        # Calculate average time to hire for this source
+        avg_time_to_hire = (
+            sum(data["times_to_hire"]) / len(data["times_to_hire"])
+            if data["times_to_hire"]
+            else 0
+        )
         source_metrics.append(
             SourceMetrics(
                 source=source,
                 applications=data["applications"],
                 hires=data["hires"],
                 hire_rate=hire_rate,
-                average_time_to_hire=0,  # TODO
+                average_time_to_hire=avg_time_to_hire,
             )
         )
 
