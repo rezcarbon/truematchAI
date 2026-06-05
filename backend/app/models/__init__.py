@@ -42,3 +42,27 @@ __all__ = [
     "Scorecard",
     "User",
 ]
+
+# Training Simulation System Models
+from app.models.training import (
+    TrainingFeedback,
+    FeedbackType,
+    CapabilityMapping,
+    CredentialMapping,
+    SuccessPattern,
+    TrainingProgress,
+    TrainingInsight,
+    VirtualBrainState,
+)
+
+__all__ = [
+    # ... existing exports ...
+    "TrainingFeedback",
+    "FeedbackType",
+    "CapabilityMapping",
+    "CredentialMapping",
+    "SuccessPattern",
+    "TrainingProgress",
+    "TrainingInsight",
+    "VirtualBrainState",
+]
