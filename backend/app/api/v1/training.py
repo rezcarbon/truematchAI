@@ -588,7 +588,7 @@ async def get_training_insights(
 async def get_virtual_brain_state(
     db: AsyncSession = Depends(get_session),
     admin: User = Depends(verify_admin),
-) -> VirtualBrainState:
+) -> VirtualBrainStateResponse:
     """
     Get the current state of the virtual brain.
 
@@ -616,13 +616,23 @@ async def get_virtual_brain_state(
 
     if not state:
         # Return empty state if no model yet
-        return VirtualBrainState(
+        import uuid
+        from datetime import datetime, timezone
+        return VirtualBrainStateResponse(
+            id=uuid.uuid4(),
             version=0,
             is_active=False,
             total_feedback_samples=0,
             total_patterns_learned=0,
             match_accuracy=0.0,
             hire_success_prediction_accuracy=0.0,
+            model_data={},
+            performance_metrics={},
+            training_started_at=None,
+            training_completed_at=None,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc),
+            notes="Initial model state - no training data yet",
         )
 
     logger.info(
@@ -634,7 +644,7 @@ async def get_virtual_brain_state(
         },
     )
 
-    return state
+    return VirtualBrainStateResponse.model_validate(state)
 
 
 @router.get(
@@ -671,8 +681,8 @@ async def get_training_stats(
 
     feedback_by_type = {}
     for record in feedback_records:
-        feedback_by_type[record.feedback_type.value] = (
-            feedback_by_type.get(record.feedback_type.value, 0) + 1
+        feedback_by_type[record.feedback_type] = (
+            feedback_by_type.get(record.feedback_type, 0) + 1
         )
 
     # Count mappings
