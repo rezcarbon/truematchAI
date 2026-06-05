@@ -1,0 +1,199 @@
+"""TrueMatch FastAPI application entrypoint."""
+from __future__ import annotations
+
+import asyncio
+import logging
+from datetime import datetime, timezone
+
+from fastapi import FastAPI, Request, status
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
+from app.api.v1.router import api_router
+from app.config import settings
+from app.core import health
+from app.core.exceptions import (
+    ProblemDetail,
+    TrueMatchError,
+    problem_detail_from_exception,
+)
+from app.core.logging import RequestContextMiddleware, configure_logging, get_request_id
+from app.core.observability import init_sentry, setup_metrics
+from app.core.ratelimit import RateLimitMiddleware
+
+logger = logging.getLogger(__name__)
+
+configure_logging()
+init_sentry()
+
+app = FastAPI(
+    title="TrueMatch API",
+    version="0.1.0",
+    description="AI-embodied ATS / hiring-assessment platform backend.",
+)
+
+
+# ─ Exception Handlers ────────────────────────────────────────────────────
+
+
+@app.exception_handler(TrueMatchError)
+async def truematch_error_handler(request: Request, exc: TrueMatchError) -> JSONResponse:
+    """Handle custom TrueMatchError exceptions."""
+    request_id = get_request_id()
+
+    problem_detail = problem_detail_from_exception(exc, request_id)
+
+    logger.error(
+        f"{exc.error_type}: {exc.message}",
+        extra={
+            "request_id": request_id,
+            "error_type": exc.error_type,
+            "status_code": exc.status_code,
+            "path": request.url.path,
+            "method": request.method,
+        },
+    )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=problem_detail.model_dump(exclude_none=True),
+        headers={"X-Request-ID": request_id},
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
+    """Handle Pydantic validation errors (HTTP 422)."""
+    request_id = get_request_id()
+
+    # Transform Pydantic errors to field-level error details
+    errors = []
+    for error in exc.errors():
+        errors.append({
+            "field": ".".join(str(loc) for loc in error["loc"][1:]),  # Skip 'body'
+            "message": error["msg"],
+            "type": error["type"],
+        })
+
+    problem_detail = ProblemDetail(
+        type="validation_error",
+        title="Request Validation Failed",
+        status=422,
+        detail="The request body contains one or more validation errors",
+        request_id=request_id,
+        timestamp=datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        instance=str(request.url.path),
+        errors=errors,
+    )
+
+    logger.warning(
+        "Validation error",
+        extra={
+            "request_id": request_id,
+            "path": request.url.path,
+            "method": request.method,
+            "error_count": len(errors),
+        },
+    )
+
+    return JSONResponse(
+        status_code=422,
+        content=problem_detail.model_dump(exclude_none=True),
+        headers={"X-Request-ID": request_id},
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Handle unhandled exceptions (HTTP 500)."""
+    request_id = get_request_id()
+
+    # Log the full exception for debugging
+    logger.exception(
+        "Unhandled exception",
+        extra={
+            "request_id": request_id,
+            "path": request.url.path,
+            "method": request.method,
+            "exc_type": type(exc).__name__,
+        },
+    )
+
+    # Return generic error response without exposing details
+    problem_detail = ProblemDetail(
+        type="internal_error",
+        title="Internal Server Error",
+        status=500,
+        detail="An unexpected error occurred. Please contact support with the request ID.",
+        request_id=request_id,
+        timestamp=datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        instance=str(request.url.path),
+    )
+
+    return JSONResponse(
+        status_code=500,
+        content=problem_detail.model_dump(exclude_none=True),
+        headers={"X-Request-ID": request_id},
+    )
+
+
+# ─ Middleware ────────────────────────────────────────────────────────────
+
+
+# Middleware order (outermost first): request-id/logging -> rate limit -> CORS.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.add_middleware(RateLimitMiddleware)
+app.add_middleware(RequestContextMiddleware)
+
+setup_metrics(app)
+
+app.include_router(api_router, prefix="/api/v1")
+
+
+# ─ Lifecycle Events ──────────────────────────────────────────────────────
+
+
+@app.on_event("shutdown")
+async def shutdown_event():
+    """Graceful shutdown: stop accepting requests and drain in-flight requests."""
+    logger.info("Shutdown initiated, draining connections...")
+    # Grace period for in-flight requests to complete
+    await asyncio.sleep(5)
+    logger.info("Shutdown complete")
+
+
+# ─ Meta Endpoints ────────────────────────────────────────────────────────
+
+
+@app.get("/livez", tags=["meta"])
+async def livez() -> dict:
+    """Liveness: the process is up. Cheap; no dependency checks."""
+    return {"status": "ok"}
+
+
+@app.get("/readyz", tags=["meta"])
+async def readyz() -> JSONResponse:
+    """Readiness: dependencies (DB, Redis) are reachable."""
+    ready, components = await health.readiness()
+    return JSONResponse(
+        status_code=200 if ready else 503,
+        content={"status": "ready" if ready else "not_ready", "components": components},
+    )
+
+
+@app.get("/health", tags=["meta"])
+async def health_endpoint() -> dict:
+    """Backwards-compatible basic health endpoint."""
+    return {"status": "ok", "environment": settings.environment}
+
+
+@app.get("/", tags=["meta"])
+async def root() -> dict:
+    return {"service": "truematch-backend", "docs": "/docs"}

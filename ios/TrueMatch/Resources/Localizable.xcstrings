@@ -1,0 +1,30 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "common.cancel" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Cancel" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "取消" } },
+        "ms" : { "stringUnit" : { "state" : "translated", "value" : "Batal" } },
+        "ta" : { "stringUnit" : { "state" : "translated", "value" : "ரத்து" } }
+      }
+    },
+    "common.continue" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续" } },
+        "ms" : { "stringUnit" : { "state" : "translated", "value" : "Teruskan" } },
+        "ta" : { "stringUnit" : { "state" : "translated", "value" : "தொடரவும்" } }
+      }
+    },
+    "assessment.title" : {
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Assessment" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "评估" } },
+        "ms" : { "stringUnit" : { "state" : "translated", "value" : "Penilaian" } },
+        "ta" : { "stringUnit" : { "state" : "translated", "value" : "மதிப்பீடு" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

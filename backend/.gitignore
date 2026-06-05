@@ -1,0 +1,41 @@
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Governance configuration — threshold values are server-side only
+governance/*.enc
+governance/*.json
+!governance/config.example.json
+*.secret
+
+# Cryptographic key material (Singpass JWKs, encryption keys) — never commit
+*.jwk
+*.pem
+keys/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Tooling
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+
+# IDE / OS
+.idea/
+.vscode/
+.DS_Store
+
+# Logs
+*.log

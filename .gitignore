@@ -1,0 +1,91 @@
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.staging
+.env.production
+
+# Backend
+backend/.venv/
+backend/__pycache__/
+backend/*.pyc
+backend/.pytest_cache/
+backend/.ruff_cache/
+backend/dist/
+backend/build/
+backend/*.egg-info/
+backend/.DS_Store
+
+# Frontend
+web/node_modules/
+web/.next/
+web/out/
+web/dist/
+web/.DS_Store
+web/.env.local
+web/.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+*.iml
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage/
+
+# Testing
+.pytest_cache/
+.tox/
+__pycache__/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+.eggs/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.VolumeIcon.icns
+
+# XCode
+*.xcworkspace/
+*.xcodeproj/
+DerivedData/
+.swiftpm/
+*.playground
