@@ -15,7 +15,7 @@ from app.models.notification import Notification, NotificationPreference, Notifi
 from app.models.position import Position
 from app.models.profile import CapabilityProfile
 from app.models.resume import Resume
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.models.training import (
     TrainingFeedback,
     FeedbackType,
@@ -51,6 +51,7 @@ __all__ = [
     "Resume",
     "Scorecard",
     "User",
+    "UserRole",
     "TrainingFeedback",
     "FeedbackType",
     "CapabilityMapping",

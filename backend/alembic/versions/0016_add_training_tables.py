@@ -17,7 +17,7 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Create feedback_type enum
+    # Create feedback_type enum (use text for now, will be converted to proper enum type)
     op.execute("""
         DO $$ BEGIN
             IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'feedback_type') THEN
@@ -27,29 +27,26 @@ def upgrade() -> None:
     """)
 
     # Create training_feedback table
-    op.create_table(
-        'training_feedback',
-        sa.Column('id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('user_id', postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column('match_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('job_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('candidate_id', postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column('feedback_type', sa.Enum('hire', 'reject', 'maybe', 'interested', 'not_interested', 'applied', name='feedback_type'), nullable=False),
-        sa.Column('rating', sa.Integer(), nullable=True),
-        sa.Column('comments', sa.Text(), nullable=True),
-        sa.Column('time_to_action_seconds', sa.Integer(), nullable=True),
-        sa.Column('outcome', sa.String(50), nullable=True),
-        sa.Column('outcome_date', sa.DateTime(timezone=True), nullable=True),
-        sa.Column('hire_success', sa.Boolean(), nullable=True),
-        sa.Column('source', sa.String(50), nullable=False, server_default='web'),
-        sa.Column('is_training', sa.Boolean(), nullable=False, server_default='true'),
-        sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-        sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
-        sa.ForeignKeyConstraint(['user_id'], ['users.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['job_id'], ['positions.id'], ondelete='CASCADE'),
-        sa.ForeignKeyConstraint(['candidate_id'], ['users.id'], ondelete='CASCADE'),
-        sa.PrimaryKeyConstraint('id')
-    )
+    op.execute("""
+        CREATE TABLE training_feedback (
+            id UUID PRIMARY KEY,
+            user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            match_id UUID,
+            job_id UUID REFERENCES positions(id) ON DELETE CASCADE,
+            candidate_id UUID REFERENCES users(id) ON DELETE CASCADE,
+            feedback_type feedback_type NOT NULL,
+            rating INTEGER,
+            comments TEXT,
+            time_to_action_seconds INTEGER,
+            outcome VARCHAR(50),
+            outcome_date TIMESTAMP WITH TIME ZONE,
+            hire_success BOOLEAN,
+            source VARCHAR(50) DEFAULT 'web',
+            is_training BOOLEAN DEFAULT true,
+            created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE NOT NULL
+        )
+    """)
     op.create_index('ix_training_feedback_user_id', 'training_feedback', ['user_id'])
     op.create_index('ix_training_feedback_job_id', 'training_feedback', ['job_id'])
     op.create_index('ix_training_feedback_candidate_id', 'training_feedback', ['candidate_id'])

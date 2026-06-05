@@ -60,10 +60,7 @@ class TrainingFeedback(Base, TimestampMixin):
     )
 
     # Feedback data
-    feedback_type: Mapped[FeedbackType] = mapped_column(
-        SAEnum(FeedbackType, name="feedback_type"),
-        nullable=False
-    )
+    feedback_type: Mapped[str] = mapped_column(String(50), nullable=False)
     rating: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 1-5 stars
     comments: Mapped[str | None] = mapped_column(Text, nullable=True)
 
