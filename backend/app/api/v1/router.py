@@ -20,6 +20,7 @@ from app.api.v1 import (
     positions,
     profile,
     recruiter_metrics,
+    training,
     uploads,
     scrapers,
     websocket_api,
@@ -39,6 +40,8 @@ api_router.include_router(bulk_actions.router, prefix="/ats")
 api_router.include_router(recruiter_metrics.router, prefix="/ats")
 api_router.include_router(dei_analytics.router, prefix="/ats")
 api_router.include_router(admin.router, prefix="/admin", tags=["admin"])
+# Virtual brain / Training Simulation System (admin-only)
+api_router.include_router(training.router, tags=["training"])
 # CV analysis and JD simulation
 api_router.include_router(cv_analysis.router)
 api_router.include_router(jd_simulation.router)

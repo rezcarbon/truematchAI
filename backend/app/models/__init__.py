@@ -16,6 +16,16 @@ from app.models.position import Position
 from app.models.profile import CapabilityProfile
 from app.models.resume import Resume
 from app.models.user import User
+from app.models.training import (
+    TrainingFeedback,
+    FeedbackType,
+    CapabilityMapping,
+    CredentialMapping,
+    SuccessPattern,
+    TrainingProgress,
+    TrainingInsight,
+    VirtualBrainState,
+)
 
 __all__ = [
     "Application",
@@ -41,22 +51,6 @@ __all__ = [
     "Resume",
     "Scorecard",
     "User",
-]
-
-# Training Simulation System Models
-from app.models.training import (
-    TrainingFeedback,
-    FeedbackType,
-    CapabilityMapping,
-    CredentialMapping,
-    SuccessPattern,
-    TrainingProgress,
-    TrainingInsight,
-    VirtualBrainState,
-)
-
-__all__ = [
-    # ... existing exports ...
     "TrainingFeedback",
     "FeedbackType",
     "CapabilityMapping",
