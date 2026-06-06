@@ -2,8 +2,10 @@
 from __future__ import annotations
 
 import logging
+from typing import Annotated, Any
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
+from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy import select
 
 from app.core import oauth_state, singpass
@@ -18,7 +20,8 @@ from app.core.security import (
     hash_password,
     verify_password,
 )
-from app.deps import CurrentUser, DBSession
+from app.core.token_denylist import TokenDenylist
+from app.deps import CurrentUser, DBSession, get_redis
 from app.models.user import User
 from app.schemas.auth import (
     LoginRequest,
@@ -33,6 +36,9 @@ from app.schemas.auth import (
 
 router = APIRouter()
 logger = logging.getLogger("truematch.auth")
+
+# OAuth2 scheme for extracting bearer token from Authorization header
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=True)
 
 
 @router.post("/signup", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
@@ -92,12 +98,53 @@ async def refresh(payload: RefreshRequest, db: DBSession) -> TokenResponse:
 
 
 @router.delete("/session", status_code=status.HTTP_204_NO_CONTENT)
-async def logout(user: CurrentUser) -> None:
-    """Stateless JWT logout.
+async def logout(
+    user: CurrentUser,
+    token: Annotated[str, Depends(oauth2_scheme)],
+    redis: Annotated[Any, Depends(get_redis)],
+) -> None:
+    """Logout user by revoking their current token.
 
-    With stateless JWTs the client discards its tokens. A production deployment
-    would also add the token jti to a Redis denylist until expiry.
+    The token's JTI is added to the denylist and becomes invalid immediately.
+    Subsequent requests using this token will be rejected.
+
+    Args:
+        user: Current authenticated user
+        token: Bearer token from Authorization header
+        redis: Redis client for denylist
+
+    Returns:
+        204 No Content on success
+
+    Raises:
+        HTTPException: If token validation fails
     """
+    try:
+        # Decode token to get JTI
+        token_data = decode_token(token)
+        token_jti = token_data.get("jti")
+
+        if not token_jti:
+            raise AuthenticationError("Token missing JTI claim")
+
+        # Calculate expiry for this token (all access tokens use this duration)
+        from app.config import settings
+        expiry_seconds = settings.access_token_expire_minutes * 60
+
+        # Add to denylist
+        denylist = TokenDenylist(redis)
+        await denylist.add_token_to_denylist(token_jti, expiry_seconds)
+        await denylist.add_user_token(user.id, token_jti, expiry_seconds)
+
+        logger.info(f"User logged out", extra={"user_id": str(user.id), "token_jti": token_jti})
+
+    except JWTError as e:
+        logger.warning(f"Failed to logout - invalid token: {e}")
+        raise AuthenticationError("Invalid token") from e
+    except Exception as e:
+        logger.error(f"Failed to logout: {e}", extra={"user_id": str(user.id)})
+        raise
+
     return None
 
 

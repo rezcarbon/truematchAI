@@ -3,10 +3,13 @@
 Uses the `bcrypt` library directly (passlib is unmaintained and breaks with
 bcrypt >= 4.1). bcrypt hashes at most 72 bytes; longer passwords are truncated
 to that boundary, which is bcrypt's standard, well-understood behaviour.
+
+JWT tokens include a JTI (unique ID) claim to support token revocation via denylist.
 """
 from __future__ import annotations
 
 import asyncio
+import uuid
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -47,10 +50,22 @@ def verify_password(plain: str, hashed: str) -> bool:
 
 
 def _create_token(subject: str, token_type: str, expires_delta: timedelta, **extra: Any) -> str:
+    """Create a JWT token with JTI for revocation support.
+
+    Args:
+        subject: User ID (sub claim)
+        token_type: Token type (access or refresh)
+        expires_delta: Time until token expires
+        **extra: Additional claims to include
+
+    Returns:
+        Encoded JWT token string
+    """
     now = datetime.now(timezone.utc)
     payload: dict[str, Any] = {
         "sub": subject,
         "type": token_type,
+        "jti": str(uuid.uuid4()),  # Unique token ID for revocation
         "iat": now,
         "exp": now + expires_delta,
         **extra,
@@ -77,7 +92,17 @@ def create_refresh_token(subject: str, **extra: Any) -> str:
 
 
 def decode_token(token: str) -> dict[str, Any]:
-    """Decode a JWT, raising JWTError on failure."""
+    """Decode a JWT, raising JWTError on failure.
+
+    Args:
+        token: JWT token string
+
+    Returns:
+        Decoded token claims as dictionary
+
+    Raises:
+        JWTError: If token is invalid or expired
+    """
     return jwt.decode(token, settings.jwt_secret, algorithms=[settings.jwt_algorithm])
 
 
@@ -106,4 +131,5 @@ __all__ = [
     "JWTError",
     "ACCESS_TOKEN_TYPE",
     "REFRESH_TOKEN_TYPE",
+    "uuid",
 ]

@@ -1,14 +1,16 @@
-"""Shared FastAPI dependencies: database session and current-user resolution."""
+"""Shared FastAPI dependencies: database session, Redis, and current-user resolution."""
 from __future__ import annotations
 
 import uuid
 from collections.abc import AsyncGenerator
 from typing import Annotated
 
+import redis.asyncio as redis
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.core.security import ACCESS_TOKEN_TYPE, JWTError, decode_token
 from app.database import get_session
 from app.models.user import User, UserRole
@@ -22,6 +24,22 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 
 
 DBSession = Annotated[AsyncSession, Depends(get_db)]
+
+
+async def get_redis() -> AsyncGenerator[redis.Redis[bytes], None]:
+    """Get Redis connection for token denylist and caching.
+
+    Yields:
+        redis.asyncio.Redis instance for async operations
+
+    Raises:
+        redis.ConnectionError: If Redis is unavailable
+    """
+    client = redis.from_url(settings.redis_url, decode_responses=False)
+    try:
+        yield client
+    finally:
+        await client.close()
 
 
 async def get_current_user(

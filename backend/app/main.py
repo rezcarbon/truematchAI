@@ -13,6 +13,7 @@ from fastapi.responses import JSONResponse
 from app.api.v1.router import api_router
 from app.config import settings
 from app.core import health
+from app.core.config_validator import SecretValidator
 from app.core.exceptions import (
     ProblemDetail,
     TrueMatchError,
@@ -158,6 +159,25 @@ app.include_router(api_router, prefix="/api/v1")
 
 
 # ─ Lifecycle Events ──────────────────────────────────────────────────────
+
+
+@app.on_event("startup")
+async def validate_config():
+    """Validate critical configuration at startup.
+
+    Runs before any other startup tasks to fail fast if secrets are misconfigured.
+    This prevents deployment with weak or missing credentials.
+
+    Raises:
+        ValueError: If critical configuration errors detected
+    """
+    validator = SecretValidator(settings)
+    try:
+        validator.validate_all()
+        logger.info("✅ Configuration validation passed")
+    except ValueError as e:
+        logger.critical(f"❌ Configuration validation failed: {e}")
+        raise
 
 
 @app.on_event("shutdown")

@@ -9,7 +9,7 @@ from __future__ import annotations
 from functools import lru_cache
 from typing import Annotated
 
-from pydantic import field_validator
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
@@ -60,7 +60,10 @@ class Settings(BaseSettings):
     semantic_confirm_threshold: int = 60
 
     # Auth
-    jwt_secret: str = "change-me"
+    jwt_secret: str = Field(
+        default="",
+        description="JWT signing secret (32+ chars). Generate with: secrets.token_urlsafe(32)",
+    )
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
@@ -68,27 +71,47 @@ class Settings(BaseSettings):
     # S3 / AWS
     s3_bucket: str = "truematch-uploads"
     aws_region: str = "ap-southeast-1"
-    aws_access_key_id: str = "placeholder"
-    aws_secret_access_key: str = "placeholder"
+    aws_access_key_id: str = Field(
+        default="",
+        description="AWS access key ID. Never use 'placeholder' in production",
+    )
+    aws_secret_access_key: str = Field(
+        default="",
+        description="AWS secret access key",
+    )
     # Optional KMS key for S3 server-side encryption. When set, objects use
     # aws:kms; otherwise AES256 (SSE-S3). Uploads are always server-side encrypted.
     s3_kms_key_id: str = ""
     max_upload_bytes: int = 5_000_000  # 5 MB cap on resume uploads
 
     @property
-    def s3_configured(self) -> bool:
-        return self.aws_access_key_id not in ("", "placeholder") and self.aws_secret_access_key not in (
-            "",
-            "placeholder",
+    def s3_enabled(self) -> bool:
+        """Whether S3 file storage is enabled with valid credentials."""
+        return (
+            bool(self.aws_access_key_id)
+            and bool(self.aws_secret_access_key)
+            and self.aws_access_key_id != "placeholder"
+            and self.aws_secret_access_key != "placeholder"
         )
+
+    @property
+    def s3_configured(self) -> bool:
+        """Deprecated: use s3_enabled instead."""
+        return self.s3_enabled
 
     # Field-level encryption (PII at rest). Keys are base64-encoded and injected
     # from a secrets manager / KMS-wrapped at deploy time. NEVER committed.
     #   encryption_key       : 32-byte base64 AES-256 data-encryption key
     #   encryption_index_key : base64 HMAC key for searchable blind indexes
     # When unset, the app runs UNENCRYPTED (dev only) and logs a warning.
-    encryption_key: str = ""
-    encryption_index_key: str = ""
+    encryption_key: str = Field(
+        default="",
+        description="Base64-encoded AES-256 key (32 bytes). Generate: secrets.token_hex(32)",
+    )
+    encryption_index_key: str = Field(
+        default="",
+        description="Base64-encoded blind index key (32 bytes). Generate: secrets.token_hex(32)",
+    )
 
     # Governance — only the PATH lives in config, never the values.
     governance_config_path: str = "./governance/config.example.json"
@@ -212,6 +235,11 @@ class Settings(BaseSettings):
     @property
     def is_production(self) -> bool:
         return self.environment == "production"
+
+    @property
+    def encryption_enabled(self) -> bool:
+        """Whether field-level encryption is enabled."""
+        return bool(self.encryption_key and self.encryption_index_key)
 
     @field_validator("cors_origins", mode="before")
     @classmethod
