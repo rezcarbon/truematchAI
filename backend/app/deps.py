@@ -26,7 +26,7 @@ async def get_db() -> AsyncGenerator[AsyncSession, None]:
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 
 
-async def get_redis() -> AsyncGenerator[redis.Redis[bytes], None]:
+async def get_redis() -> AsyncGenerator[redis.Redis, None]:
     """Get Redis connection for token denylist and caching.
 
     Yields:
