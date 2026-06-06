@@ -170,6 +170,15 @@ class Settings(BaseSettings):
     decision_review_threshold: float = 0.65
     decision_auto_reject_threshold: float = 0.65
 
+    # ─── PHASE 1: AUTONOMY LAYER (Week 1) ───
+    # Auto-approval/rejection thresholds
+    # AUTO_APPROVE_THRESHOLD: Score >= this triggers automatic approval (if governance passes)
+    # AUTO_REJECT_THRESHOLD: Score < this triggers automatic rejection
+    # DECISION_REVIEW_THRESHOLD: Score between reject and approve requires manual review
+    AUTO_APPROVE_THRESHOLD: float = 0.90
+    AUTO_REJECT_THRESHOLD: float = 0.40
+    DECISION_REVIEW_THRESHOLD: float = 0.65
+
     # Legacy email/SMTP config (kept for backward compatibility)
     # SMTP server for sending notification emails
     smtp_server: str = ""  # e.g., smtp.gmail.com
