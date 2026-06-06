@@ -8,17 +8,28 @@ Sends automated responses to senders.
 import asyncio
 import hashlib
 import logging
-import tempfile
+import re
 from datetime import datetime, timedelta
 from email import message_from_bytes
 from email.mime.text import MIMEText
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
+from uuid import UUID
 
 import aioimap
 import aiosmtplib
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
+from app.database import AsyncSessionLocal
+from app.models.ingest_queue import (
+    IngestQueueItem,
+    IngestSource,
+    IngestStatus,
+    IngestType,
+)
+from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
@@ -26,39 +37,48 @@ logger = logging.getLogger(__name__)
 class EmailAttachment:
     """Represents extracted email attachment."""
 
-    def __init__(self, filename: str, content: bytes, email_from: str, email_subject: str):
+    SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".doc", ".txt"}
+
+    def __init__(
+        self,
+        filename: str,
+        content: bytes,
+        email_from: str,
+        email_subject: str,
+        message_id: str,
+    ):
         self.filename = filename
         self.content = content
         self.email_from = email_from
         self.email_subject = email_subject
+        self.message_id = message_id
         self.content_hash = hashlib.sha256(content).hexdigest()
         self.received_at = datetime.utcnow()
 
     def is_supported(self) -> bool:
         """Check if attachment is supported format."""
-        supported = {".pdf", ".docx", ".txt", ".csv", ".json", ".md"}
         ext = Path(self.filename).suffix.lower()
-        return ext in supported
+        return ext in self.SUPPORTED_EXTENSIONS
 
 
 class EmailIngestor:
     """
-    Autonomous email ingestion for assessment submissions.
+    Autonomous email ingestion for CV/JD submissions.
 
-    Monitors email inbox (IMAP) for CVs and JDs.
+    Monitors email inbox (IMAP) for documents.
     Extracts attachments and queues for processing.
-    Sends automated confirmations.
+    Sends automated confirmations and results.
     """
 
     def __init__(
         self,
-        imap_host: str = settings.email_imap_host,
-        imap_port: int = settings.email_imap_port,
-        email_address: str = settings.email_address,
-        email_password: str = settings.email_password,
+        imap_host: str = settings.ingest_imap_host,
+        imap_port: int = settings.ingest_imap_port,
+        email_address: str = settings.ingest_imap_user,
+        email_password: str = settings.ingest_imap_password,
         smtp_host: str = settings.email_smtp_host,
         smtp_port: int = settings.email_smtp_port,
-        poll_interval: int = 300,  # 5 minutes
+        poll_interval: float = settings.ingest_email_poll_seconds,
     ):
         self.imap_host = imap_host
         self.imap_port = imap_port
@@ -68,7 +88,8 @@ class EmailIngestor:
         self.smtp_port = smtp_port
         self.poll_interval = poll_interval
         self.is_running = False
-        self.processed_message_ids = set()
+        self.processed_message_ids: set[str] = set()
+        self.last_check: datetime | None = None
 
     async def _connect_imap(self) -> aioimap.IMAP4:
         """Connect to IMAP server."""
@@ -83,7 +104,13 @@ class EmailIngestor:
         await smtp.login(self.email_address, self.email_password)
         return smtp
 
-    async def extract_attachments(self, email_bytes: bytes, email_from: str, email_subject: str) -> List[EmailAttachment]:
+    async def extract_attachments(
+        self,
+        email_bytes: bytes,
+        email_from: str,
+        email_subject: str,
+        message_id: str,
+    ) -> list[EmailAttachment]:
         """
         Extract attachments from email message.
 
@@ -102,11 +129,23 @@ class EmailIngestor:
                         continue
 
                     content = part.get_payload(decode=True)
-                    attachment = EmailAttachment(filename, content, email_from, email_subject)
+                    if not content:
+                        continue
+
+                    attachment = EmailAttachment(
+                        filename,
+                        content,
+                        email_from,
+                        email_subject,
+                        message_id,
+                    )
 
                     if attachment.is_supported():
                         attachments.append(attachment)
-                        logger.info(f"Extracted attachment: {filename} (hash: {attachment.content_hash})")
+                        logger.info(
+                            f"Extracted attachment: {filename}",
+                            extra={"hash": attachment.content_hash},
+                        )
                     else:
                         logger.debug(f"Skipping unsupported attachment: {filename}")
 
@@ -189,80 +228,191 @@ TrueMatch Assessment System
         except Exception as e:
             logger.error(f"Error sending result email: {e}")
 
-    async def fetch_new_emails(self):
+    async def fetch_new_emails(self) -> None:
         """
         Fetch new unread emails from inbox.
 
         Searches for emails since last check.
         Extracts attachments and queues for processing.
         """
+        if not self.email_address or not self.email_password:
+            logger.warning("Email ingestion not configured (missing credentials)")
+            return
+
         try:
             imap = await self._connect_imap()
 
-            # Select INBOX
-            await imap.select("INBOX")
+            try:
+                # Select INBOX
+                await imap.select(settings.ingest_imap_folder)
 
-            # Search for recent unseen emails (since last 5 minutes)
-            search_criteria = f'(UNSEEN SINCE "{self._format_date_for_imap(datetime.utcnow() - timedelta(minutes=5))}")'
-            status, message_ids = await imap.search(search_criteria)
+                # Search for recent unseen emails
+                search_date = self.last_check or (datetime.utcnow() - timedelta(hours=1))
+                search_criteria = f'(UNSEEN SINCE "{self._format_date_for_imap(search_date)}")'
+                status, message_ids = await imap.search(search_criteria)
 
-            if status != "OK":
-                logger.warning(f"IMAP search failed: {status}")
-                await imap.logout()
-                return
+                if status != "OK":
+                    logger.warning(f"IMAP search failed: {status}")
+                    return
 
-            message_ids_list = message_ids[0].split()
-            logger.info(f"Found {len(message_ids_list)} new emails")
+                message_ids_list = message_ids[0].split() if message_ids[0] else []
+                logger.info(f"Found {len(message_ids_list)} new emails")
 
-            for message_id in message_ids_list:
-                # Skip if already processed
-                if message_id.decode() in self.processed_message_ids:
-                    continue
+                for message_id in message_ids_list:
+                    msg_id_str = message_id.decode()
 
-                try:
-                    # Fetch email
-                    status, email_data = await imap.fetch(message_id, "(RFC822)")
-                    if status != "OK":
+                    # Skip if already processed
+                    if msg_id_str in self.processed_message_ids:
                         continue
 
-                    email_bytes = email_data[0][1]
-                    msg = message_from_bytes(email_bytes)
+                    try:
+                        # Fetch email
+                        status, email_data = await imap.fetch(message_id, "(RFC822)")
+                        if status != "OK":
+                            continue
 
-                    email_from = msg.get("From", "unknown")
-                    email_subject = msg.get("Subject", "No Subject")
+                        email_bytes = email_data[0][1]
+                        msg = message_from_bytes(email_bytes)
 
-                    logger.info(f"Processing email from {email_from}: {email_subject}")
+                        email_from = msg.get("From", "unknown")
+                        email_subject = msg.get("Subject", "No Subject")
+                        email_message_id = msg.get("Message-ID", msg_id_str)
 
-                    # Extract attachments
-                    attachments = await self.extract_attachments(email_bytes, email_from, email_subject)
+                        logger.info(
+                            f"Processing email from {email_from}: {email_subject}",
+                            extra={"message_id": email_message_id},
+                        )
 
-                    if attachments:
-                        # Send confirmation
-                        await self.send_confirmation_email(email_from, len(attachments), email_subject)
+                        # Extract attachments
+                        attachments = await self.extract_attachments(
+                            email_bytes,
+                            email_from,
+                            email_subject,
+                            email_message_id,
+                        )
 
-                        # Queue for processing
-                        await self._queue_attachments(attachments)
+                        if attachments:
+                            # Send confirmation
+                            await self.send_confirmation_email(
+                                email_from,
+                                len(attachments),
+                                email_subject,
+                            )
 
-                        # Mark as processed
-                        self.processed_message_ids.add(message_id.decode())
+                            # Queue for processing
+                            await self._queue_attachments(attachments)
 
-                        # Mark email as read
-                        await imap.store(message_id, "+FLAGS", "\\Seen")
+                            # Mark as processed
+                            self.processed_message_ids.add(msg_id_str)
 
-                except Exception as e:
-                    logger.error(f"Error processing message {message_id}: {e}")
+                            # Mark email as read
+                            await imap.store(message_id, "+FLAGS", "\\Seen")
 
-            await imap.logout()
+                    except Exception as e:
+                        logger.error(f"Error processing message {message_id}: {e}")
+
+                # Update last check time
+                self.last_check = datetime.utcnow()
+
+            finally:
+                await imap.logout()
 
         except Exception as e:
             logger.error(f"Error in fetch_new_emails: {e}")
 
-    async def _queue_attachments(self, attachments: List[EmailAttachment]):
+    async def _queue_attachments(self, attachments: list[EmailAttachment]) -> None:
         """Queue attachments for assessment processing."""
-        for attachment in attachments:
-            logger.info(f"Queuing attachment for assessment: {attachment.filename}")
-            # TODO: Integration point with Phase A job queue
-            # Would save to temp file and queue assessment job
+        async with AsyncSessionLocal() as db:
+            for attachment in attachments:
+                try:
+                    # Determine ingest type from filename
+                    ingest_type = self._detect_ingest_type(attachment.filename)
+
+                    # Extract sender email
+                    sender_email = self._extract_email_address(attachment.email_from)
+
+                    # Create ingest queue item
+                    ingest_item = IngestQueueItem(
+                        source=IngestSource.email,
+                        ingest_type=ingest_type,
+                        status=IngestStatus.pending,
+                        extracted_text=None,  # Will be extracted by Celery task
+                        source_ref=attachment.message_id,
+                        sender_meta={
+                            "name": attachment.email_from,
+                            "email": sender_email,
+                            "filename": attachment.filename,
+                            "subject": attachment.email_subject,
+                        },
+                        retry_count=0,
+                    )
+
+                    db.add(ingest_item)
+                    await db.flush()
+
+                    logger.info(
+                        "Email attachment ingested",
+                        extra={
+                            "item_id": str(ingest_item.id),
+                            "sender": sender_email,
+                            "filename": attachment.filename,
+                            "ingest_type": ingest_type.value,
+                        },
+                    )
+
+                    # Enqueue processing task in Celery
+                    await self._enqueue_processing_task(ingest_item.id, ingest_type)
+
+                except Exception as e:
+                    logger.error(f"Error processing attachment {attachment.filename}: {e}")
+
+            # Commit all items
+            try:
+                await db.commit()
+            except Exception as e:
+                logger.error(f"Error committing ingest items: {e}")
+                await db.rollback()
+
+    async def _enqueue_processing_task(
+        self,
+        item_id: UUID,
+        ingest_type: IngestType,
+    ) -> None:
+        """Enqueue the item for processing via Celery."""
+        try:
+            from app.workers.agents.ingest_cv import poll_cv_ingest
+            from app.workers.agents.ingest_jd import poll_jd_ingest
+
+            if ingest_type == IngestType.cv:
+                poll_cv_ingest.delay(str(item_id))
+            else:
+                poll_jd_ingest.delay(str(item_id))
+
+            logger.info(
+                "Enqueued email attachment processing task",
+                extra={
+                    "item_id": str(item_id),
+                    "ingest_type": ingest_type.value,
+                },
+            )
+        except Exception as e:
+            logger.error(f"Error enqueueing task for {item_id}: {e}")
+
+    @staticmethod
+    def _extract_email_address(sender: str) -> str:
+        """Extract email address from 'Name <email>' format."""
+        match = re.search(r"<(.+?)>", sender)
+        return match.group(1) if match else sender
+
+    @staticmethod
+    def _detect_ingest_type(filename: str) -> IngestType:
+        """Guess ingest type from filename."""
+        lower = filename.lower()
+        if any(x in lower for x in ["cv", "resume", "résumé", "curriculum"]):
+            return IngestType.cv
+        elif any(x in lower for x in ["jd", "job", "description", "posting", "role"]):
+            return IngestType.jd_draft
+        return IngestType.cv  # Default to CV
 
     @staticmethod
     def _format_date_for_imap(dt: datetime) -> str:

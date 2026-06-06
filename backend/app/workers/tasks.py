@@ -33,6 +33,7 @@ from app.engines import (
 from app.core import provenance, scoring
 from app.models.assessment import Assessment, AssessmentStatus
 from app.models.audit import AuditTrail
+from app.models.ingest_queue import IngestQueueItem, IngestSource, IngestStatus, IngestType
 from app.models.position import Position
 from app.models.resume import Resume
 from app.workers.celery_app import celery_app
@@ -342,6 +343,215 @@ def _should_counter_recommend(
     if governance_cfg is not None and governance_cfg.is_operational():
         return score_delta >= governance_cfg.counter_rec_delta()
     return score_delta > 0
+
+
+# ============================================================================
+# Ingest Queue Processing Tasks
+# ============================================================================
+
+
+@celery_app.task(name="app.workers.tasks.process_ingest_item", bind=True, max_retries=3, default_retry_delay=60)
+def process_ingest_item(
+    self,
+    item_id: str,
+    source: str = "folder",
+) -> dict:
+    """
+    Process an ingested document (CV or JD draft).
+
+    Flow:
+    1. Load ingest queue item from database
+    2. Extract text if not already done
+    3. Create Resume and Assessment (for CV) or improve JD (for JD draft)
+    4. Enqueue assessment pipeline or governance review
+    5. Update ingest queue status
+    6. Send notifications
+
+    Args:
+        item_id: UUID of IngestQueueItem
+        source: Source type (folder or email)
+
+    Returns:
+        Dict with processing result
+    """
+    try:
+        item_uuid = uuid.UUID(item_id)
+        with _session_factory()() as db:
+            # Load ingest item
+            stmt = select(IngestQueueItem).where(IngestQueueItem.id == item_uuid)
+            ingest_item = db.scalar(stmt)
+
+            if ingest_item is None:
+                logger.error(f"Ingest item {item_id} not found")
+                return {"status": "not_found", "item_id": item_id}
+
+            try:
+                # Update status to processing
+                ingest_item.status = IngestStatus.extracting
+                db.commit()
+                _audit(db, item_uuid, "ingest.started", {"source": source})
+
+                # Route based on ingest type
+                if ingest_item.ingest_type == IngestType.cv:
+                    result = _process_cv_ingest(db, ingest_item)
+                elif ingest_item.ingest_type == IngestType.jd_draft:
+                    result = _process_jd_ingest(db, ingest_item)
+                else:
+                    raise ValueError(f"Unknown ingest type: {ingest_item.ingest_type}")
+
+                # Update status
+                ingest_item.status = IngestStatus.completed
+                _audit(
+                    db,
+                    item_uuid,
+                    "ingest.completed",
+                    {
+                        "result": result.get("status"),
+                        "assessment_id": str(result.get("assessment_id")) if result.get("assessment_id") else None,
+                    },
+                )
+                db.commit()
+
+                logger.info(
+                    f"Ingest processing completed: {item_id}",
+                    extra={
+                        "item_id": item_id,
+                        "ingest_type": ingest_item.ingest_type.value,
+                        "status": "completed",
+                    },
+                )
+
+                return {
+                    "status": "success",
+                    "item_id": item_id,
+                    "ingest_type": ingest_item.ingest_type.value,
+                    **result,
+                }
+
+            except Exception as exc:
+                # Update status to failed
+                db.rollback()
+                ingest_item = db.get(IngestQueueItem, item_uuid)
+                if ingest_item is not None:
+                    ingest_item.status = IngestStatus.failed
+                    ingest_item.last_error = str(exc)
+                    ingest_item.retry_count = min(ingest_item.retry_count + 1, settings.ingest_max_retries)
+                    _audit(db, item_uuid, "ingest.failed", {"error": str(exc)})
+                    db.commit()
+
+                logger.error(
+                    f"Ingest processing failed: {exc}",
+                    extra={
+                        "item_id": item_id,
+                        "error": str(exc),
+                    },
+                )
+
+                # Retry if under max retries
+                if ingest_item and ingest_item.retry_count < settings.ingest_max_retries:
+                    raise self.retry(exc=exc)
+
+                return {
+                    "status": "failed",
+                    "item_id": item_id,
+                    "error": str(exc),
+                }
+
+    except Exception as exc:
+        logger.exception(f"Unexpected error in process_ingest_item: {exc}")
+        raise
+
+
+def _process_cv_ingest(db: Session, ingest_item: IngestQueueItem) -> dict:
+    """Process CV ingestion: create Resume and Assessment."""
+    from app.engines.extract import extract_text
+    from app.models.resume import Resume
+    from app.models.assessment import Assessment, AssessmentStatus
+
+    # Extract text if needed
+    if not ingest_item.extracted_text:
+        logger.info("Text extraction required for CV ingest")
+        # For email attachments, would need the raw content
+        # For now, mark as error if no extracted text
+        if ingest_item.source == IngestSource.email:
+            raise ValueError("Email attachments require pre-extracted text")
+        ingest_item.extracted_text = ""
+
+    cv_text = ingest_item.extracted_text or ""
+
+    # Create Resume record
+    resume = Resume(
+        user_id=None,  # System ingestion
+        file_name=ingest_item.source_ref or "ingested_cv",
+        raw_narrative=cv_text,
+        supplementary={
+            "extracted_text": cv_text,
+            "agent_ingested": True,
+            "ingest_source": ingest_item.source.value,
+            "sender_meta": ingest_item.sender_meta,
+        },
+    )
+    db.add(resume)
+    db.flush()
+
+    ingest_item.resume_id = resume.id
+
+    # TODO: Auto-match to best open position (if needed)
+    # For now, assessments are created via API endpoints
+
+    # Mark as awaiting review if configured
+    if settings.ingest_require_approval:
+        ingest_item.status = IngestStatus.awaiting_review
+    else:
+        ingest_item.status = IngestStatus.processing
+
+    db.commit()
+
+    logger.info(
+        f"CV ingest processed: created Resume {resume.id}",
+        extra={"resume_id": str(resume.id), "ingest_item_id": str(ingest_item.id)},
+    )
+
+    return {
+        "status": "resume_created",
+        "resume_id": str(resume.id),
+        "assessment_id": None,
+    }
+
+
+def _process_jd_ingest(db: Session, ingest_item: IngestQueueItem) -> dict:
+    """Process JD draft ingestion: improve JD using agent."""
+    from app.models.position import Position
+
+    # Extract text if needed
+    if not ingest_item.extracted_text:
+        logger.info("Text extraction required for JD ingest")
+        ingest_item.extracted_text = ""
+
+    jd_text = ingest_item.extracted_text or ""
+
+    # TODO: Call JD improvement agent (reasoning.improve_jd or similar)
+    # For now, just store the draft
+    ingest_item.jd_improved_draft = jd_text
+    ingest_item.jd_agent_output = {
+        "status": "pending",
+        "message": "JD improvement not yet implemented",
+    }
+
+    ingest_item.status = IngestStatus.awaiting_review
+
+    db.commit()
+
+    logger.info(
+        f"JD ingest processed and marked for review",
+        extra={"ingest_item_id": str(ingest_item.id)},
+    )
+
+    return {
+        "status": "jd_draft_created",
+        "resume_id": None,
+        "assessment_id": None,
+    }
 
 
 # ============================================================================

@@ -161,6 +161,11 @@ app.include_router(api_router, prefix="/api/v1")
 # ─ Lifecycle Events ──────────────────────────────────────────────────────
 
 
+# Global references to ingestion workers
+_file_monitor = None
+_email_ingestor = None
+
+
 @app.on_event("startup")
 async def validate_config():
     """Validate critical configuration at startup.
@@ -180,10 +185,59 @@ async def validate_config():
         raise
 
 
+@app.on_event("startup")
+async def start_ingestion_workers():
+    """Start file and email ingestion workers on application startup."""
+    global _file_monitor, _email_ingestor
+
+    # Start file system monitor for CV/JD folders
+    try:
+        from app.workers.file_ingestion import FileSystemMonitor
+
+        _file_monitor = FileSystemMonitor()
+        _file_monitor.start()
+        logger.info("File ingestion worker started")
+    except Exception as e:
+        logger.error(f"Failed to start file ingestion worker: {e}")
+
+    # Start email ingestion polling loop if configured
+    if settings.ingest_imap_host and settings.ingest_imap_user:
+        try:
+            from app.workers.email_ingestion import EmailIngestor
+
+            _email_ingestor = EmailIngestor()
+            asyncio.create_task(_email_ingestor.start_polling())
+            logger.info("Email ingestion worker started")
+        except Exception as e:
+            logger.error(f"Failed to start email ingestion worker: {e}")
+    else:
+        logger.info("Email ingestion disabled in configuration")
+
+
 @app.on_event("shutdown")
 async def shutdown_event():
-    """Graceful shutdown: stop accepting requests and drain in-flight requests."""
-    logger.info("Shutdown initiated, draining connections...")
+    """Graceful shutdown: stop workers and drain in-flight requests."""
+    global _file_monitor, _email_ingestor
+
+    logger.info("Shutdown initiated, stopping ingestion workers...")
+
+    # Stop file monitor
+    if _file_monitor:
+        try:
+            _file_monitor.stop()
+            logger.info("File ingestion worker stopped")
+        except Exception as e:
+            logger.error(f"Error stopping file monitor: {e}")
+
+    # Stop email ingestor
+    if _email_ingestor:
+        try:
+            _email_ingestor.stop_polling()
+            logger.info("Email ingestion worker stopped")
+        except Exception as e:
+            logger.error(f"Error stopping email ingestor: {e}")
+
+    logger.info("Draining in-flight requests...")
     # Grace period for in-flight requests to complete
     await asyncio.sleep(5)
     logger.info("Shutdown complete")
