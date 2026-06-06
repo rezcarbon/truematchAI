@@ -23,7 +23,7 @@ interface Message {
   content: string;
   feedback_type?: string;
   extracted_training_signal?: TrainingSignal | null;
-  learning_impact?: any;
+  learning_impact?: number | null;
   created_at: string;
 }
 
@@ -68,13 +68,14 @@ export default function TrainingChatPage() {
     setLoading(true);
 
     try {
-      const token = (session as any)?.accessToken || (session?.user as any)?.accessToken;
-      if (!token) throw new Error('No access token');
+      const token = (session as Record<string, unknown>)?.accessToken || (session?.user as Record<string, unknown>)?.accessToken;
+      if (!token || typeof token !== 'string') throw new Error('No access token');
+      const typedToken = token as string;
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/training/data/chat`, {
         method: 'POST',
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${typedToken}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -84,7 +85,13 @@ export default function TrainingChatPage() {
       });
 
       if (!response.ok) throw new Error('Failed to send message');
-      const data = await response.json();
+      const data = await response.json() as {
+        message_id: string;
+        ai_response: string;
+        feedback_type?: string;
+        extracted_training_signal?: TrainingSignal | null;
+        learning_impact?: number | null;
+      };
 
       const assistantMessage: Message = {
         id: data.message_id,
@@ -92,7 +99,7 @@ export default function TrainingChatPage() {
         content: data.ai_response,
         feedback_type: data.feedback_type,
         extracted_training_signal: data.extracted_training_signal,
-        learning_impact: data.learning_impact,
+        learning_impact: data.learning_impact ?? null,
         created_at: new Date().toISOString(),
       };
 

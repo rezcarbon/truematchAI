@@ -14,6 +14,25 @@ interface DiversityData {
   geography: Record<string, number>;
 }
 
+interface AdvancementData {
+  hired: number;
+  total: number;
+  rate: number;
+}
+
+interface EquityGap {
+  group1: string;
+  group2: string;
+  gap_percentage: number;
+  severity: string;
+}
+
+interface RetentionData {
+  retention_rate: number;
+  retained: number;
+  hired: number;
+}
+
 interface DEIAnalytics {
   diversity: {
     diversity_metrics: DiversityData;
@@ -23,20 +42,20 @@ interface DEIAnalytics {
     total_candidates: number;
   };
   equity: {
-    advancement_by_demographic: Record<string, any>;
+    advancement_by_demographic: Record<string, AdvancementData>;
     offer_rates: Record<string, number>;
     advancement_equality_index: number;
-    equity_gaps: Array<any>;
+    equity_gaps: EquityGap[];
   };
   inclusion: {
-    team_diversity: Record<string, any>;
-    retention_by_demographic: Record<string, any>;
+    team_diversity: Record<string, Record<string, unknown>>;
+    retention_by_demographic: Record<string, RetentionData>;
     inclusion_score: number;
     recommendations: string[];
   };
   compliance: {
-    eeoc_data: Record<string, any>;
-    four_fifths_rule: Record<string, any>;
+    eeoc_data: Record<string, number | string>;
+    four_fifths_rule: Record<string, unknown>;
     hiring_fairness_score: number;
     compliance_status: string;
     audit_trail_complete: boolean;
@@ -219,7 +238,7 @@ export default function DEIAnalyticsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {Object.entries(equity.advancement_by_demographic).map(([demo, data]: [string, any]) => (
+            {Object.entries(equity.advancement_by_demographic).map(([demo, data]) => (
               <div key={demo} className="flex items-center justify-between p-3 border rounded-lg">
                 <div>
                   <p className="font-medium capitalize">{demo.replace(/_/g, ' ')}</p>
@@ -241,7 +260,7 @@ export default function DEIAnalyticsPage() {
                 <AlertTriangle className="h-4 w-4 text-yellow-600 mt-1" />
                 <div>
                   <p className="font-medium text-sm text-yellow-900">Equity Gaps Detected</p>
-                  {equity.equity_gaps.map((gap: any, idx: number) => (
+                  {equity.equity_gaps.map((gap, idx) => (
                     <p key={idx} className="text-xs text-yellow-700 mt-1">
                       {gap.group1} vs {gap.group2}: {gap.gap_percentage}pp gap ({gap.severity} severity)
                     </p>
@@ -260,7 +279,7 @@ export default function DEIAnalyticsPage() {
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            {Object.entries(inclusion.retention_by_demographic).map(([demo, data]: [string, any]) => (
+            {Object.entries(inclusion.retention_by_demographic).map(([demo, data]) => (
               <div key={demo} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <p className="font-medium text-sm capitalize">{demo.replace(/_/g, ' ')}</p>
@@ -291,7 +310,7 @@ export default function DEIAnalyticsPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-            {Object.entries(analytics.compliance.eeoc_data).map(([key, value]: [string, any]) => (
+            {Object.entries(analytics.compliance.eeoc_data).map(([key, value]) => (
               <div key={key} className="p-3 bg-gray-50 rounded-lg">
                 <p className="text-xs text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</p>
                 <p className="text-lg font-bold">{value}</p>

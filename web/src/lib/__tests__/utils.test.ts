@@ -44,42 +44,45 @@ describe('Utility Functions', () => {
 
   describe('Object utilities', () => {
     it('merges objects shallowly', () => {
-      const merge = (a: any, b: any) => ({ ...a, ...b })
+      const merge = <T extends Record<string, unknown>>(a: T, b: Partial<T>): T & Partial<T> => ({ ...a, ...b })
       const obj1 = { a: 1, b: 2 }
       const obj2 = { b: 3, c: 4 }
-      expect(merge(obj1, obj2)).toEqual({ a: 1, b: 3, c: 4 })
+      expect(merge(obj1, obj2 as any)).toEqual({ a: 1, b: 3, c: 4 })
     })
 
     it('removes undefined values', () => {
-      const removeUndefined = (obj: any) => {
+      const removeUndefined = <T extends Record<string, unknown>>(obj: T): Partial<T> => {
         return Object.fromEntries(
           Object.entries(obj).filter(([_, v]) => v !== undefined)
-        )
+        ) as Partial<T>
       }
       const input = { a: 1, b: undefined, c: 3 }
-      expect(removeUndefined(input)).toEqual({ a: 1, c: 3 })
+      expect(removeUndefined(input as any)).toEqual({ a: 1, c: 3 })
     })
   })
 
   describe('Array utilities', () => {
     it('filters duplicates', () => {
-      const uniqueArray = (arr: any[]) => [...new Set(arr)]
+      const uniqueArray = <T>(arr: T[]): T[] => [...new Set(arr)]
       expect(uniqueArray([1, 2, 2, 3, 3, 3])).toEqual([1, 2, 3])
     })
 
     it('sorts numbers in descending order', () => {
-      const sortDesc = (arr: number[]) => [...arr].sort((a, b) => b - a)
+      const sortDesc = (arr: number[]): number[] => [...arr].sort((a, b) => b - a)
       expect(sortDesc([3, 1, 4, 1, 5])).toEqual([5, 4, 3, 1, 1])
     })
 
     it('groups items by property', () => {
-      const groupBy = (arr: any[], key: string) => {
-        return arr.reduce((acc, item) => {
-          const group = item[key]
+      interface Item {
+        [key: string]: unknown;
+      }
+      const groupBy = (arr: Item[], key: string): Record<string, Item[]> => {
+        return arr.reduce((acc: Record<string, Item[]>, item) => {
+          const group = String(item[key])
           if (!acc[group]) acc[group] = []
           acc[group].push(item)
           return acc
-        }, {} as Record<string, any[]>)
+        }, {})
       }
 
       const items = [
@@ -161,11 +164,11 @@ describe('Utility Functions', () => {
 
   describe('Promise utilities', () => {
     it('retries function on failure', async () => {
-      const retryAsync = async (
-        fn: () => Promise<any>,
+      const retryAsync = async <T,>(
+        fn: () => Promise<T>,
         maxRetries = 3,
         delay = 10
-      ) => {
+      ): Promise<T> => {
         for (let i = 0; i < maxRetries; i++) {
           try {
             return await fn()
@@ -174,10 +177,11 @@ describe('Utility Functions', () => {
             await new Promise((resolve) => setTimeout(resolve, delay))
           }
         }
+        throw new Error('Max retries exceeded')
       }
 
       let attempts = 0
-      const fn = async () => {
+      const fn = async (): Promise<string> => {
         attempts++
         if (attempts < 3) throw new Error('Failed')
         return 'Success'
@@ -189,10 +193,10 @@ describe('Utility Functions', () => {
     })
 
     it('times out promise if it takes too long', async () => {
-      const withTimeout = async (promise: Promise<any>, ms: number) => {
+      const withTimeout = async <T,>(promise: Promise<T>, ms: number): Promise<T> => {
         return Promise.race([
           promise,
-          new Promise((_, reject) =>
+          new Promise<T>((_, reject) =>
             setTimeout(() => reject(new Error('Timeout')), ms)
           ),
         ])
@@ -251,15 +255,15 @@ describe('Utility Functions', () => {
       jest.useFakeTimers()
       const mockFn = jest.fn()
 
-      const debounce = (fn: Function, delay: number) => {
+      const debounce = <T extends unknown[], R,>(fn: (...args: T) => R, delay: number): ((...args: T) => void) => {
         let timeoutId: NodeJS.Timeout
-        return (...args: any[]) => {
+        return (...args: T) => {
           clearTimeout(timeoutId)
           timeoutId = setTimeout(() => fn(...args), delay)
         }
       }
 
-      const debouncedFn = debounce(mockFn, 100)
+      const debouncedFn = debounce((arg: string) => mockFn(arg), 100)
 
       debouncedFn('first')
       debouncedFn('second')
@@ -279,9 +283,9 @@ describe('Utility Functions', () => {
       jest.useFakeTimers()
       const mockFn = jest.fn()
 
-      const throttle = (fn: Function, delay: number) => {
+      const throttle = <T extends unknown[], R,>(fn: (...args: T) => R, delay: number): ((...args: T) => void) => {
         let lastCall = 0
-        return (...args: any[]) => {
+        return (...args: T) => {
           const now = Date.now()
           if (now - lastCall >= delay) {
             lastCall = now
@@ -290,7 +294,7 @@ describe('Utility Functions', () => {
         }
       }
 
-      const throttledFn = throttle(mockFn, 100)
+      const throttledFn = throttle((arg: string) => mockFn(arg), 100)
 
       throttledFn('first')
       throttledFn('second')

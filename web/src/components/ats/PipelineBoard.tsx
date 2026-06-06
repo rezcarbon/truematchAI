@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import type { WebSocketMessage } from '@/types';
 import { useToast } from '@/components/providers/ToastProvider';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -58,25 +59,24 @@ export function PipelineBoard({
   const [wsConnected, setWsConnected] = useState(false);
 
   // Handle real-time WebSocket updates
-  const handleWebSocketMessage = useCallback((message: any) => {
+  const handleWebSocketMessage = useCallback((message: WebSocketMessage) => {
     if (message.type === 'pipeline_update') {
       // Update candidate stage in real-time
+      const candidateId = (message as Record<string, unknown>).application_id as string;
+      const newStage = (message as Record<string, unknown>).new_stage as string;
+      const candidateName = (message as Record<string, unknown>).candidate_name as string || 'Candidate';
+
       setCandidates(prevCandidates =>
         prevCandidates.map(c =>
-          c.id === message.application_id
-            ? { ...c, stage: message.new_stage }
+          c.id === candidateId
+            ? { ...c, stage: newStage }
             : c
         )
       );
-      addToast(
-        `${message.candidate_name || 'Candidate'} moved to ${message.new_stage}`,
-        'info'
-      );
+      addToast(`${candidateName} moved to ${newStage}`, 'info');
     } else if (message.type === 'interview_scheduled') {
-      addToast(
-        `Interview scheduled for ${message.candidate_name || 'candidate'}`,
-        'info'
-      );
+      const candidateName = (message as Record<string, unknown>).candidate_name as string || 'candidate';
+      addToast(`Interview scheduled for ${candidateName}`, 'info');
     } else if (message.type === 'scorecard_submitted') {
       addToast('Scorecard submitted', 'success');
     }

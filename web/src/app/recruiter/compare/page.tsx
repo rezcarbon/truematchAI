@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 import Link from "next/link";
+import type { PipelineCandidate } from "@/lib/types";
 import { PageHeader } from "@/components/shared/AppShell";
 import { ScoreTrio } from "@/components/shared/ScoreTrio";
 import { MatchTypeBadge } from "@/components/shared/MatchTypeBadge";
@@ -17,7 +18,7 @@ import {
   X, ArrowRight, Award, TrendingUp, Users
 } from "lucide-react";
 
-export default function ComparePage() {
+export default function ComparePage(): React.ReactElement {
   const pipeline = mockPipeline;
 
   return (
@@ -25,10 +26,10 @@ export default function ComparePage() {
   );
 }
 
-function CompareContent({ candidates }: { candidates: any[] }) {
-  const [selected, setSelected] = useState(candidates.slice(0, 2));
+function CompareContent({ candidates }: { candidates: PipelineCandidate[] }): React.ReactElement {
+  const [selected, setSelected] = useState<PipelineCandidate[]>(candidates.slice(0, 2));
 
-  const toggleCandidate = (candidate: any) => {
+  const toggleCandidate = (candidate: PipelineCandidate): void => {
     if (selected.find((c) => c.id === candidate.id)) {
       setSelected(selected.filter((c) => c.id !== candidate.id));
     } else if (selected.length < 4) {

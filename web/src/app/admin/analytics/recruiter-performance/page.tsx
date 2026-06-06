@@ -56,10 +56,36 @@ export default function RecruiterPerformancePage() {
           throw new Error('Failed to fetch recruiter metrics');
         }
 
-        const data = await response.json();
+        const data = await response.json() as {
+          recruiters: Array<{
+            recruiter_id: string;
+            recruiter_name: string;
+            metrics: {
+              candidates_reviewed: number;
+              interviews_scheduled: number;
+              offers_made: number;
+              hire_rate: number;
+              avg_time_to_hire: number;
+              avg_interviews_per_hire: number;
+            };
+            conversion_funnel: {
+              applied: number;
+              phone_screen: number;
+              technical: number;
+              onsite: number;
+              offer: number;
+              hired: number;
+            };
+          }>;
+          team_averages: {
+            hire_rate: number;
+            time_to_hire: number;
+            reviews_per_hire: number;
+          };
+        };
 
         // Transform API data to component format
-        const recruiters: RecruiterMetrics[] = data.recruiters.map((r: any) => ({
+        const recruiters: RecruiterMetrics[] = data.recruiters.map((r) => ({
           recruiterId: r.recruiter_id,
           recruiterName: r.recruiter_name,
           metrics: {

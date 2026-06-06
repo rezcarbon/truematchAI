@@ -1,12 +1,7 @@
 import { useEffect, useCallback, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-
-interface WebSocketMessage {
-  type: string;
-  [key: string]: any;
-}
-
-type MessageHandler = (message: WebSocketMessage) => void;
+import type { WebSocketMessage, WebSocketMessageHandler, UsePipelineWebSocketReturn } from '@/types';
+import type { Session } from 'next-auth';
 
 /**
  * Hook for WebSocket real-time pipeline updates
@@ -14,9 +9,9 @@ type MessageHandler = (message: WebSocketMessage) => void;
  */
 export function usePipelineWebSocket(
   positionId: string,
-  onMessage: MessageHandler,
+  onMessage: WebSocketMessageHandler,
   enabled: boolean = true
-) {
+): UsePipelineWebSocketReturn {
   const { data: session } = useSession();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
@@ -24,7 +19,7 @@ export function usePipelineWebSocket(
   useEffect(() => {
     if (!enabled || !positionId) return;
 
-    const accessToken = (session as any)?.accessToken;
+    const accessToken = (session as Session | null)?.accessToken;
     if (!accessToken) return;
 
     const connectWebSocket = () => {
@@ -73,7 +68,7 @@ export function usePipelineWebSocket(
         wsRef.current.close();
       }
     };
-  }, [enabled, (session as any)?.accessToken, positionId, onMessage]);
+  }, [enabled, (session as Session | null)?.accessToken, positionId, onMessage]);
 
   const send = useCallback((message: WebSocketMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -89,15 +84,15 @@ export function usePipelineWebSocket(
  * Handles: interview reminders, scorecard requests, system alerts
  */
 export function useNotificationWebSocket(
-  onNotification: MessageHandler,
+  onNotification: WebSocketMessageHandler,
   enabled: boolean = true
-) {
+): { isConnected: boolean } {
   const { data: session } = useSession();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
-    const accessToken = (session as any)?.accessToken;
+    const accessToken = (session as Session | null)?.accessToken;
     if (!enabled || !accessToken) return;
 
     const connectWebSocket = () => {
@@ -158,7 +153,7 @@ export function useNotificationWebSocket(
         wsRef.current.close();
       }
     };
-  }, [enabled, (session as any)?.accessToken, onNotification]);
+  }, [enabled, (session as Session | null)?.accessToken, onNotification]);
 
   return { isConnected: wsRef.current?.readyState === WebSocket.OPEN };
 }

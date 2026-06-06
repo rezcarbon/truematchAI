@@ -9,10 +9,20 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Upload, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 
+interface UploadItem {
+  id: string;
+  filename?: string;
+  fileName?: string;
+  status: 'processing' | 'completed' | 'failed';
+  createdAt?: string;
+  row_count?: number;
+  format?: string;
+}
+
 export default function TrainingUploadPage() {
   const { data: session } = useSession();
   const [isDragging, setIsDragging] = useState(false);
-  const [uploads, setUploads] = useState([]);
+  const [uploads, setUploads] = useState<UploadItem[]>([]);
   const [loading, setLoading] = useState(false);
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -35,15 +45,16 @@ export default function TrainingUploadPage() {
 
     setLoading(true);
     try {
-      const token = (session as any)?.accessToken || (session?.user as any)?.accessToken;
-      if (!token) throw new Error('No access token');
+      const token = (session as Record<string, unknown>)?.accessToken || (session?.user as Record<string, unknown>)?.accessToken;
+      if (!token || typeof token !== 'string') throw new Error('No access token');
+      const typedToken = token as string;
 
       const formData = new FormData();
       formData.append('file', file);
 
       const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/v1/training/data/upload`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${typedToken}` },
         body: formData,
       });
 
@@ -144,7 +155,7 @@ export default function TrainingUploadPage() {
         <div>
           <h3 className="text-lg font-semibold mb-4">Recent Uploads</h3>
           <div className="space-y-3">
-            {uploads.map((upload: any) => (
+            {uploads.map((upload) => (
               <Card key={upload.id}>
                 <CardContent className="p-5">
                   <div className="flex items-center justify-between">

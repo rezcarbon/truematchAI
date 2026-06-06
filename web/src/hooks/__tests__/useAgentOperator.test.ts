@@ -18,8 +18,20 @@ jest.mock('next-auth/react', () => ({
   },
 }))
 
+interface MockWebSocket {
+  onopen: (() => void) | null;
+  onmessage: ((event: { data: string }) => void) | null;
+  onerror: (() => void) | null;
+  onclose: (() => void) | null;
+  readyState: number;
+  send: jest.Mock;
+  close: jest.Mock;
+  addEventListener: jest.Mock;
+  removeEventListener: jest.Mock;
+}
+
 describe('useAgentOperator Hook', () => {
-  let mockWebSocket: any
+  let mockWebSocket: MockWebSocket
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -45,7 +57,7 @@ describe('useAgentOperator Hook', () => {
         }
       })
       return mockWebSocket
-    }) as any
+    }) as unknown as typeof WebSocket
   })
 
   it('initializes with empty state', () => {

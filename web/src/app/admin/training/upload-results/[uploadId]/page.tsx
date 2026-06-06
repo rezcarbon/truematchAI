@@ -15,7 +15,11 @@ interface UploadResult {
   items_failed: number;
   insights_extracted: number;
   new_capabilities: string[];
-  updated_mappings: any[];
+  updated_mappings: Array<{
+    field: string;
+    oldValue: string;
+    newValue: string;
+  }>;
   improvement_delta: Record<string, number>;
   processing_time_seconds: number;
 }
@@ -34,13 +38,14 @@ export default function UploadResultsPage() {
       if (!session || !uploadId) return;
 
       try {
-        const token = (session as any)?.accessToken || (session?.user as any)?.accessToken;
-        if (!token) throw new Error('No access token');
+        const token = (session as Record<string, unknown>)?.accessToken || (session?.user as Record<string, unknown>)?.accessToken;
+        if (!token || typeof token !== 'string') throw new Error('No access token');
+        const typedToken = token as string;
 
         const response = await fetch(
           `${process.env.NEXT_PUBLIC_API_URL}/api/v1/training/data/upload/${uploadId}/status`,
           {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${typedToken}` },
           }
         );
 

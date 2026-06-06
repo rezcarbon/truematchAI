@@ -16,6 +16,14 @@ import type {
   JDQuality,
   JDQualityFlag,
 } from "./types";
+import type {
+  ScraperConfig,
+  ScraperRun,
+  FieldMapping,
+  UploadBatch,
+  CVAnalysisResponse,
+  JDSimulationResponse,
+} from "@/types";
 import {
   mockAssessment,
   mockPipeline,
@@ -209,57 +217,48 @@ export const api = {
     send<{ status: string }>(`/agents/queue/${id}/reject`, "POST", { notes: notes ?? null }),
 
   // --- scraper API ---
-  getScrapers: () => get<any>(`/scrapers`, { scrapers: [] }),
-  createScraper: (payload: any) => send<any>(`/scrapers`, "POST", payload),
-  updateScraper: (id: string, payload: any) => send<any>(`/scrapers/${id}`, "PATCH", payload),
-  testScraper: (id: string) => send<any>(`/scrapers/${id}/test`, "POST", {}),
+  getScrapers: () => get<{ scrapers: ScraperConfig[] }>(`/scrapers`, { scrapers: [] }),
+  createScraper: (payload: ScraperConfig) => send<ScraperConfig>(`/scrapers`, "POST", payload),
+  updateScraper: (id: string, payload: Partial<ScraperConfig>) => send<ScraperConfig>(`/scrapers/${id}`, "PATCH", payload),
+  testScraper: (id: string) => send<{ status: string }>(`/scrapers/${id}/test`, "POST", {}),
   deleteScraper: (id: string) => send<void>(`/scrapers/${id}`, "DELETE"),
-  getScraperRuns: (id: string) => get<any>(`/scrapers/${id}/runs`, { config_id: id, runs: [] }),
+  getScraperRuns: (id: string) => get<{ config_id: string; runs: ScraperRun[] }>(`/scrapers/${id}/runs`, { config_id: id, runs: [] }),
 
   // --- upload API ---
-  getFieldMappings: () => get<any>(`/upload/field-mappings`, { mappings: [] }),
-  getUploadBatches: () => get<any>(`/upload/batches`, { batches: [] }),
-  getUploadBatch: (id: string) => get<any>(`/upload/batch/${id}`, {}),
-  uploadCSV: (formData: FormData) => {
-    const res = fetch(`${BASE}/upload/csv`, {
+  getFieldMappings: () => get<{ mappings: FieldMapping[] }>(`/upload/field-mappings`, { mappings: [] }),
+  getUploadBatches: () => get<{ batches: UploadBatch[] }>(`/upload/batches`, { batches: [] }),
+  getUploadBatch: (id: string) => get<UploadBatch>(`/upload/batch/${id}`, {} as UploadBatch),
+  uploadCSV: async (formData: FormData): Promise<UploadBatch> => {
+    const res = await fetch(`${BASE}/upload/csv`, {
       method: "POST",
       body: formData,
     });
-    return res.then(async (r) => {
-      if (!r.ok) throw new Error(`Upload failed (${r.status})`);
-      return (await r.json()) as any;
-    });
+    if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+    return (await res.json()) as UploadBatch;
   },
-  uploadJSON: (payload: any) => send<any>(`/upload/json`, "POST", payload),
-  downloadErrors: (id: string) => get<any>(`/upload/batch/${id}/errors`, {}),
+  uploadJSON: (payload: Record<string, unknown>) => send<UploadBatch>(`/upload/json`, "POST", payload),
+  downloadErrors: (id: string) => get<{ errors: Array<{ row: number; field: string; error: string }> }>(`/upload/batch/${id}/errors`, { errors: [] }),
 
   // --- CV Analysis API (candidate feature) ---
-  createCVAnalysis: (formData: FormData) => {
-    const res = fetch(`${BASE}/cv-analysis`, {
+  createCVAnalysis: async (formData: FormData): Promise<{ id: string }> => {
+    const res = await fetch(`${BASE}/cv-analysis`, {
       method: "POST",
       body: formData,
     });
-    return res.then(async (r) => {
-      if (!r.ok) throw new Error(`CV analysis failed (${r.status})`);
-      return (await r.json()) as { id: string };
-    });
+    if (!res.ok) throw new Error(`CV analysis failed (${res.status})`);
+    return (await res.json()) as { id: string };
   },
   getCVAnalysis: (id: string) =>
-    get<any>(`/cv-analysis/${id}`, {
+    get<CVAnalysisResponse>(`/cv-analysis/${id}`, {
       id,
-      status: "pending",
-      targetRole: "Target Role",
-      missingCapabilities: [],
-      weaknessAreas: [],
-      strengthSummary: "",
-      topMatchingPositions: [],
-      improvementSuggestions: [],
-      trajectoryAnalysis: "",
-      marketPositioning: "",
-      growthOpportunities: [],
+      fileName: "",
+      extractedText: "",
+      skills: [],
+      experience_years: 0,
+      summary: "",
     }),
   listCVAnalyses: () =>
-    get<any>(`/cv-analysis`, {
+    get<{ analyses: CVAnalysisResponse[] }>(`/cv-analysis`, {
       analyses: [],
     }),
 
@@ -274,18 +273,15 @@ export const api = {
     });
   },
   getJDSimulation: (id: string) =>
-    get<any>(`/jd-simulation/${id}`, {
+    get<JDSimulationResponse>(`/jd-simulation/${id}`, {
       id,
-      status: "pending",
-      jdText: "",
-      positionTitle: "Untitled Position",
-      jdQuality: {
-        score: 0,
-        flags: [],
-      },
+      jd_text: "",
+      extracted_requirements: [],
+      quality_score: 0,
+      suggestions: [],
     }),
   listJDSimulations: () =>
-    get<any>(`/jd-simulation`, {
+    get<{ simulations: JDSimulationResponse[] }>(`/jd-simulation`, {
       simulations: [],
     }),
 };

@@ -48,7 +48,7 @@ export function useBulkActions(): UseBulkActionsResult {
         }
 
         let endpoint = '';
-        let body: any = {
+        const body: Record<string, unknown> = {
           candidate_ids: request.candidateIds,
           ...request.payload,
         };
