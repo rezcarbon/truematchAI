@@ -1,10 +1,12 @@
 """Celery tasks for CV analysis pipeline."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 
 from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
@@ -15,9 +17,13 @@ from app.workers.celery_app import celery_app
 
 logger = logging.getLogger("truematch.cv_analysis_tasks")
 
-# Synchronous engine for the worker (same pattern as app/workers/tasks.py)
+# Synchronous engine for fetching/updating the request status
 _sync_engine = None
 _SyncSessionLocal: sessionmaker[Session] | None = None
+
+# Async engine for the actual analysis
+_async_engine = None
+_AsyncSessionLocal: async_sessionmaker[AsyncSession] | None = None
 
 
 def _sync_database_url() -> str:
@@ -28,12 +34,22 @@ def _sync_database_url() -> str:
     return url
 
 
-def _session_factory() -> sessionmaker[Session]:
+def _sync_session_factory() -> sessionmaker[Session]:
+    """Get or create the synchronous session factory."""
     global _sync_engine, _SyncSessionLocal
     if _SyncSessionLocal is None:
         _sync_engine = create_engine(_sync_database_url(), pool_pre_ping=True, future=True)
         _SyncSessionLocal = sessionmaker(bind=_sync_engine, expire_on_commit=False)
     return _SyncSessionLocal
+
+
+def _async_session_factory() -> async_sessionmaker[AsyncSession]:
+    """Get or create the async session factory."""
+    global _async_engine, _AsyncSessionLocal
+    if _AsyncSessionLocal is None:
+        _async_engine = create_async_engine(settings.database_url, pool_pre_ping=True, future=True)
+        _AsyncSessionLocal = async_sessionmaker(bind=_async_engine, expire_on_commit=False)
+    return _AsyncSessionLocal
 
 
 def _audit(db: Session, request_id: uuid.UUID, event_type: str, data: dict) -> None:
@@ -48,14 +64,39 @@ def _audit(db: Session, request_id: uuid.UUID, event_type: str, data: dict) -> N
     )
 
 
+async def _run_analysis(
+    analysis_req: CVAnalysisRequest,
+    request_id: str,
+) -> dict:
+    """Run the CV analysis in an async context.
+
+    Args:
+        analysis_req: The CVAnalysisRequest to process
+        request_id: String UUID of the request
+
+    Returns:
+        Dict with analysis results
+    """
+    # Create a new async session for this analysis
+    async_session_factory = _async_session_factory()
+    async with async_session_factory() as async_db:
+        # Initialize Claude client
+        claude_client = ClaudeClient(api_key=settings.anthropic_api_key)
+
+        # Run the analysis engine
+        result = await analyze_candidate_cv(async_db, claude_client, analysis_req)
+
+        return result
+
+
 @celery_app.task(name="app.workers.cv_analysis.process_cv_analysis_task", bind=True, max_retries=2)
 def process_cv_analysis_task(self, request_id: str) -> dict:
     """Process a CV analysis request end-to-end.
 
     This task:
-    1. Fetches the CVAnalysisRequest from the database
-    2. Runs the CV analysis engine
-    3. Persists results to CVAnalysisResult
+    1. Fetches the CVAnalysisRequest from the database (sync)
+    2. Runs the CV analysis engine (async)
+    3. Persists results to CVAnalysisResult (sync)
     4. Updates the request status to completed/failed
 
     Args:
@@ -66,9 +107,10 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
     """
     req_id = uuid.UUID(request_id)
 
-    with _session_factory()() as db:
+    # Use sync session for initial fetch and status updates
+    with _sync_session_factory()() as sync_db:
         # Fetch the request
-        analysis_req = db.get(CVAnalysisRequest, req_id)
+        analysis_req = sync_db.get(CVAnalysisRequest, req_id)
         if analysis_req is None:
             logger.error("CV analysis request %s not found", request_id)
             return {"status": "not_found", "request_id": request_id}
@@ -76,9 +118,9 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
         try:
             # Update status to analyzing
             analysis_req.status = CVAnalysisStatus.analyzing
-            db.commit()
-            _audit(db, req_id, "analysis.started", {})
-            db.commit()
+            sync_db.commit()
+            _audit(sync_db, req_id, "analysis.started", {})
+            sync_db.commit()
 
             logger.info(
                 "Starting CV analysis processing",
@@ -89,24 +131,17 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
                 },
             )
 
-            # Initialize Claude client
-            claude_client = ClaudeClient(api_key=settings.anthropic_api_key)
+            # Run async analysis
+            result = asyncio.run(_run_analysis(analysis_req, request_id))
 
-            # Run the analysis engine (using sync wrapper)
-            # Note: The engine itself is async, so we need to run it in an event loop
-            import asyncio
-            result = asyncio.run(
-                analyze_candidate_cv(db, claude_client, analysis_req)
-            )
-
-            # Persist the result
-            db.add(result)
-            db.flush()
+            # Persist the result in the sync database
+            sync_db.add(result)
+            sync_db.flush()
 
             # Update request status
             analysis_req.status = CVAnalysisStatus.completed
             _audit(
-                db,
+                sync_db,
                 req_id,
                 "analysis.completed",
                 {
@@ -115,7 +150,7 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
                     "job_matches": len(result.top_matching_position_ids or []),
                 },
             )
-            db.commit()
+            sync_db.commit()
 
             logger.info(
                 "CV analysis completed",
@@ -135,12 +170,12 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
             }
 
         except Exception as exc:
-            db.rollback()
-            analysis_req = db.get(CVAnalysisRequest, req_id)
+            sync_db.rollback()
+            analysis_req = sync_db.get(CVAnalysisRequest, req_id)
             if analysis_req is not None:
                 analysis_req.status = CVAnalysisStatus.failed
-                _audit(db, req_id, "analysis.failed", {"error": str(exc)})
-                db.commit()
+                _audit(sync_db, req_id, "analysis.failed", {"error": str(exc)})
+                sync_db.commit()
 
             logger.exception("CV analysis failed for %s", request_id)
 
