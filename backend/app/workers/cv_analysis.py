@@ -9,7 +9,6 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
 from app.models.cv_analysis import CVAnalysisRequest, CVAnalysisStatus
-from app.models.audit import AuditTrail
 from app.engines.cv_analysis_engine import analyze_candidate_cv
 from app.engines.client import ClaudeClient
 from app.workers.celery_app import celery_app
@@ -37,17 +36,16 @@ def _session_factory() -> sessionmaker[Session]:
     return _SyncSessionLocal
 
 
-def _audit(db: Session, request_id: uuid.UUID, event_type: str, data: dict) -> AuditTrail:
-    """Create an audit trail entry."""
-    entry = AuditTrail(
-        cv_analysis_request_id=request_id,
-        event_type=event_type,
-        event_data=data,
-        actor_type="system",
+def _audit(db: Session, request_id: uuid.UUID, event_type: str, data: dict) -> None:
+    """Log CV analysis event (audit trail not available yet for CV analysis).
+
+    TODO: Create dedicated CVAnalysisAudit table when needed.
+    For now, we log via the standard logger instead.
+    """
+    logger.info(
+        f"CV Analysis Event: {event_type}",
+        extra={"request_id": str(request_id), "event_data": data},
     )
-    db.add(entry)
-    db.flush()
-    return entry
 
 
 @celery_app.task(name="app.workers.cv_analysis.process_cv_analysis_task", bind=True, max_retries=2)
