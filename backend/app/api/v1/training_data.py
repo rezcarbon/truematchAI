@@ -118,16 +118,25 @@ async def upload_training_data(
         },
     )
 
-    # TODO: Queue async job to process file
-    # This would use a task queue (Celery/RQ) in production
-    # For now, we'll note that processing would happen asynchronously
-    # Background job would:
-    # 1. Parse CSV/JSON
-    # 2. Validate items
-    # 3. Extract capabilities using Claude
-    # 4. Discover patterns
-    # 5. Update virtual brain state
-    # 6. Store results in TrainingInsightBatch
+    # Queue background job to process file
+    # Using a simple background task system (can be replaced with Celery/RQ)
+    try:
+        import asyncio
+        from app.workers.training_jobs import TrainingJobProcessor
+
+        # Start background processing task
+        asyncio.create_task(
+            TrainingJobProcessor().process_upload(upload.id, file_content, db)
+        )
+
+        logger.info(
+            f"Upload job queued",
+            extra={"upload_id": str(upload.id)},
+        )
+    except Exception as e:
+        logger.error(f"Error queuing upload job: {e}")
+        # Job queuing failed but upload record created
+        # User can check status via GET endpoint
 
     return TrainingDataUploadSchema.from_orm(upload)
 
@@ -283,45 +292,95 @@ async def send_training_message(
             status="active",
         )
         db.add(session)
+        await db.commit()
 
-    # TODO: Send message to LLM for training signal extraction
-    # For now, mock response
-    ai_response = f"I understand: {request.message[:50]}... Learning from this feedback."
+    # Get conversation history
+    history_query = (
+        select(TrainingChatMessage)
+        .where(TrainingChatMessage.session_id == request.session_id)
+        .order_by(TrainingChatMessage.created_at.asc())
+    )
+    history_result = await db.execute(history_query)
+    messages = history_result.scalars().all()
 
-    # Create chat message
+    # Convert to conversation history format
+    conversation_history = []
+    for msg in messages:
+        if msg.user_message:
+            conversation_history.append(
+                {"role": "user", "content": msg.user_message}
+            )
+        if msg.ai_response:
+            conversation_history.append(
+                {"role": "assistant", "content": msg.ai_response}
+            )
+
+    # Process message through Claude chat engine
+    from app.engines.training_chat_engine import TrainingChatEngine
+
+    chat_engine = TrainingChatEngine()
+    result = await chat_engine.process_message(request.message, conversation_history)
+
+    ai_response = result.get("ai_response", "")
+    training_signal = result.get("extracted_training_signal")
+    feedback_type = result.get("feedback_type")
+
+    # Create chat message record
     message = TrainingChatMessage(
         id=str(uuid4()),
         user_id=admin.id,
         session_id=request.session_id,
         user_message=request.message,
         ai_response=ai_response,
-        extracted_training_signal=None,  # TODO: Extract from LLM
-        feedback_type=None,  # TODO: Determine type
+        extracted_training_signal=training_signal,
+        feedback_type=feedback_type,
     )
 
     db.add(message)
     session.message_count = (session.message_count or 0) + 1
     session.last_message_at = datetime.utcnow()
 
+    # Track insights and mappings if training signal extracted
+    if training_signal:
+        session.insights_extracted = (session.insights_extracted or 0) + 1
+        if feedback_type in ["mapping_correction", "credential_equivalency"]:
+            session.mappings_updated = (session.mappings_updated or 0) + 1
+
     await db.commit()
     await db.refresh(message)
 
+    # Analyze learning impact
+    learning_impact = await chat_engine.analyze_learning_impact(
+        [
+            {
+                "feedback_type": msg.feedback_type,
+                "description": msg.extracted_training_signal.get("description")
+                if msg.extracted_training_signal
+                else "",
+            }
+            for msg in messages + [message]
+            if msg.feedback_type
+        ]
+    )
+
     logger.info(
-        f"Training chat message received",
+        f"Training chat message processed",
         extra={
             "session_id": request.session_id,
             "message_length": len(request.message),
-            "user_id": admin.id,
+            "feedback_type": feedback_type,
+            "signal_extracted": training_signal is not None,
+            "user_id": str(admin.id),
         },
     )
 
     return TrainingChatResponseSchema(
         message_id=message.id,
         ai_response=ai_response,
-        feedback_type=None,
-        extracted_training_signal=None,
-        applied_changes=None,
-        learning_impact=None,
+        feedback_type=feedback_type,
+        extracted_training_signal=training_signal,
+        applied_changes=training_signal.get("action") if training_signal else None,
+        learning_impact=learning_impact,
     )
 
 
