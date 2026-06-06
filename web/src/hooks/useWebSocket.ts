@@ -86,11 +86,12 @@ export function usePipelineWebSocket(
  */
 export function useNotificationWebSocket(
   onNotification: WebSocketMessageHandler,
-  enabled: boolean = true
+  enabled: boolean = false  // Disabled by default until endpoint exists
 ): { isConnected: boolean } {
   const { data: session } = useSession();
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const hasLoggedErrorRef = useRef(false);
 
   useEffect(() => {
     const accessToken = (session as Session | null)?.accessToken;

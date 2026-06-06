@@ -36,7 +36,9 @@ export default function JDSimulationResultsPage({
     const fetchResults = async () => {
       try {
         setLoading(true);
-        const response = await fetch(`/api/proxy/jd-simulation/${params.id}`);
+        // Use backend API directly (port 8000)
+        const backendUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+        const response = await fetch(`${backendUrl}/api/v1/jd-simulation/${params.id}`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch simulation results');
