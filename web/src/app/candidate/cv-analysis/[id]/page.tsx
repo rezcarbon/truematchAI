@@ -7,16 +7,22 @@ import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
+interface CVAnalysisGapItem {
+  capability: string;
+  importance: string;
+  description?: string;
+  howToImprove?: string;
+}
+
 interface CVAnalysisResultData {
-  id: string;
+  analysisId: string;
   status: 'pending' | 'analyzing' | 'completed' | 'failed';
-  targetRole?: string;
-  missingCapabilities?: string[];
-  weaknessAreas?: string[];
+  missingCapabilities?: CVAnalysisGapItem[];
+  weaknessAreas?: CVAnalysisGapItem[];
   strengthSummary?: string;
   topMatchingPositions?: Array<{
-    id: string;
-    title: string;
+    positionId: string;
+    jobTitle: string;
     matchScore: number;
   }>;
   improvementSuggestions?: Array<{
@@ -27,7 +33,6 @@ interface CVAnalysisResultData {
   trajectoryAnalysis?: string;
   marketPositioning?: string;
   growthOpportunities?: string[];
-  createdAt: string;
 }
 
 export default function CVAnalysisResultsPage({
@@ -155,7 +160,7 @@ export default function CVAnalysisResultsPage({
   return (
     <div className="min-h-screen bg-background">
       <PageHeader
-        title={data.targetRole || 'CV Analysis Results'}
+        title="CV Analysis Results"
         subtitle="Review your personalized recommendations"
         icon="Sparkles"
       />
@@ -180,7 +185,12 @@ export default function CVAnalysisResultsPage({
                       {data.missingCapabilities.map((cap, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-red-500" />
-                          <p className="text-sm">{cap}</p>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{typeof cap === 'string' ? cap : cap.capability}</p>
+                            {typeof cap === 'object' && cap.description && (
+                              <p className="text-xs text-muted-foreground">{cap.description}</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -194,7 +204,12 @@ export default function CVAnalysisResultsPage({
                       {data.weaknessAreas.map((area, idx) => (
                         <div key={idx} className="flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full bg-amber-500" />
-                          <p className="text-sm">{area}</p>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{typeof area === 'string' ? area : area.capability}</p>
+                            {typeof area === 'object' && area.description && (
+                              <p className="text-xs text-muted-foreground">{area.description}</p>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -219,12 +234,12 @@ export default function CVAnalysisResultsPage({
                   <div className="space-y-3">
                     {data.topMatchingPositions.map((position) => (
                       <div
-                        key={position.id}
+                        key={position.positionId}
                         className="flex items-center justify-between p-3 border rounded-lg"
                       >
-                        <p className="font-medium text-sm">{position.title}</p>
+                        <p className="font-medium text-sm">{position.jobTitle}</p>
                         <Badge variant="outline">
-                          {Math.round(position.matchScore * 100)}% Match
+                          {Math.round(position.matchScore)}% Match
                         </Badge>
                       </div>
                     ))}
