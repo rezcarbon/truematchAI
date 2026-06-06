@@ -85,7 +85,7 @@ class EmailLog(Base):
         nullable=False,
         default=datetime.utcnow
     )
-    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    email_metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
 
     __table_args__ = (
         Index("ix_email_logs_recipient", "recipient_email"),
