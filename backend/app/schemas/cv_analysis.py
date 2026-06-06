@@ -2,7 +2,8 @@
 from __future__ import annotations
 
 from uuid import UUID
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
+from pydantic.alias_generators import to_camel
 from typing import Optional
 
 from app.models.cv_analysis import CVAnalysisStatus, SeniorityLevel
@@ -24,6 +25,8 @@ class CVAnalysisStartResponse(BaseModel):
 
 class CVAnalysisGapItem(BaseModel):
     """A single skill gap or weakness."""
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     capability: str
     importance: str = Field(..., description="high/medium/low")
     description: Optional[str] = None
@@ -32,6 +35,8 @@ class CVAnalysisGapItem(BaseModel):
 
 class CVAnalysisRecommendation(BaseModel):
     """A single CV improvement recommendation."""
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     category: str = Field(..., description="skills/achievements/keywords/structure")
     suggestion: str
     priority: str = Field(..., description="high/medium/low")
@@ -40,6 +45,8 @@ class CVAnalysisRecommendation(BaseModel):
 
 class JobFitMatch(BaseModel):
     """A job position match result."""
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     position_id: UUID
     job_title: str
     company: Optional[str] = None
@@ -53,6 +60,8 @@ class JobFitMatch(BaseModel):
 
 class CVAnalysisResult(BaseModel):
     """Complete CV analysis results."""
+    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+
     analysis_id: UUID
     status: CVAnalysisStatus
 
