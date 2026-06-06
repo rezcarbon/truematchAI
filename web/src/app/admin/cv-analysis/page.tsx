@@ -37,9 +37,8 @@ export default function AdminCVAnalysisPage() {
     const fetchResumes = async () => {
       try {
         setLoadingResumes(true);
-        // Use backend API directly (port 8000)
-        const backendUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
-        const response = await fetch(`${backendUrl}/api/v1/files/resumes`);
+        // Use proxy which handles authentication injection
+        const response = await fetch('/api/proxy/files/resumes');
         if (!response.ok) {
           throw new Error('Failed to fetch resumes');
         }
@@ -81,9 +80,8 @@ export default function AdminCVAnalysisPage() {
     setLoading(true);
 
     try {
-      // Use backend API directly (port 8000)
-      const backendUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
-      const response = await fetch(`${backendUrl}/api/v1/candidates/cv-analysis`, {
+      // Use proxy which handles authentication injection
+      const response = await fetch('/api/proxy/candidates/cv-analysis', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
