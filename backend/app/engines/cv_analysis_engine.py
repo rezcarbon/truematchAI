@@ -221,7 +221,6 @@ Example format:
             # Call Claude API with structured prompt
             result_text = await self.claude_client.analyze(
                 prompt,
-                model="claude-3-5-sonnet-20241022",
                 temperature=0.3,  # Low temperature for consistency
             )
 
