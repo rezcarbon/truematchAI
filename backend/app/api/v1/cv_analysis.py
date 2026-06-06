@@ -82,8 +82,15 @@ async def start_cv_analysis(
     await db.commit()
 
     # Enqueue the async task to the worker
-    from app.workers.cv_analysis import process_cv_analysis_task
-    process_cv_analysis_task.delay(str(analysis_req.id))
+    try:
+        from app.workers.cv_analysis import process_cv_analysis_task
+        process_cv_analysis_task.delay(str(analysis_req.id))
+    except Exception as e:
+        # In development, Celery may not be running. Log and continue.
+        logger.warning(
+            "Failed to enqueue CV analysis task - Celery may not be running",
+            extra={"error": str(e), "analysis_id": str(analysis_req.id)},
+        )
 
     return CVAnalysisStartResponse(
         analysis_id=analysis_req.id,
