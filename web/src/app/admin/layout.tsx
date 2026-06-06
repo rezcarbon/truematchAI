@@ -12,6 +12,8 @@ const nav: NavItem[] = [
   { href: "/admin/upload-resume", label: "Upload Resume" },
   { divider: true },
   { href: "/admin/training", label: "Training System" },
+  { href: "/admin/training/upload", label: "Upload Data", indent: true },
+  { href: "/admin/training/chat", label: "Training Chat", indent: true },
   { href: "/admin/training/feedback", label: "Feedback", indent: true },
   { href: "/admin/training/mappings", label: "Capability Mappings", indent: true },
   { href: "/admin/training/insights", label: "Insights & Analytics", indent: true },
