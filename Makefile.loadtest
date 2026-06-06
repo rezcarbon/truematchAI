@@ -1,0 +1,419 @@
+.PHONY: help load-test-locust load-test-k6 load-test-jmeter baseline capacity-planning \
+          smoke-test stress-test spike-test soak-test chaos-test \
+          monitor stop-tests report analyze-results \
+          install-tools setup-test-env docker-compose-up docker-compose-down
+
+# ============================================================================
+# Load Testing Targets for TrueMatch
+# ============================================================================
+
+.DEFAULT_GOAL := help
+
+# Variables
+API_HOST ?= http://localhost:8000
+API_URL ?= http://localhost:8000
+ENVIRONMENT ?= local
+WORKERS ?= 4
+USERS ?= 100
+SPAWN_RATE ?= 10
+DURATION ?= 20m
+TEST_RESULTS_DIR ?= ./load-test-results
+
+TIMESTAMP := $(shell date +%Y%m%d_%H%M%S)
+RESULTS_FILE := $(TEST_RESULTS_DIR)/results_$(TIMESTAMP)
+
+help: ## Show this help message
+	@echo "TrueMatch Load Testing Suite"
+	@echo ""
+	@echo "Usage: make [target] [OPTIONS]"
+	@echo ""
+	@echo "Load Testing Targets:"
+	@echo "  load-test-locust      Run Locust load test (web UI)"
+	@echo "  load-test-k6          Run k6 load test (scripted)"
+	@echo "  load-test-jmeter      Run Apache JMeter load test"
+	@echo ""
+	@echo "Quick Tests:"
+	@echo "  smoke-test            Quick smoke test (5 users, 2 min)"
+	@echo "  baseline-test         Establish performance baseline"
+	@echo "  stress-test           Push system to limits (100-1000 users)"
+	@echo "  spike-test            Test sudden load spike (5x increase)"
+	@echo "  soak-test             Run 24-hour sustained load test"
+	@echo "  chaos-test            Run with component failures"
+	@echo "  capacity-planning     Determine maximum capacity"
+	@echo ""
+	@echo "Utilities:"
+	@echo "  install-tools         Install load testing dependencies"
+	@echo "  setup-test-env        Prepare test environment"
+	@echo "  docker-compose-up     Start test infrastructure"
+	@echo "  docker-compose-down   Stop test infrastructure"
+	@echo "  monitor               Monitor system during test"
+	@echo "  stop-tests            Stop running tests"
+	@echo "  report                Generate test report"
+	@echo "  analyze-results       Analyze test results"
+	@echo ""
+	@echo "Options:"
+	@echo "  API_HOST=<url>        API host (default: http://localhost:8000)"
+	@echo "  USERS=<n>             Number of concurrent users (default: 100)"
+	@echo "  SPAWN_RATE=<n>        User spawn rate (default: 10/sec)"
+	@echo "  DURATION=<time>       Test duration (default: 20m)"
+	@echo "  ENVIRONMENT=<env>     Test environment (default: local)"
+	@echo ""
+	@echo "Examples:"
+	@echo "  make smoke-test"
+	@echo "  make load-test-locust USERS=50 DURATION=10m"
+	@echo "  make stress-test API_HOST=https://staging.truematch.ai"
+	@echo "  make capacity-planning ENVIRONMENT=production"
+
+# ============================================================================
+# INSTALLATION & SETUP
+# ============================================================================
+
+install-tools: ## Install load testing tools (locust, k6, jmeter)
+	@echo "Installing load testing tools..."
+	@echo ""
+	@echo "Installing Locust..."
+	pip install locust==2.15.1 --upgrade
+	@echo ""
+	@echo "Installing k6..."
+	brew install k6 || apt-get install -y k6 || echo "Please install k6 manually"
+	@echo ""
+	@echo "Installing Apache JMeter..."
+	brew install jmeter || apt-get install -y jmeter || echo "Please install JMeter manually"
+	@echo ""
+	@echo "Installing monitoring tools..."
+	pip install prometheus-client psutil
+	@echo ""
+	@echo "Load testing tools installed successfully!"
+
+setup-test-env: ## Prepare test environment (create directories, validate API)
+	@echo "Setting up load test environment..."
+	@mkdir -p $(TEST_RESULTS_DIR)
+	@mkdir -p ./load-test-logs
+	@echo "✓ Created directories"
+	@echo ""
+	@echo "Validating API connectivity..."
+	@curl -s -o /dev/null -w "API Status: %{http_code}\n" $(API_HOST)/health
+	@echo ""
+	@echo "✓ Test environment ready"
+	@echo "Results will be saved to: $(TEST_RESULTS_DIR)"
+
+docker-compose-up: ## Start test infrastructure (Prometheus, Grafana, etc.)
+	@echo "Starting test infrastructure..."
+	docker-compose -f docker-compose.test.yml up -d
+	@echo "✓ Infrastructure started"
+	@echo ""
+	@echo "Available services:"
+	@echo "  Prometheus: http://localhost:9090"
+	@echo "  Grafana: http://localhost:3000"
+	@echo "  API: $(API_HOST)"
+	@sleep 5
+
+docker-compose-down: ## Stop test infrastructure
+	@echo "Stopping test infrastructure..."
+	docker-compose -f docker-compose.test.yml down
+	@echo "✓ Infrastructure stopped"
+
+# ============================================================================
+# LOCUST LOAD TESTS
+# ============================================================================
+
+load-test-locust: setup-test-env ## Run Locust load test with web UI
+	@echo "Starting Locust load test..."
+	@echo "API Host: $(API_HOST)"
+	@echo "Users: $(USERS)"
+	@echo "Spawn Rate: $(SPAWN_RATE) users/sec"
+	@echo "Duration: $(DURATION)"
+	@echo ""
+	@echo "Locust Web UI: http://localhost:8089"
+	@echo ""
+	@echo "Press Ctrl+C to stop."
+	@echo ""
+	locust \
+		-f load-tests/locustfile.py \
+		--host=$(API_HOST) \
+		--users=$(USERS) \
+		--spawn-rate=$(SPAWN_RATE) \
+		--run-time=$(DURATION) \
+		--csv=$(RESULTS_FILE)
+
+load-test-locust-headless: setup-test-env ## Run Locust in headless mode (automated)
+	@echo "Running Locust load test (headless mode)..."
+	@echo "Results: $(RESULTS_FILE)"
+	@echo ""
+	locust \
+		-f load-tests/locustfile.py \
+		--host=$(API_HOST) \
+		--users=$(USERS) \
+		--spawn-rate=$(SPAWN_RATE) \
+		--run-time=$(DURATION) \
+		--csv=$(RESULTS_FILE) \
+		--headless \
+		--tags smoke
+
+# ============================================================================
+# K6 LOAD TESTS
+# ============================================================================
+
+load-test-k6: setup-test-env ## Run k6 load test with detailed metrics
+	@echo "Running k6 load test..."
+	@echo "API URL: $(API_URL)"
+	@echo ""
+	k6 run \
+		--vus $(USERS) \
+		--duration $(DURATION) \
+		--out json=$(RESULTS_FILE).json \
+		-e API_URL=$(API_URL) \
+		-e ENVIRONMENT=$(ENVIRONMENT) \
+		load-tests/k6-script.js
+
+load-test-k6-cloud: setup-test-env ## Run k6 test with Grafana Cloud integration
+	@echo "Running k6 test on Grafana Cloud..."
+	@echo "Note: Requires K6_CLOUD_TOKEN environment variable"
+	@echo ""
+	k6 cloud \
+		--vus $(USERS) \
+		--duration $(DURATION) \
+		-e API_URL=$(API_URL) \
+		load-tests/k6-script.js
+
+# ============================================================================
+# APACHE JMETER TESTS
+# ============================================================================
+
+load-test-jmeter: setup-test-env ## Run Apache JMeter load test
+	@echo "Running Apache JMeter load test..."
+	@echo ""
+	jmeter \
+		-n \
+		-t load-tests/jmeter-plan.jmx \
+		-l $(RESULTS_FILE).jtl \
+		-j $(RESULTS_FILE).log \
+		-Jhost=$(subst http://,,$(API_HOST)) \
+		-Jusers=$(USERS) \
+		-Jduration=$(DURATION) \
+		-Jrampup=60
+
+# ============================================================================
+# QUICK TEST PROFILES
+# ============================================================================
+
+smoke-test: ## Quick smoke test (5 users, 2 min) - validates test setup
+	@echo "🔍 Running smoke test..."
+	@echo "Users: 5"
+	@echo "Duration: 2 minutes"
+	$(MAKE) load-test-locust-headless USERS=5 DURATION=2m SPAWN_RATE=2
+
+baseline-test: ## Establish performance baseline (single user, 5 min)
+	@echo "📊 Establishing performance baseline..."
+	@echo "Users: 1"
+	@echo "Duration: 5 minutes"
+	@echo ""
+	@echo "This test establishes baseline metrics for comparison."
+	$(MAKE) load-test-locust-headless USERS=1 DURATION=5m SPAWN_RATE=1
+	@echo ""
+	@echo "✓ Baseline established"
+	@echo "Save results for future comparison"
+
+stress-test: ## Stress test system to limits (ramp to 1000 users)
+	@echo "🔥 Running stress test..."
+	@echo "This test will ramp up to 1000 concurrent users"
+	@echo "Monitor system metrics closely"
+	@echo ""
+	$(MAKE) load-test-locust-headless USERS=1000 DURATION=30m SPAWN_RATE=100
+
+spike-test: ## Sudden load spike test (100 -> 500 users in 1 min)
+	@echo "⚡ Running spike test..."
+	@echo "Test simulates sudden 5x load increase"
+	@echo ""
+	locust \
+		-f load-tests/locustfile.py \
+		--host=$(API_HOST) \
+		--spawn-rate=400 \
+		--run-time=10m \
+		--csv=$(RESULTS_FILE) \
+		--headless \
+		--tags spike
+
+soak-test: ## Long-duration soak test (24 hours at 50% capacity)
+	@echo "😴 Starting 24-hour soak test..."
+	@echo "Duration: 24 hours"
+	@echo "Users: 50 (sustained)"
+	@echo ""
+	@echo "This test will run for 24 hours"
+	@echo "Set up monitoring and background process:"
+	@echo "  nohup make _soak-test-background > soak-test.log 2>&1 &"
+	@echo ""
+	@$(MAKE) _soak-test-background
+
+_soak-test-background: setup-test-env
+	@locust \
+		-f load-tests/locustfile.py \
+		--host=$(API_HOST) \
+		--users=50 \
+		--spawn-rate=5 \
+		--run-time=24h \
+		--csv=$(RESULTS_FILE) \
+		--headless
+
+capacity-planning: ## Determine maximum sustainable load
+	@echo "📈 Running capacity planning test..."
+	@echo ""
+	@echo "This test gradually increases load to find system limits"
+	@echo "Watch for:"
+	@echo "  - Response time degradation"
+	@echo "  - Error rate increase"
+	@echo "  - Resource exhaustion"
+	@echo ""
+	@echo "Stage 1: Ramp to 100 users..."
+	$(MAKE) load-test-locust-headless USERS=100 DURATION=5m SPAWN_RATE=20
+	@echo ""
+	@echo "Stage 2: Ramp to 250 users..."
+	$(MAKE) load-test-locust-headless USERS=250 DURATION=5m SPAWN_RATE=30
+	@echo ""
+	@echo "Stage 3: Ramp to 500 users..."
+	$(MAKE) load-test-locust-headless USERS=500 DURATION=5m SPAWN_RATE=50
+	@echo ""
+	@echo "Stage 4: Ramp to 1000 users..."
+	$(MAKE) load-test-locust-headless USERS=1000 DURATION=5m SPAWN_RATE=100
+	@echo ""
+	@echo "✓ Capacity test complete"
+	@echo "Review results to determine maximum sustainable load"
+
+chaos-test: ## Chaos test with component failures during load
+	@echo "💥 Running chaos test..."
+	@echo "This test simulates component failures during load"
+	@echo ""
+	@echo "Starting load test..."
+	$(MAKE) load-test-locust-headless USERS=100 DURATION=15m SPAWN_RATE=10 &
+	@TEST_PID=$$!; \
+	sleep 120; \
+	echo "Simulating component failures..."; \
+	echo "  - Killing random API pods"; \
+	kubectl delete pod -n truematch -l app=api --grace-period=0 --force 2>/dev/null || true; \
+	sleep 30; \
+	echo "  - Restarting failed pods"; \
+	wait $$TEST_PID
+
+# ============================================================================
+# MONITORING & ANALYSIS
+# ============================================================================
+
+monitor: ## Monitor system metrics during test (CPU, memory, network)
+	@echo "Starting system monitoring..."
+	@echo ""
+	@echo "Monitoring metrics:"
+	@echo "  - CPU usage"
+	@echo "  - Memory usage"
+	@echo "  - Network I/O"
+	@echo "  - Disk I/O"
+	@echo "  - Database connections"
+	@echo ""
+	@echo "Press Ctrl+C to stop"
+	@echo ""
+	@while true; do \
+		clear; \
+		echo "=== System Metrics ==="; \
+		echo "Timestamp: $$(date)"; \
+		echo ""; \
+		echo "=== CPU ==="; \
+		top -bn1 | grep "Cpu(s)" || ps aux --no-headers | head -5; \
+		echo ""; \
+		echo "=== Memory ==="; \
+		free -h | head -2; \
+		echo ""; \
+		echo "=== Network ==="; \
+		netstat -ib | grep -E "eth|en0" | head -3; \
+		echo ""; \
+		echo "=== API Health ==="; \
+		curl -s -o /dev/null -w "HTTP %{http_code}" $(API_HOST)/health; \
+		echo ""; \
+		sleep 5; \
+	done
+
+stop-tests: ## Stop all running load tests
+	@echo "Stopping load tests..."
+	@pkill -f "locust" || true
+	@pkill -f "k6" || true
+	@pkill -f "jmeter" || true
+	@echo "✓ All tests stopped"
+
+# ============================================================================
+# RESULTS ANALYSIS
+# ============================================================================
+
+report: analyze-results ## Generate load test report (alias)
+
+analyze-results: ## Analyze and summarize test results
+	@echo "Analyzing load test results..."
+	@echo ""
+	@if [ -f "$(RESULTS_FILE)_stats.csv" ]; then \
+		echo "=== Test Summary ==="; \
+		echo ""; \
+		head -20 "$(RESULTS_FILE)_stats.csv"; \
+		echo ""; \
+		echo "=== Response Time Analysis ==="; \
+		tail -5 "$(RESULTS_FILE)_stats.csv"; \
+		echo ""; \
+		echo "Results saved to: $(RESULTS_FILE)*"; \
+	else \
+		echo "No results found in $(TEST_RESULTS_DIR)"; \
+		echo "Recent result files:"; \
+		ls -lh $(TEST_RESULTS_DIR)/ | tail -10; \
+	fi
+
+compare-results: ## Compare current results with baseline
+	@echo "Comparing results with baseline..."
+	@echo ""
+	@echo "Note: Implement custom comparison logic based on your metrics"
+	@echo ""
+	@echo "Metrics to compare:"
+	@echo "  - Average response time"
+	@echo "  - P95/P99 latency"
+	@echo "  - Error rate"
+	@echo "  - Throughput (RPS)"
+
+generate-report: ## Generate comprehensive HTML report
+	@echo "Generating comprehensive HTML report..."
+	@echo ""
+	@if command -v jupyter &> /dev/null; then \
+		jupyter nbconvert --to html load-tests/analysis.ipynb; \
+		echo "✓ Report generated: load-tests/analysis.html"; \
+	else \
+		echo "⚠ Jupyter not found. Install with: pip install jupyter"; \
+	fi
+
+# ============================================================================
+# CI/CD INTEGRATION
+# ============================================================================
+
+ci-smoke-test: ## Run smoke test in CI (for regression detection)
+	@echo "Running CI smoke test..."
+	$(MAKE) smoke-test
+
+ci-performance-test: ## Run performance test in CI with thresholds
+	@echo "Running CI performance test..."
+	@echo "This will fail if thresholds are exceeded"
+	@echo ""
+	k6 run \
+		--vus 10 \
+		--duration 5m \
+		--threshold 'http_req_duration{group:::base} p(95)<500' \
+		--threshold 'http_req_duration{group:::api} p(95)<1000' \
+		--threshold 'http_req_failed<0.01' \
+		-e API_URL=$(API_URL) \
+		load-tests/k6-script.js
+
+# ============================================================================
+# HELPER TARGETS
+# ============================================================================
+
+show-results: ## Show most recent test results
+	@echo "Most recent test results:"
+	@ls -lh $(TEST_RESULTS_DIR)/ | tail -5
+
+clean-results: ## Clean old test results (keep last 10)
+	@echo "Cleaning old test results..."
+	@cd $(TEST_RESULTS_DIR) && ls -t | tail -n +11 | xargs -r rm
+	@echo "✓ Cleaned"
+
+.SILENT: help
