@@ -20,6 +20,7 @@ from app.api.v1 import (
     notifications_api,
     positions,
     profile,
+    realtime_progress_api,
     recruiter_metrics,
     training,
     training_data,
@@ -57,3 +58,5 @@ api_router.include_router(scrapers.router)
 api_router.include_router(websocket_api.router)
 # Phase C+D: Provenance, Audit Trail, Reproducibility, Learning Integration
 api_router.include_router(compliance.router)
+# Phase E: IDF Corpus Learning & Real-Time Progress
+api_router.include_router(realtime_progress_api.router)
