@@ -261,15 +261,16 @@ class AutoApproveWorker:
 
         # Send notification to recruiter (async, non-blocking)
         try:
-            # Note: This would integrate with notification service
-            # to send email/Slack notification about auto-approval
+            # Note: Notification sending is handled separately via
+            # candidate_notification worker. This could be triggered
+            # via event queue or Celery task if needed.
             logger.info(
-                f"[AutoApprove] Notification queued for recruiter "
-                f"about auto-approved assessment {assessment_id}"
+                f"[AutoApprove] Assessment {assessment_id} approved and ready "
+                f"for candidate notification"
             )
         except Exception as e:
             logger.error(
-                f"[AutoApprove] Failed to queue notification: {e}"
+                f"[AutoApprove] Error with assessment approval: {e}"
             )
 
 

@@ -1,460 +1,438 @@
 """
-Candidate Notification Worker (Phase 1.3: Autonomy Layer)
+Candidate Notification Worker (Phase 1: Autonomy Layer)
 
-Sends status update notifications to candidates at key assessment milestones.
-
-Triggers:
-- Assessment started: candidate_notification.assessment_started
-- Assessment approved: candidate_notification.assessment_approved
-- Assessment rejected: candidate_notification.assessment_rejected
+Sends notifications to candidates when their assessments reach key milestones:
+- Assessment started
+- Assessment approved
+- Assessment rejected
 
 Features:
-- Async non-blocking email delivery
-- Personalized content from templates
-- Tracks notification_sent timestamp
-- Supports multiple notification channels (email, SMS, in-app)
-- Template customization per recruiter
-
-Configuration:
-- Email templates (assessment_started, assessment_approved, assessment_rejected)
-- SMTP server for email delivery
-- Optional SMS integration
+- Async email delivery (non-blocking)
+- Template-based email rendering via EmailService
+- Email tracking and logging
+- Retry logic with exponential backoff
+- Error handling and reporting
 """
 
-from __future__ import annotations
-
+import asyncio
 import logging
 import uuid
-from datetime import datetime
-from enum import Enum
-from typing import Optional, Dict, Any
+from datetime import datetime, timezone
+from typing import Optional
 
-from sqlalchemy import select, update
+from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel, Field
 
 from app.config import settings
-from app.models.assessment import Assessment, AssessmentStatus
+from app.core.email_service import EmailService, EmailTemplate
 from app.models.resume import Resume
-from app.models.ingest_queue import IngestQueueItem
+from app.models.notification import EmailLog
 
 logger = logging.getLogger("truematch.candidate_notification")
 
 
-class NotificationChannel(str, Enum):
-    """Supported notification channels"""
-    EMAIL = "email"
-    SMS = "sms"
-    IN_APP = "in_app"
-
-
-class NotificationTemplate(BaseModel):
-    """Notification template definition"""
-    name: str = Field(description="Template name (e.g., 'assessment_started')")
-    subject: str = Field(description="Email subject line")
-    body: str = Field(description="Email body template")
-    variables: list[str] = Field(
-        default_factory=list,
-        description="Template variables: {candidate_name}, {position_title}, etc."
-    )
-
-
-class NotificationEvent(BaseModel):
-    """Notification event details"""
-    event_type: str = Field(
-        description="Type: 'assessment_started', 'assessment_approved', 'assessment_rejected'"
-    )
-    candidate_id: Optional[uuid.UUID] = None
-    resume_id: Optional[uuid.UUID] = None
-    assessment_id: Optional[uuid.UUID] = None
-    position_title: Optional[str] = None
-    candidate_name: Optional[str] = None
-    candidate_email: Optional[str] = None
-    rejection_reason: Optional[str] = None
-    metadata: Optional[Dict[str, Any]] = None
-
-
-class CandidateNotificationManager:
+class CandidateNotificationWorker:
     """
-    Manages candidate notifications across multiple channels.
+    Handles sending notifications to candidates about assessment status.
 
-    Sends personalized notifications to candidates at key assessment milestones.
-    All operations are async and non-blocking.
+    Integrates with email service for multi-provider support and template
+    rendering.
     """
 
-    def __init__(self, db: AsyncSession):
+    def __init__(self, db: AsyncSession, email_service: Optional[EmailService] = None):
         """
-        Initialize the notification manager.
+        Initialize candidate notification worker.
 
         Args:
             db: AsyncSession for database access
+            email_service: EmailService instance (created if not provided)
         """
         self.db = db
-        self.templates = self._load_templates()
+        self.email_service = email_service or EmailService(settings)
 
-    def _load_templates(self) -> Dict[str, NotificationTemplate]:
-        """
-        Load notification templates from configuration.
-
-        In production, these would be loaded from the database
-        or an external template service.
-
-        Returns:
-            Dict mapping template names to template objects
-        """
-        return {
-            'assessment_started': NotificationTemplate(
-                name='assessment_started',
-                subject='Your Assessment: {candidate_name} - {position_title}',
-                body="""Dear {candidate_name},
-
-Thank you for applying for the {position_title} position. Your assessment has been initiated.
-
-What to expect:
-- You will receive an invitation to complete your assessment
-- The assessment typically takes 30-45 minutes
-- You will receive results within 1-2 business days
-
-If you have any questions, please reply to this email or contact our support team.
-
-Best regards,
-The TrueMatch Team""",
-                variables=[
-                    'candidate_name',
-                    'position_title',
-                    'company_name',
-                ],
-            ),
-            'assessment_approved': NotificationTemplate(
-                name='assessment_approved',
-                subject='Congratulations: Your Assessment Result - {position_title}',
-                body="""Dear {candidate_name},
-
-Great news! We are pleased to inform you that you have successfully passed the assessment for the {position_title} position.
-
-Your profile has been forwarded to the hiring team for further consideration. You can expect to hear from them within the next 3-5 business days.
-
-Thank you for your interest in joining our team.
-
-Best regards,
-The TrueMatch Team""",
-                variables=[
-                    'candidate_name',
-                    'position_title',
-                    'company_name',
-                ],
-            ),
-            'assessment_rejected': NotificationTemplate(
-                name='assessment_rejected',
-                subject='Assessment Result - {position_title}',
-                body="""Dear {candidate_name},
-
-Thank you for completing your assessment for the {position_title} position.
-
-After careful review, we have decided not to move forward at this time. The assessment results did not align with the specific requirements of this role.
-
-We encourage you to explore other opportunities that may be a better fit for your background and experience.
-
-Thank you for your interest in joining our team.
-
-Best regards,
-The TrueMatch Team""",
-                variables=[
-                    'candidate_name',
-                    'position_title',
-                    'company_name',
-                    'rejection_reason',
-                ],
-            ),
-        }
-
-    async def send_notification(
+    async def notify_assessment_started(
         self,
-        event: NotificationEvent,
-        channels: list[NotificationChannel] = None,
-    ) -> dict[str, bool | str]:
+        assessment_id: uuid.UUID,
+        candidate_email: str,
+        candidate_name: str,
+        position_title: str,
+        company_name: str,
+        assessment_url: str,
+        recruiter_name: str = "Our team",
+        recruiter_email: str = "support@truematch.ai",
+    ) -> bool:
         """
-        Send notification to candidate.
+        Send notification when assessment starts.
 
         Args:
-            event: Notification event with candidate and assessment details
-            channels: List of channels to use (default: [EMAIL])
+            assessment_id: UUID of the assessment
+            candidate_email: Candidate email address
+            candidate_name: Candidate full name
+            position_title: Job position title
+            company_name: Company name
+            assessment_url: URL for candidate to access assessment
+            recruiter_name: Name of recruiter/hiring contact
+            recruiter_email: Email of recruiter/hiring contact
 
         Returns:
-            Status dict with send results:
-                {
-                    'sent': bool,
-                    'channels_used': List[str],
-                    'email_sent': bool,
-                    'sms_sent': bool,
-                    'error': Optional[str],
-                }
+            True if notification sent successfully
         """
-        if channels is None:
-            channels = [NotificationChannel.EMAIL]
-
         try:
             logger.info(
-                f"[CandidateNotification] Sending {event.event_type} "
-                f"to {event.candidate_email}"
+                f"[CandidateNotif] Sending assessment_started email",
+                extra={
+                    "assessment_id": str(assessment_id),
+                    "candidate_email": candidate_email,
+                    "position": position_title,
+                }
             )
 
-            # Validate required fields
-            if not event.candidate_email:
-                logger.warning(
-                    f"[CandidateNotification] No email address for candidate "
-                    f"{event.candidate_id}"
-                )
-                return {
-                    'sent': False,
-                    'error': 'No candidate email address',
-                }
-
-            result = {
-                'sent': True,
-                'channels_used': [],
-                'email_sent': False,
-                'sms_sent': False,
+            context = {
+                "candidate_name": candidate_name,
+                "position_title": position_title,
+                "company_name": company_name,
+                "assessment_url": assessment_url,
+                "recruiter_name": recruiter_name,
+                "recruiter_email": recruiter_email,
+                "current_year": datetime.now(timezone.utc).year,
             }
 
-            # Send via email if requested
-            if NotificationChannel.EMAIL in channels:
-                email_sent = await self._send_email(event)
-                result['email_sent'] = email_sent
-                if email_sent:
-                    result['channels_used'].append('email')
-
-            # Send via SMS if requested and available
-            if NotificationChannel.SMS in channels:
-                # SMS implementation would go here
-                logger.debug("[CandidateNotification] SMS not yet implemented")
-
-            # Send in-app if requested and user has dashboard
-            if NotificationChannel.IN_APP in channels:
-                # In-app notification would go here
-                logger.debug(
-                    "[CandidateNotification] In-app notification queued"
-                )
-                result['channels_used'].append('in_app')
-
-            if not result['channels_used']:
-                result['sent'] = False
-                result['error'] = 'No notification channels succeeded'
-                return result
-
-            # Update database with notification timestamp
-            if event.resume_id:
-                await self._update_notification_timestamp(event.resume_id)
-
-            logger.info(
-                f"[CandidateNotification] Sent {event.event_type} via "
-                f"{', '.join(result['channels_used'])} to {event.candidate_email}"
+            success = await self.email_service.send_email(
+                to_address=candidate_email,
+                template_name=EmailTemplate.ASSESSMENT_STARTED,
+                context=context,
             )
 
-            return result
+            if success:
+                await self._log_email_sent(
+                    candidate_email,
+                    EmailTemplate.ASSESSMENT_STARTED,
+                    assessment_id,
+                )
+                logger.info(
+                    f"[CandidateNotif] assessment_started email sent",
+                    extra={"assessment_id": str(assessment_id)}
+                )
+            else:
+                await self._log_email_failed(
+                    candidate_email,
+                    EmailTemplate.ASSESSMENT_STARTED,
+                    assessment_id,
+                    "Email service returned False",
+                )
+
+            return success
 
         except Exception as e:
             logger.error(
-                f"[CandidateNotification] Error sending {event.event_type}: {e}",
+                f"[CandidateNotif] Error sending assessment_started notification",
+                extra={
+                    "assessment_id": str(assessment_id),
+                    "candidate_email": candidate_email,
+                    "error": str(e),
+                },
                 exc_info=True
             )
-            return {
-                'sent': False,
-                'error': str(e),
-            }
-
-    async def _send_email(self, event: NotificationEvent) -> bool:
-        """
-        Send email notification to candidate.
-
-        Args:
-            event: Notification event
-
-        Returns:
-            True if email was queued successfully
-
-        Raises:
-            Exception: If email sending fails
-        """
-        try:
-            # Get template
-            template = self.templates.get(event.event_type)
-            if not template:
-                logger.warning(
-                    f"[CandidateNotification] Template not found for {event.event_type}"
-                )
-                return False
-
-            # Build template variables
-            template_vars = {
-                'candidate_name': event.candidate_name or 'Candidate',
-                'position_title': event.position_title or 'Position',
-                'company_name': getattr(settings, 'company_name', 'Our Company'),
-                'rejection_reason': event.rejection_reason or 'N/A',
-            }
-
-            # Render template
-            subject = template.subject.format(**template_vars)
-            body = template.body.format(**template_vars)
-
-            # Log email (in production, would send via SMTP or service)
-            logger.info(
-                f"[CandidateNotification] Email queued:\n"
-                f"  To: {event.candidate_email}\n"
-                f"  Subject: {subject}\n"
-                f"  Event: {event.event_type}"
-            )
-
-            # TODO: Integrate with SMTP service
-            # This would use app.workers.notification_service or similar
-            # to actually send the email asynchronously
-
-            return True
-
-        except Exception as e:
-            logger.error(
-                f"[CandidateNotification] Email send failed: {e}",
-                exc_info=True
+            await self._log_email_failed(
+                candidate_email,
+                EmailTemplate.ASSESSMENT_STARTED,
+                assessment_id,
+                str(e),
             )
             return False
 
-    async def _update_notification_timestamp(
+    async def notify_assessment_approved(
         self,
-        resume_id: uuid.UUID,
-    ) -> None:
+        assessment_id: uuid.UUID,
+        candidate_email: str,
+        candidate_name: str,
+        position_title: str,
+        company_name: str,
+        recruiter_name: str = "Our team",
+        recruiter_email: str = "support@truematch.ai",
+        strengths: Optional[list[str]] = None,
+    ) -> bool:
         """
-        Update notification_sent timestamp in resume record.
+        Send approval notification to candidate.
 
         Args:
-            resume_id: ID of resume to update
+            assessment_id: UUID of the assessment
+            candidate_email: Candidate email address
+            candidate_name: Candidate full name
+            position_title: Job position title
+            company_name: Company name
+            recruiter_name: Name of recruiter/hiring contact
+            recruiter_email: Email of recruiter/hiring contact
+            strengths: List of candidate strengths identified in assessment
 
-        Raises:
-            Exception: If database update fails
+        Returns:
+            True if notification sent successfully
         """
         try:
-            stmt = (
-                update(Resume)
-                .where(Resume.id == resume_id)
-                .values(
-                    notification_sent=datetime.utcnow(),
-                    updated_at=datetime.utcnow(),
-                )
+            logger.info(
+                f"[CandidateNotif] Sending assessment_approved email",
+                extra={
+                    "assessment_id": str(assessment_id),
+                    "candidate_email": candidate_email,
+                    "position": position_title,
+                }
             )
-            await self.db.execute(stmt)
-            await self.db.commit()
 
-            logger.debug(
-                f"[CandidateNotification] Updated notification_sent timestamp "
-                f"for resume {resume_id}"
+            context = {
+                "candidate_name": candidate_name,
+                "position_title": position_title,
+                "company_name": company_name,
+                "recruiter_name": recruiter_name,
+                "recruiter_email": recruiter_email,
+                "strengths": strengths or [],
+                "current_year": datetime.now(timezone.utc).year,
+            }
+
+            success = await self.email_service.send_email(
+                to_address=candidate_email,
+                template_name=EmailTemplate.ASSESSMENT_APPROVED,
+                context=context,
             )
+
+            if success:
+                await self._log_email_sent(
+                    candidate_email,
+                    EmailTemplate.ASSESSMENT_APPROVED,
+                    assessment_id,
+                    metadata={"strengths_count": len(strengths or [])},
+                )
+                logger.info(
+                    f"[CandidateNotif] assessment_approved email sent",
+                    extra={"assessment_id": str(assessment_id)}
+                )
+            else:
+                await self._log_email_failed(
+                    candidate_email,
+                    EmailTemplate.ASSESSMENT_APPROVED,
+                    assessment_id,
+                    "Email service returned False",
+                )
+
+            return success
 
         except Exception as e:
             logger.error(
-                f"[CandidateNotification] Failed to update timestamp: {e}"
+                f"[CandidateNotif] Error sending assessment_approved notification",
+                extra={
+                    "assessment_id": str(assessment_id),
+                    "candidate_email": candidate_email,
+                    "error": str(e),
+                },
+                exc_info=True
+            )
+            await self._log_email_failed(
+                candidate_email,
+                EmailTemplate.ASSESSMENT_APPROVED,
+                assessment_id,
+                str(e),
+            )
+            return False
+
+    async def notify_assessment_rejected(
+        self,
+        assessment_id: uuid.UUID,
+        candidate_email: str,
+        candidate_name: str,
+        position_title: str,
+        company_name: str,
+        recruiter_name: str = "Our team",
+        recruiter_email: str = "support@truematch.ai",
+        rejection_reason: str = "Thank you for your interest in this position.",
+    ) -> bool:
+        """
+        Send rejection notification to candidate.
+
+        Args:
+            assessment_id: UUID of the assessment
+            candidate_email: Candidate email address
+            candidate_name: Candidate full name
+            position_title: Job position title
+            company_name: Company name
+            recruiter_name: Name of recruiter/hiring contact
+            recruiter_email: Email of recruiter/hiring contact
+            rejection_reason: Feedback about assessment performance
+
+        Returns:
+            True if notification sent successfully
+        """
+        try:
+            logger.info(
+                f"[CandidateNotif] Sending assessment_rejected email",
+                extra={
+                    "assessment_id": str(assessment_id),
+                    "candidate_email": candidate_email,
+                    "position": position_title,
+                }
             )
 
+            context = {
+                "candidate_name": candidate_name,
+                "position_title": position_title,
+                "company_name": company_name,
+                "recruiter_name": recruiter_name,
+                "recruiter_email": recruiter_email,
+                "rejection_reason": rejection_reason,
+                "current_year": datetime.now(timezone.utc).year,
+            }
 
-async def send_assessment_started_notification(
+            success = await self.email_service.send_email(
+                to_address=candidate_email,
+                template_name=EmailTemplate.ASSESSMENT_REJECTED,
+                context=context,
+            )
+
+            if success:
+                await self._log_email_sent(
+                    candidate_email,
+                    EmailTemplate.ASSESSMENT_REJECTED,
+                    assessment_id,
+                )
+                logger.info(
+                    f"[CandidateNotif] assessment_rejected email sent",
+                    extra={"assessment_id": str(assessment_id)}
+                )
+            else:
+                await self._log_email_failed(
+                    candidate_email,
+                    EmailTemplate.ASSESSMENT_REJECTED,
+                    assessment_id,
+                    "Email service returned False",
+                )
+
+            return success
+
+        except Exception as e:
+            logger.error(
+                f"[CandidateNotif] Error sending assessment_rejected notification",
+                extra={
+                    "assessment_id": str(assessment_id),
+                    "candidate_email": candidate_email,
+                    "error": str(e),
+                },
+                exc_info=True
+            )
+            await self._log_email_failed(
+                candidate_email,
+                EmailTemplate.ASSESSMENT_REJECTED,
+                assessment_id,
+                str(e),
+            )
+            return False
+
+    async def _log_email_sent(
+        self,
+        recipient_email: str,
+        template_name: EmailTemplate,
+        assessment_id: Optional[uuid.UUID] = None,
+        metadata: Optional[dict] = None,
+    ) -> None:
+        """
+        Log successful email send to database.
+
+        Args:
+            recipient_email: Email address sent to
+            template_name: Template used
+            assessment_id: Associated assessment ID (optional)
+            metadata: Additional metadata to store
+        """
+        try:
+            email_log = EmailLog(
+                recipient_email=recipient_email,
+                template_name=template_name.value,
+                assessment_id=assessment_id,
+                status="sent",
+                subject=self._get_subject(template_name),
+                provider=settings.EMAIL_PROVIDER,
+                metadata=metadata or {},
+            )
+            self.db.add(email_log)
+            await self.db.commit()
+
+            logger.debug(
+                f"[CandidateNotif] Email logged to database",
+                extra={
+                    "recipient": recipient_email,
+                    "template": template_name.value,
+                }
+            )
+        except Exception as e:
+            logger.error(
+                f"[CandidateNotif] Failed to log email send",
+                extra={"error": str(e)},
+                exc_info=True
+            )
+
+    async def _log_email_failed(
+        self,
+        recipient_email: str,
+        template_name: EmailTemplate,
+        assessment_id: Optional[uuid.UUID] = None,
+        error_message: str = "Unknown error",
+    ) -> None:
+        """
+        Log failed email send to database.
+
+        Args:
+            recipient_email: Email address that failed
+            template_name: Template that was attempted
+            assessment_id: Associated assessment ID (optional)
+            error_message: Error details
+        """
+        try:
+            email_log = EmailLog(
+                recipient_email=recipient_email,
+                template_name=template_name.value,
+                assessment_id=assessment_id,
+                status="failed",
+                subject=self._get_subject(template_name),
+                provider=settings.EMAIL_PROVIDER,
+                error_message=error_message[:500],  # Truncate to 500 chars
+            )
+            self.db.add(email_log)
+            await self.db.commit()
+
+            logger.debug(
+                f"[CandidateNotif] Email failure logged to database",
+                extra={
+                    "recipient": recipient_email,
+                    "template": template_name.value,
+                }
+            )
+        except Exception as e:
+            logger.error(
+                f"[CandidateNotif] Failed to log email failure",
+                extra={"error": str(e)},
+                exc_info=True
+            )
+
+    @staticmethod
+    def _get_subject(template_name: EmailTemplate) -> str:
+        """Get email subject for logging."""
+        subjects = {
+            EmailTemplate.ASSESSMENT_STARTED: "Your TrueMatch Assessment Has Started",
+            EmailTemplate.ASSESSMENT_APPROVED: "Congratulations! Your Assessment Was Approved",
+            EmailTemplate.ASSESSMENT_REJECTED: "Assessment Results",
+        }
+        return subjects.get(template_name, "Notification from TrueMatch")
+
+
+async def get_candidate_notification_worker(
     db: AsyncSession,
-    resume_id: uuid.UUID,
-    position_title: str,
-    candidate_name: str,
-    candidate_email: str,
-) -> dict[str, bool | str]:
+    email_service: Optional[EmailService] = None,
+) -> CandidateNotificationWorker:
     """
-    Send "assessment started" notification to candidate.
+    Get candidate notification worker instance.
 
     Args:
         db: Database session
-        resume_id: ID of resume
-        position_title: Job title candidate is applying for
-        candidate_name: Candidate name
-        candidate_email: Candidate email address
+        email_service: Optional EmailService (created if not provided)
 
     Returns:
-        Status dict with notification results
-
-    Example:
-        >>> result = await send_assessment_started_notification(
-        ...     db=session,
-        ...     resume_id=uuid.uuid4(),
-        ...     position_title="Software Engineer",
-        ...     candidate_name="Jane Doe",
-        ...     candidate_email="jane@example.com",
-        ... )
-        >>> assert result['sent'] is True
+        CandidateNotificationWorker instance
     """
-    manager = CandidateNotificationManager(db)
-    event = NotificationEvent(
-        event_type='assessment_started',
-        resume_id=resume_id,
-        position_title=position_title,
-        candidate_name=candidate_name,
-        candidate_email=candidate_email,
-    )
-    return await manager.send_notification(event)
-
-
-async def send_assessment_approved_notification(
-    db: AsyncSession,
-    resume_id: uuid.UUID,
-    position_title: str,
-    candidate_name: str,
-    candidate_email: str,
-) -> dict[str, bool | str]:
-    """
-    Send "assessment approved" notification to candidate.
-
-    Args:
-        db: Database session
-        resume_id: ID of resume
-        position_title: Job title candidate applied for
-        candidate_name: Candidate name
-        candidate_email: Candidate email address
-
-    Returns:
-        Status dict with notification results
-    """
-    manager = CandidateNotificationManager(db)
-    event = NotificationEvent(
-        event_type='assessment_approved',
-        resume_id=resume_id,
-        position_title=position_title,
-        candidate_name=candidate_name,
-        candidate_email=candidate_email,
-    )
-    return await manager.send_notification(event)
-
-
-async def send_assessment_rejected_notification(
-    db: AsyncSession,
-    resume_id: uuid.UUID,
-    position_title: str,
-    candidate_name: str,
-    candidate_email: str,
-    rejection_reason: Optional[str] = None,
-) -> dict[str, bool | str]:
-    """
-    Send "assessment rejected" notification to candidate.
-
-    Args:
-        db: Database session
-        resume_id: ID of resume
-        position_title: Job title candidate applied for
-        candidate_name: Candidate name
-        candidate_email: Candidate email address
-        rejection_reason: Optional reason for rejection
-
-    Returns:
-        Status dict with notification results
-    """
-    manager = CandidateNotificationManager(db)
-    event = NotificationEvent(
-        event_type='assessment_rejected',
-        resume_id=resume_id,
-        position_title=position_title,
-        candidate_name=candidate_name,
-        candidate_email=candidate_email,
-        rejection_reason=rejection_reason,
-    )
-    return await manager.send_notification(event)
+    return CandidateNotificationWorker(db, email_service)

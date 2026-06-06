@@ -61,6 +61,41 @@ class Notification(Base):
     )
 
 
+class EmailLog(Base):
+    """Track all emails sent via the email service."""
+    __tablename__ = "email_logs"
+
+    id: Mapped[uuid.UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    recipient_email: Mapped[str] = mapped_column(String(254), nullable=False)
+    template_name: Mapped[str] = mapped_column(String(50), nullable=False)
+    assessment_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        PG_UUID(as_uuid=True),
+        nullable=True
+    )
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default="sent"
+    )  # "sent", "failed", "bounced"
+    subject: Mapped[str] = mapped_column(String(255), nullable=False)
+    error_message: Mapped[Optional[str]] = mapped_column(String(500), nullable=True)
+    provider: Mapped[str] = mapped_column(String(20), nullable=False)  # "smtp", "sendgrid", "ses"
+    sent_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=datetime.utcnow
+    )
+    metadata: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+
+    __table_args__ = (
+        Index("ix_email_logs_recipient", "recipient_email"),
+        Index("ix_email_logs_assessment_id", "assessment_id"),
+        Index("ix_email_logs_sent_at", "sent_at"),
+        Index("ix_email_logs_status", "status"),
+        Index("ix_email_logs_template", "template_name"),
+    )
+
+
 class NotificationPreference(Base):
     """User notification preferences."""
     __tablename__ = "notification_preferences"

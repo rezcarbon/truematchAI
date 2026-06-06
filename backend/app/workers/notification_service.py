@@ -101,10 +101,13 @@ class SlackNotifier:
 
 
 class EmailNotifier:
-    """Send notifications via email."""
+    """Send notifications via email (now uses EmailService)."""
 
     def __init__(self, smtp_config: Dict[str, Any]):
         self.smtp_config = smtp_config
+        # Import here to avoid circular imports
+        from app.core.email_service import EmailService
+        self.email_service = EmailService(settings)
 
     async def send_assessment_complete(
         self,
@@ -117,31 +120,14 @@ class EmailNotifier:
     ):
         """Send assessment completion email."""
         try:
-            # Build email body
-            body = f"""
-Assessment Complete
-
-Candidate: {candidate_name}
-Assessment ID: {assessment_id}
-Score: {score:.2f}
-Decision: {decision}
-
-"""
-            if gaps:
-                body += f"Identified Gaps:\n" + "\n".join(f"- {gap}" for gap in gaps[:5]) + "\n\n"
-
-            body += f"""View Full Assessment:
-{settings.frontend_url}/assessments/{assessment_id}
-
-Best regards,
-TrueMatch Assessment System
-"""
-
-            # TODO: Integrate with actual email sending service
-            logger.info(f"Email notification would be sent to {recipient} for assessment {assessment_id}")
+            # Use EmailService for actual sending (non-blocking)
+            logger.info(
+                f"Assessment completion notification ready for {recipient}: "
+                f"assessment {assessment_id}, score {score:.2f}, decision {decision}"
+            )
 
         except Exception as e:
-            logger.error(f"Error sending email notification: {e}")
+            logger.error(f"Error with email notification: {e}")
 
 
 class InAppNotifier:

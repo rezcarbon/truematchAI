@@ -202,6 +202,50 @@ class Settings(BaseSettings):
     AUTO_REJECT_THRESHOLD: float = 0.40
     DECISION_REVIEW_THRESHOLD: float = 0.65
 
+    # Email Service Configuration (Production-Ready)
+    EMAIL_PROVIDER: str = Field(
+        default="smtp",
+        description="Email provider: 'smtp', 'sendgrid', or 'ses'"
+    )
+    EMAIL_FROM_ADDRESS: str = Field(
+        default="noreply@truematch.ai",
+        description="Sender email address for notifications"
+    )
+
+    # SMTP Configuration (if using SMTP provider)
+    SMTP_SERVER: str = Field(
+        default="smtp.gmail.com",
+        description="SMTP server hostname"
+    )
+    SMTP_PORT: int = Field(
+        default=587,
+        description="SMTP port (587 for TLS, 465 for SMTPS)"
+    )
+    SMTP_USE_TLS: bool = Field(
+        default=True,
+        description="Use TLS encryption for SMTP"
+    )
+    SMTP_USERNAME: str = Field(
+        default="",
+        description="SMTP username for authentication"
+    )
+    SMTP_PASSWORD: str = Field(
+        default="",
+        description="SMTP password for authentication"
+    )
+
+    # SendGrid Configuration (if using SendGrid provider)
+    SENDGRID_API_KEY: str = Field(
+        default="",
+        description="SendGrid API key for email delivery"
+    )
+
+    # AWS SES Configuration (if using SES provider)
+    AWS_REGION: str = Field(
+        default="us-east-1",
+        description="AWS region for SES (if using SES provider)"
+    )
+
     # Legacy email/SMTP config (kept for backward compatibility)
     # SMTP server for sending notification emails
     smtp_server: str = ""  # e.g., smtp.gmail.com

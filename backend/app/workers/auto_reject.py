@@ -253,7 +253,7 @@ class AutoRejectWorker:
             f"[AutoReject] Broadcasted rejection event for queue item {queue_item.id}"
         )
 
-        # Send rejection email to candidate
+        # Send rejection email to candidate via notification worker
         try:
             # Fetch resume to get candidate email
             if queue_item.resume_id:
@@ -262,15 +262,16 @@ class AutoRejectWorker:
                 resume = result.scalar_one_or_none()
 
                 if resume and resume.candidate_email:
-                    # Queue notification (would integrate with notification service)
+                    # Rejection email would be sent via candidate_notification worker
+                    # triggered separately or via event queue
                     logger.info(
-                        f"[AutoReject] Rejection email queued for candidate "
-                        f"{resume.candidate_name} ({resume.candidate_email})"
+                        f"[AutoReject] Assessment {assessment_id} rejected. "
+                        f"Candidate {resume.candidate_name} ready for rejection notification"
                     )
                     candidate_notified = True
         except Exception as e:
             logger.error(
-                f"[AutoReject] Failed to send rejection notification: {e}"
+                f"[AutoReject] Error handling rejection notification: {e}"
             )
 
         return candidate_notified
