@@ -13,6 +13,7 @@ celery_app = Celery(
         "app.workers.tasks",
         "app.workers.agents.ingest_cv",
         "app.workers.agents.ingest_jd",
+        "app.workers.cv_analysis",
     ],
 )
 
