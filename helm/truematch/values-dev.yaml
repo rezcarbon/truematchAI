@@ -1,0 +1,89 @@
+#!/usr/bin/env yaml
+# Development values for truematch
+
+global:
+  environment: development
+  imagePullPolicy: IfNotPresent
+
+# API Configuration
+api:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+    targetCPUUtilizationPercentage: 80
+
+# Worker Configuration
+worker:
+  replicaCount: 1
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 3
+
+# PostgreSQL Configuration
+postgres:
+  storage:
+    size: 20Gi
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+# Redis Configuration
+redis:
+  storage:
+    size: 5Gi
+  maxmemory: "256mb"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+# Ingress
+ingress:
+  enabled: false  # Use port-forward for dev
+
+# Monitoring (lighter in dev)
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    replicaCount: 1
+    retention: 7d
+  loki:
+    enabled: false  # Optional for dev
+  fluent-bit:
+    enabled: false  # Optional for dev
+
+# Security Policies (relaxed for dev)
+securityPolicies:
+  enabled: false
+  networkPolicies:
+    enabled: false
+
+config:
+  environment: development
+  logLevel: debug
+  debug: true

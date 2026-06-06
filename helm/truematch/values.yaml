@@ -1,0 +1,229 @@
+#!/usr/bin/env yaml
+# Default values for truematch
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  environment: production
+  imagePullPolicy: IfNotPresent
+
+# API Configuration
+api:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: truematch-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 8000
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Celery Worker Configuration
+worker:
+  enabled: true
+  replicaCount: 3
+  image:
+    repository: truematch-api
+    tag: latest
+    pullPolicy: IfNotPresent
+  concurrency: 4
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  autoscaling:
+    enabled: true
+    minReplicas: 3
+    maxReplicas: 20
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+# PostgreSQL Configuration
+postgres:
+  enabled: true
+  image:
+    repository: postgres
+    tag: "15-alpine"
+    pullPolicy: IfNotPresent
+  username: truematch
+  database: truematch
+  storage:
+    size: 100Gi
+    storageClass: standard
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 2000m
+      memory: 2Gi
+  maxConnections: 200
+  sharedBuffers: "256MB"
+  effectiveCacheSize: "1GB"
+  workMem: "8MB"
+
+# Redis Configuration
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: "7-alpine"
+    pullPolicy: IfNotPresent
+  storage:
+    size: 50Gi
+    storageClass: standard
+  maxmemory: "1gb"
+  maxmemoryPolicy: "allkeys-lru"
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+  persistence:
+    enabled: true
+    appendonly: "yes"
+
+# Ingress Configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    cert-manager.io/issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/rate-limit: "100"
+  hosts:
+    - host: api.truematch.ai
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    enabled: true
+    certManager: true
+    issuer: letsencrypt-prod
+
+# ConfigMap and Secrets
+config:
+  environment: production
+  logLevel: info
+  debug: false
+  apiHost: "0.0.0.0"
+  apiPort: "8000"
+  apiWorkers: "4"
+  fileIngestionEnabled: true
+  emailIngestionEnabled: true
+  encryptionEnabled: true
+  vectorSearchEnabled: true
+
+secrets:
+  # These should be provided via sealed-secrets or external-secrets operator
+  jwtSecret: "CHANGEME"
+  encryptionKey: "CHANGEME"
+  databasePassword: "CHANGEME"
+  awsAccessKeyId: "CHANGEME"
+  awsSecretAccessKey: "CHANGEME"
+  sendgridApiKey: "CHANGEME"
+  googleClientId: "CHANGEME"
+  googleClientSecret: "CHANGEME"
+
+# Monitoring
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    replicaCount: 2
+    retention: 30d
+    resources:
+      requests:
+        cpu: 500m
+        memory: 512Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+  loki:
+    enabled: true
+    replicaCount: 1
+    retention: 7d
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  fluent-bit:
+    enabled: true
+    resources:
+      requests:
+        cpu: 100m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 256Mi
+
+# Security Policies
+securityPolicies:
+  enabled: true
+  networkPolicies:
+    enabled: true
+  podSecurityPolicies:
+    enabled: false  # deprecated in K8s 1.25+
+  podSecurityStandards:
+    enabled: true
+    enforce: restricted
+
+# Service Account
+serviceAccount:
+  create: true
+  name: truematch
+  annotations: {}
+
+# RBAC
+rbac:
+  create: true
+
+# Pod Disruption Budget
+podDisruptionBudget:
+  enabled: true
+  minAvailable:
+    api: 1
+    worker: 1
+    postgres: 1
+    redis: 1

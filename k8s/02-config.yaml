@@ -1,0 +1,263 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: truematch-config
+  namespace: truematch
+  labels:
+    app: truematch
+data:
+  # Application Environment
+  ENVIRONMENT: "production"
+  LOG_LEVEL: "info"
+  DEBUG: "false"
+
+  # API Configuration
+  API_HOST: "0.0.0.0"
+  API_PORT: "8000"
+  API_WORKERS: "4"
+  API_TIMEOUT: "120"
+
+  # Database Configuration
+  DATABASE_HOST: "postgres"
+  DATABASE_PORT: "5432"
+  DATABASE_NAME: "truematch"
+  DATABASE_POOL_SIZE: "20"
+  DATABASE_ECHO: "false"
+
+  # Redis Configuration
+  REDIS_HOST: "redis"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+
+  # Celery Configuration
+  CELERY_BROKER_URL: "redis://redis:6379/1"
+  CELERY_RESULT_BACKEND: "redis://redis:6379/2"
+  CELERY_WORKER_CONCURRENCY: "4"
+  CELERY_WORKER_PREFETCH_MULTIPLIER: "4"
+  CELERY_TASK_TIME_LIMIT: "3600"
+  CELERY_TASK_SOFT_TIME_LIMIT: "3600"
+
+  # Feature Flags
+  FILE_INGESTION_ENABLED: "true"
+  EMAIL_INGESTION_ENABLED: "true"
+  ENCRYPTION_ENABLED: "true"
+  VECTOR_SEARCH_ENABLED: "true"
+
+  # AWS/S3 Configuration
+  AWS_REGION: "us-east-1"
+  S3_BUCKET: "truematch-files"
+  S3_ACL: "private"
+
+  # Email Configuration
+  EMAIL_PROVIDER: "sendgrid"
+  EMAIL_FROM_ADDRESS: "noreply@truematch.ai"
+  EMAIL_FROM_NAME: "TrueMatch"
+
+  # Singpass Configuration
+  SINGPASS_ENABLED: "true"
+  SINGPASS_ENV: "production"
+  SINGPASS_SIG_JWK_PATH: "/etc/secrets/singpass/sig-jwk.json"
+  SINGPASS_ENC_JWK_PATH: "/etc/secrets/singpass/enc-jwk.json"
+
+  # Security
+  CORS_ORIGINS: "https://truematch.ai,https://www.truematch.ai"
+  CORS_ALLOW_CREDENTIALS: "true"
+  CORS_ALLOW_METHODS: "GET,POST,PUT,DELETE,OPTIONS"
+  CORS_ALLOW_HEADERS: "Content-Type,Authorization"
+
+  # Monitoring & Logging
+  ENABLE_PROMETHEUS_METRICS: "true"
+  PROMETHEUS_PORT: "9090"
+  ENABLE_STRUCTURED_LOGGING: "true"
+  LOG_FORMAT: "json"
+
+  # Rate Limiting
+  RATE_LIMIT_ENABLED: "true"
+  RATE_LIMIT_REQUESTS: "100"
+  RATE_LIMIT_PERIOD: "60"
+
+  # Timeouts
+  REQUEST_TIMEOUT: "120"
+  DATABASE_TIMEOUT: "30"
+  EXTERNAL_API_TIMEOUT: "30"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: truematch-secrets
+  namespace: truematch
+  labels:
+    app: truematch
+type: Opaque
+stringData:
+  # Database Credentials
+  DATABASE_USER: "truematch"
+  DATABASE_PASSWORD: "CHANGEME-REPLACE-IN-PRODUCTION"
+
+  # JWT & Encryption Keys
+  # These MUST be replaced with actual secrets using sealed-secrets or similar
+  JWT_SECRET: "CHANGEME-USE-SEALED-SECRETS-OR-EXTERNAL-SECRETS-IN-PRODUCTION"
+  ENCRYPTION_KEY: "CHANGEME-USE-SEALED-SECRETS-OR-EXTERNAL-SECRETS-IN-PRODUCTION"
+  ENCRYPTION_INDEX_KEY: "CHANGEME-USE-SEALED-SECRETS-OR-EXTERNAL-SECRETS-IN-PRODUCTION"
+
+  # AWS/S3 Credentials
+  AWS_ACCESS_KEY_ID: "CHANGEME"
+  AWS_SECRET_ACCESS_KEY: "CHANGEME"
+  S3_KMS_KEY_ID: ""
+
+  # Email Service Credentials
+  SENDGRID_API_KEY: "CHANGEME"
+  SMTP_HOST: ""
+  SMTP_PORT: "587"
+  SMTP_USERNAME: ""
+  SMTP_PASSWORD: ""
+
+  # OAuth Credentials
+  GOOGLE_CLIENT_ID: "CHANGEME"
+  GOOGLE_CLIENT_SECRET: "CHANGEME"
+
+  # Error Tracking
+  SENTRY_DSN: ""
+  SENTRY_ENVIRONMENT: "production"
+
+  # API Keys for External Services
+  OPENAI_API_KEY: "CHANGEME"
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-init
+  namespace: truematch
+  labels:
+    app: postgres
+data:
+  init.sql: |
+    -- Create required extensions
+    CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+    CREATE EXTENSION IF NOT EXISTS "pgcrypto";
+
+    -- Set search path
+    ALTER SYSTEM SET search_path = public;
+
+    -- Logging configuration
+    ALTER SYSTEM SET log_min_duration_statement = 1000;
+    ALTER SYSTEM SET log_connections = on;
+    ALTER SYSTEM SET log_disconnections = on;
+
+    SELECT pg_reload_conf();
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: truematch
+  labels:
+    app: prometheus
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+      scrape_timeout: 10s
+      evaluation_interval: 15s
+      external_labels:
+        cluster: 'production'
+        environment: 'production'
+
+    alerting:
+      alertmanagers:
+        - static_configs:
+            - targets: []
+
+    scrape_configs:
+      - job_name: 'prometheus'
+        static_configs:
+          - targets: ['localhost:9090']
+
+      - job_name: 'api'
+        static_configs:
+          - targets: ['api:8000']
+        metrics_path: '/metrics'
+        scrape_interval: 15s
+
+      - job_name: 'postgres'
+        static_configs:
+          - targets: ['postgres-exporter:9187']
+        scrape_interval: 30s
+
+      - job_name: 'redis'
+        static_configs:
+          - targets: ['redis-exporter:9121']
+        scrape_interval: 30s
+
+      - job_name: 'kubernetes-pods'
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names:
+                - truematch
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+            action: keep
+            regex: true
+          - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+            action: replace
+            target_label: __metrics_path__
+            regex: (.+)
+          - source_labels: [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+            action: replace
+            regex: ([^:]+)(?::\d+)?;(\d+)
+            replacement: $1:$2
+            target_label: __address__
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: fluent-bit-config
+  namespace: truematch
+  labels:
+    app: fluent-bit
+data:
+  fluent-bit.conf: |
+    [SERVICE]
+        Daemon Off
+        Flush 1
+        Log_Level info
+        Parsers_File parsers.conf
+
+    [INPUT]
+        Name tail
+        Path /var/log/containers/*-truematch_*.log
+        Parser docker
+        Tag kubernetes.*
+        Refresh_Interval 5
+        Skip_Long_Lines On
+
+    [FILTER]
+        Name kubernetes
+        Match kubernetes.*
+        Kube_URL https://kubernetes.default.svc:443
+        Kube_CA_File /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+        Kube_Token_File /var/run/secrets/kubernetes.io/serviceaccount/token
+        Labels On
+        Annotations On
+
+    [OUTPUT]
+        Name stdout
+        Match *
+
+  parsers.conf: |
+    [PARSER]
+        Name docker
+        Format json
+        Time_Key time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L%z
+
+    [PARSER]
+        Name json
+        Format json
+        Time_Key timestamp
+        Time_Format %Y-%m-%dT%H:%M:%S%z

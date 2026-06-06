@@ -1,0 +1,99 @@
+#!/usr/bin/env yaml
+# Staging values for truematch
+
+global:
+  environment: staging
+  imagePullPolicy: IfNotPresent
+
+# API Configuration
+api:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 300m
+      memory: 384Mi
+    limits:
+      cpu: 750m
+      memory: 768Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 75
+
+# Worker Configuration
+worker:
+  replicaCount: 2
+  resources:
+    requests:
+      cpu: 300m
+      memory: 384Mi
+    limits:
+      cpu: 750m
+      memory: 768Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 75
+
+# PostgreSQL Configuration
+postgres:
+  storage:
+    size: 50Gi
+  resources:
+    requests:
+      cpu: 300m
+      memory: 384Mi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+
+# Redis Configuration
+redis:
+  storage:
+    size: 25Gi
+  maxmemory: "512mb"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 768Mi
+
+# Ingress
+ingress:
+  enabled: true
+  hosts:
+    - host: api-staging.truematch.ai
+      paths:
+        - path: /
+          pathType: Prefix
+
+# Monitoring
+monitoring:
+  enabled: true
+  prometheus:
+    enabled: true
+    replicaCount: 1
+    retention: 14d
+  loki:
+    enabled: true
+    replicaCount: 1
+    retention: 3d
+  fluent-bit:
+    enabled: true
+
+# Security Policies
+securityPolicies:
+  enabled: true
+  networkPolicies:
+    enabled: true
+  podSecurityStandards:
+    enforce: restricted
+
+config:
+  environment: staging
+  logLevel: info
+  debug: false
