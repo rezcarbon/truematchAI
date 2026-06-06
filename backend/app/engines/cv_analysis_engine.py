@@ -16,7 +16,7 @@ from app.models.position import Position
 from app.models.resume import Resume
 from app.models.user import User
 from app.engines.client import ClaudeClient
-from app.engines.intake import parse_resume_text, analyze_jd
+from app.engines.intake import parse_resume, analyze_jd
 from app.engines.semantic_match import compute_semantic_score
 from app.engines.reasoning import assess_capability
 
@@ -134,7 +134,7 @@ class CVAnalysisEngine:
         # Parse resume if not already parsed
         if not resume.parsed_data:
             # Use existing intake engine
-            resume.parsed_data = await parse_resume_text(
+            resume.parsed_data = parse_resume(
                 resume.raw_narrative or resume.supplementary or {}
             )
 
