@@ -12,13 +12,10 @@ from datetime import datetime
 from typing import Optional
 from uuid import uuid4, UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.security import verify_admin
-from app.database import get_session
-from app.models.user import User
+from app.deps import DBSession, CurrentAdmin
 from app.models.training_data import (
     TrainingDataUpload,
     TrainingDataItem,
@@ -55,8 +52,8 @@ router = APIRouter(prefix="/training/data", tags=["training-data"])
 )
 async def upload_training_data(
     file: UploadFile = File(..., description="CSV or JSON file with training data"),
-    db: AsyncSession = Depends(get_session),
-    admin: User = Depends(verify_admin),
+    db: DBSession,
+    admin: CurrentAdmin,
 ) -> TrainingDataUploadSchema:
     """
     Upload training data file (CSV/JSON).
@@ -150,8 +147,8 @@ async def upload_training_data(
 async def list_uploads(
     skip: int = 0,
     limit: int = 50,
-    db: AsyncSession = Depends(get_session),
-    admin: User = Depends(verify_admin),
+    db: DBSession,
+    admin: CurrentAdmin,
 ) -> list[TrainingDataUploadSchema]:
     """Get list of training data uploads."""
     query = (
@@ -176,8 +173,8 @@ async def list_uploads(
 )
 async def get_upload_detail(
     upload_id: str,
-    db: AsyncSession = Depends(get_session),
-    admin: User = Depends(verify_admin),
+    db: DBSession,
+    admin: CurrentAdmin,
 ) -> TrainingDataUploadDetailSchema:
     """Get detailed upload information."""
     query = select(TrainingDataUpload).where(
@@ -201,8 +198,8 @@ async def get_upload_detail(
 )
 async def get_upload_status(
     upload_id: str,
-    db: AsyncSession = Depends(get_session),
-    admin: User = Depends(verify_admin),
+    db: DBSession,
+    admin: CurrentAdmin,
 ) -> UploadResultSchema:
     """Get upload processing status and results."""
     upload_uuid = UUID(upload_id) if isinstance(upload_id, str) else upload_id
@@ -263,8 +260,8 @@ async def get_upload_status(
 )
 async def send_training_message(
     request: TrainingChatRequestSchema,
-    db: AsyncSession = Depends(get_session),
-    admin: User = Depends(verify_admin),
+    db: DBSession,
+    admin: CurrentAdmin,
 ) -> TrainingChatResponseSchema:
     """
     Send a training feedback message via chat.
@@ -392,8 +389,8 @@ async def send_training_message(
 )
 async def get_chat_history(
     session_id: str,
-    db: AsyncSession = Depends(get_session),
-    admin: User = Depends(verify_admin),
+    db: DBSession,
+    admin: CurrentAdmin,
 ) -> TrainingChatHistorySchema:
     """Get chat conversation history."""
     # Verify session belongs to user
@@ -431,8 +428,8 @@ async def get_chat_history(
 )
 async def create_session(
     request: CreateSessionRequestSchema,
-    db: AsyncSession = Depends(get_session),
-    admin: User = Depends(verify_admin),
+    db: DBSession,
+    admin: CurrentAdmin,
 ) -> TrainingLearningSessionSchema:
     """Create new training session."""
     session = TrainingLearningSession(
@@ -459,8 +456,8 @@ async def create_session(
     description="Get current status of the autonomous learning system.",
 )
 async def get_learning_status(
-    db: AsyncSession = Depends(get_session),
-    admin: User = Depends(verify_admin),
+    db: DBSession,
+    admin: CurrentAdmin,
 ) -> LearningStatusSchema:
     """Get learning system status."""
     from sqlalchemy import func
