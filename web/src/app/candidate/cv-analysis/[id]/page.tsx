@@ -45,7 +45,7 @@ export default function CVAnalysisResultsPage({
         setLoading(true);
         // Use backend API directly (port 8000)
         const backendUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
-        const response = await fetch(`${backendUrl}/api/v1/cv-analysis/${params.id}`);
+        const response = await fetch(`${backendUrl}/api/v1/candidates/cv-analysis/${params.id}`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch analysis results');
