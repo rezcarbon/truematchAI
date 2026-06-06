@@ -8,6 +8,8 @@ the autonomous agents and the ability to command them from anywhere.
   POST /agents/queue/{id}/approve — advance an awaiting_review item
   POST /agents/queue/{id}/reject  — reject and stop an item
   POST /agents/queue/{id}/reassign — reassign a CV to a different position
+  GET  /agents/status/quick       — quick agent health dashboard
+  GET  /agents/queue?awaiting_review=true — filtered queue with decision deadline
   POST /agents/trigger            — manually trigger CV assessment (iOS on-the-go)
   POST /agents/jd/draft           — submit a JD draft for autonomous analysis
   GET  /agents/jd/{position_id}/suggestions — fetch the AI-improved JD draft
@@ -21,15 +23,22 @@ import asyncio
 import json
 import logging
 import uuid
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import select, func
 
 from app.deps import CurrentUser, DBSession
 from app.models.ingest_queue import IngestQueueItem, IngestStatus
 from app.models.position import Position
 from app.models.resume import Resume
+from app.schemas.agents import (
+    AgentStatusResponse,
+    AgentsStatusResponse,
+    QueueItemDetail as QueueItemDetailSchema,
+)
+from app.websocket.agents_operator import get_operator_manager
 
 router = APIRouter()
 logger = logging.getLogger("truematch.agents_api")
@@ -115,6 +124,8 @@ async def approve_item(
     item.status = IngestStatus.processing
     await db.flush()
 
+    assessment_id = None
+
     # If it's a CV item with a resume and position, kick off the pipeline.
     if item.ingest_type == "cv" and item.resume_id and item.position_id:
         from app.models.assessment import Assessment
@@ -124,8 +135,20 @@ async def approve_item(
         db.add(assessment)
         await db.flush()
         item.assessment_id = assessment.id
+        assessment_id = assessment.id
         from app.workers.tasks import run_assessment
         run_assessment.delay(str(assessment.id))
+
+    # Broadcast to operator dashboard via WebSocket
+    await _broadcast_event(
+        event_type="queue_item_action",
+        item_id=item_id,
+        action="approved",
+        user_id=user.id,
+        status="processing",
+        notes=payload.notes,
+        assessment_id=assessment_id,
+    )
 
     await _broadcast({"event": "item_approved", "id": str(item_id), "status": "processing"})
     return {"status": "approved", "id": str(item_id)}
@@ -135,10 +158,23 @@ async def approve_item(
 async def reject_item(
     item_id: uuid.UUID, payload: ApprovePayload, user: CurrentUser, db: DBSession
 ) -> dict:
+    """Reject an item — prevents it from entering the assessment pipeline."""
     item = await _get_actionable(item_id, db)
     item.status = IngestStatus.rejected
     item.reviewed_by = user.id
     item.review_notes = payload.notes
+    await db.flush()
+
+    # Broadcast to operator dashboard via WebSocket
+    await _broadcast_event(
+        event_type="queue_item_action",
+        item_id=item_id,
+        action="rejected",
+        user_id=user.id,
+        status="rejected",
+        notes=payload.notes,
+    )
+
     await _broadcast({"event": "item_rejected", "id": str(item_id)})
     return {"status": "rejected", "id": str(item_id)}
 
@@ -249,6 +285,131 @@ async def get_jd_suggestions(
     }
 
 
+# ── Agent health & metrics ───────────────────────────────────────────────────
+
+@router.get("/status/quick", response_model=AgentsStatusResponse)
+async def get_quick_status(user: CurrentUser, db: DBSession) -> AgentsStatusResponse:
+    """
+    Quick agent health dashboard.
+
+    Returns:
+        AgentsStatusResponse with CV, JD, and Email agent status summaries.
+    """
+    now = datetime.utcnow()
+    hours_24_ago = now - timedelta(hours=24)
+
+    async def get_agent_status(ingest_type: str) -> AgentStatusResponse:
+        """Get status for a specific agent type."""
+        # Count items in queue
+        queue_count = await db.scalar(
+            select(func.count(IngestQueueItem.id)).where(
+                IngestQueueItem.ingest_type == ingest_type,
+                IngestQueueItem.status.in_([
+                    IngestStatus.pending,
+                    IngestStatus.extracting,
+                    IngestStatus.matching,
+                    IngestStatus.awaiting_review,
+                ]),
+            )
+        )
+
+        # Count processed in last 24 hours
+        processed_24h = await db.scalar(
+            select(func.count(IngestQueueItem.id)).where(
+                IngestQueueItem.ingest_type == ingest_type,
+                IngestQueueItem.status == IngestStatus.completed,
+                IngestQueueItem.updated_at >= hours_24_ago,
+            )
+        )
+
+        # Count failed in last 24 hours
+        failed_24h = await db.scalar(
+            select(func.count(IngestQueueItem.id)).where(
+                IngestQueueItem.ingest_type == ingest_type,
+                IngestQueueItem.status == IngestStatus.failed,
+                IngestQueueItem.updated_at >= hours_24_ago,
+            )
+        )
+
+        # Get last activity
+        last_item = await db.scalar(
+            select(IngestQueueItem.updated_at)
+            .where(IngestQueueItem.ingest_type == ingest_type)
+            .order_by(IngestQueueItem.updated_at.desc())
+            .limit(1)
+        )
+
+        return AgentStatusResponse(
+            agent_type=ingest_type,
+            running=queue_count > 0 or processed_24h > 0,
+            queue_size=queue_count or 0,
+            processed_24h=processed_24h or 0,
+            failed_24h=failed_24h or 0,
+            avg_processing_time_seconds=None,  # Would need processing_started_at timestamp
+            last_activity_at=last_item,
+        )
+
+    cv_status = await get_agent_status("cv")
+    jd_status = await get_agent_status("jd_draft")
+    # Email agent would use a different model; for now, create a placeholder
+    email_status = AgentStatusResponse(
+        agent_type="email",
+        running=False,
+        queue_size=0,
+        processed_24h=0,
+        failed_24h=0,
+    )
+
+    return AgentsStatusResponse(
+        cv=cv_status,
+        jd=jd_status,
+        email=email_status,
+        timestamp=now,
+    )
+
+
+@router.get("/queue", response_model=list[QueueItemDetailSchema])
+async def list_queue(
+    user: CurrentUser,
+    db: DBSession,
+    status_filter: str | None = Query(None, alias="status"),
+    awaiting_review: bool = Query(False, description="Filter to awaiting_review items only"),
+    sort: str = Query("created_at", description="Sort by: created_at, updated_at, retry_count"),
+    limit: int = Query(50, ge=1, le=200),
+) -> list[QueueItemDetailSchema]:
+    """
+    Get ingest queue items with optional filtering.
+
+    Args:
+        status_filter: Filter by status (e.g., 'pending', 'processing')
+        awaiting_review: If True, only return items awaiting human review
+        sort: Sort field (created_at, updated_at, retry_count)
+        limit: Maximum items to return
+
+    Returns:
+        List of queue items with decision support fields.
+    """
+    stmt = select(IngestQueueItem)
+
+    if awaiting_review:
+        stmt = stmt.where(IngestQueueItem.status == IngestStatus.awaiting_review)
+    elif status_filter:
+        stmt = stmt.where(IngestQueueItem.status == status_filter)
+
+    # Apply sorting
+    if sort == "updated_at":
+        stmt = stmt.order_by(IngestQueueItem.updated_at.desc())
+    elif sort == "retry_count":
+        stmt = stmt.order_by(IngestQueueItem.retry_count.desc())
+    else:
+        stmt = stmt.order_by(IngestQueueItem.created_at.desc())
+
+    stmt = stmt.limit(limit)
+    items = list((await db.scalars(stmt)).all())
+
+    return [_to_detail_schema(item) for item in items]
+
+
 # ── WebSocket real-time feed ──────────────────────────────────────────────────
 
 _connections: set[WebSocket] = set()
@@ -283,6 +444,30 @@ async def agents_ws(websocket: WebSocket) -> None:
         _connections.discard(websocket)
 
 
+@router.websocket("/ws/operator")
+async def operator_ws(websocket: WebSocket) -> None:
+    """
+    Operator dashboard feed — real-time queue item actions and agent alerts.
+
+    Receives events like:
+    - queue_item_action: when items are approved/rejected/reassigned
+    - agent_status_change: when agent status changes
+    - processing_alert: errors, warnings from agents
+    """
+    manager = get_operator_manager()
+    await manager.subscribe(websocket)
+    try:
+        while True:
+            # Keep connection alive; clients can send pings
+            data = await asyncio.wait_for(websocket.receive_text(), timeout=60.0)
+            if data.strip() == "ping":
+                await websocket.send_text("pong")
+    except (WebSocketDisconnect, asyncio.TimeoutError):
+        pass
+    finally:
+        await manager.unsubscribe(websocket)
+
+
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 async def _get_actionable(item_id: uuid.UUID, db: DBSession) -> IngestQueueItem:
@@ -309,4 +494,63 @@ def _detail(i: IngestQueueItem) -> QueueItemDetail:
         last_error=i.last_error,
         jd_agent_output=i.jd_agent_output,
         review_notes=i.review_notes,
+    )
+
+
+def _to_detail_schema(item: IngestQueueItem) -> QueueItemDetailSchema:
+    """Convert an IngestQueueItem to QueueItemDetailSchema with decision support fields."""
+    sender_name = None
+    if item.sender_meta and isinstance(item.sender_meta, dict):
+        sender_name = item.sender_meta.get("name") or item.sender_meta.get("sender_name")
+
+    return QueueItemDetailSchema(
+        id=item.id,
+        source=item.source,
+        ingest_type=item.ingest_type,
+        status=item.status,
+        created_at=item.created_at.isoformat() if item.created_at else "",
+        resume_id=item.resume_id,
+        assessment_id=item.assessment_id,
+        position_id=item.position_id,
+        retry_count=item.retry_count,
+        source_ref=item.source_ref,
+        last_error=item.last_error,
+        jd_agent_output=item.jd_agent_output,
+        awaiting_review=item.status == IngestStatus.awaiting_review,
+        decision_deadline=None,  # Would be set based on business rules
+        notes_history=[item.review_notes] if item.review_notes else [],
+        sender_name=sender_name,
+        review_notes=item.review_notes,
+    )
+
+
+async def _broadcast_event(
+    event_type: str,
+    item_id: uuid.UUID,
+    action: str,
+    user_id: uuid.UUID,
+    status: str,
+    notes: str | None = None,
+    assessment_id: uuid.UUID | None = None,
+) -> None:
+    """
+    Broadcast a queue item action event to all connected operators.
+
+    Args:
+        event_type: Type of event (e.g., 'queue_item_action')
+        item_id: ID of the queue item
+        action: Action performed ('approved', 'rejected', 'reassigned')
+        user_id: ID of user performing the action
+        status: New status of the item
+        notes: Optional review notes
+        assessment_id: Optional assessment ID created by the action
+    """
+    manager = get_operator_manager()
+    await manager.broadcast_queue_item_action(
+        item_id=str(item_id),
+        action=action,
+        user_id=str(user_id),
+        status=status,
+        notes=notes,
+        assessment_id=str(assessment_id) if assessment_id else None,
     )
