@@ -51,9 +51,9 @@ router = APIRouter(prefix="/training/data", tags=["training-data"])
     description="Upload training feedback data for the virtual brain to learn from. Returns 202 Accepted - processing happens asynchronously.",
 )
 async def upload_training_data(
-    file: UploadFile = File(..., description="CSV or JSON file with training data"),
     db: DBSession,
     admin: CurrentAdmin,
+    file: UploadFile = File(..., description="CSV or JSON file with training data"),
 ) -> TrainingDataUploadSchema:
     """
     Upload training data file (CSV/JSON).
@@ -145,10 +145,10 @@ async def upload_training_data(
     description="Get list of all training data uploads for the current admin user.",
 )
 async def list_uploads(
-    skip: int = 0,
-    limit: int = 50,
     db: DBSession,
     admin: CurrentAdmin,
+    skip: int = 0,
+    limit: int = 50,
 ) -> list[TrainingDataUploadSchema]:
     """Get list of training data uploads."""
     query = (
