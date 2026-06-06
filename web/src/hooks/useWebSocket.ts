@@ -24,7 +24,8 @@ export function usePipelineWebSocket(
 
     const connectWebSocket = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const url = `${protocol}//${window.location.host}/api/proxy/ws/pipeline/${positionId}?token=${accessToken}`;
+      const backendHost = window.location.hostname;
+      const url = `${protocol}//${backendHost}:8000/api/v1/positions/${positionId}/ws?token=${accessToken}`;
 
       try {
         const ws = new WebSocket(url);
@@ -97,7 +98,8 @@ export function useNotificationWebSocket(
 
     const connectWebSocket = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-      const url = `${protocol}//${window.location.host}/api/proxy/ws/notifications?token=${accessToken}`;
+      const backendHost = window.location.hostname;
+      const url = `${protocol}//${backendHost}:8000/api/v1/notifications/ws?token=${accessToken}`;
 
       try {
         const ws = new WebSocket(url);

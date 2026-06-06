@@ -245,7 +245,11 @@ export function useAgentOperator(): UseAgentOperatorReturn {
         window.location.protocol === 'https:'
         ? 'wss:'
         : 'ws:';
-      const url = `${protocol}//${window.location.host}/ws/operator?token=${accessToken}`;
+      // Connect to backend WebSocket endpoint at port 8000
+      const backendHost = typeof window !== 'undefined'
+        ? window.location.hostname
+        : 'localhost';
+      const url = `${protocol}//${backendHost}:8000/api/v1/agents/ws/operator?token=${accessToken}`;
 
       const ws = new WebSocket(url);
 
