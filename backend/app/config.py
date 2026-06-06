@@ -132,7 +132,45 @@ class Settings(BaseSettings):
     # If True, CV agent requires human approval before running the pipeline.
     ingest_require_approval: bool = False
 
-    # Email / SMTP Configuration
+    # ─── PHASE A: AUTONOMY LAYER ───
+    # File system monitoring
+    assessment_inbox_path: str = "./inbox/assessments"
+
+    # Email Ingestion (IMAP)
+    email_ingestion_enabled: bool = False
+    email_imap_host: str = "imap.gmail.com"
+    email_imap_port: int = 993
+    email_address: str = ""  # Email account to monitor
+    email_password: str = ""  # Email password or app-specific password
+    email_poll_interval: int = 300  # Poll every 5 minutes
+
+    # Email Sending (SMTP)
+    email_smtp_host: str = "smtp.gmail.com"
+    email_smtp_port: int = 587
+    email_smtp_username: str = ""
+    email_smtp_password: str = ""
+
+    # Assessment Processing
+    max_concurrent_assessments: int = 5  # Number of parallel assessment workers
+    assessment_timeout_seconds: int = 60  # Max time per assessment
+
+    # Notification Channels
+    slack_webhook_url: str = ""  # Slack webhook for notifications
+    slack_notifications_enabled: bool = False
+
+    # ─── PHASE B: GOVERNANCE LAYER ───
+    # Governance gates configuration
+    governance_enable_coherence_gate: bool = True
+    governance_enable_consistency_gate: bool = True
+    governance_enable_fidelity_gate: bool = True
+    governance_enable_bias_gate: bool = True
+
+    # Decision thresholds
+    decision_auto_approve_threshold: float = 0.85
+    decision_review_threshold: float = 0.65
+    decision_auto_reject_threshold: float = 0.65
+
+    # Legacy email/SMTP config (kept for backward compatibility)
     # SMTP server for sending notification emails
     smtp_server: str = ""  # e.g., smtp.gmail.com
     smtp_port: int = 587  # TLS port (not 465 for SMTPS or 25 for plain)
