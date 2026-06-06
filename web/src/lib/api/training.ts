@@ -132,7 +132,12 @@ export async function getTrainingFeedback(
     }
   );
   if (!response.ok) throw new Error('Failed to fetch training feedback');
-  return response.json();
+  const data = await response.json();
+  // Backend returns an array directly, wrap it in the expected structure
+  return {
+    items: Array.isArray(data) ? data : data.items || [],
+    total: Array.isArray(data) ? data.length : data.total || 0,
+  };
 }
 
 export async function submitTrainingFeedback(

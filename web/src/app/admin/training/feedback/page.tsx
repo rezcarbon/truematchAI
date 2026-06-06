@@ -49,7 +49,7 @@ export default function TrainingFeedbackPage() {
 
   const feedbackTypes = ['hire', 'reject', 'applied', 'interested', 'not_interested', 'maybe'];
   const typeCounts = feedbackTypes.reduce((acc, type) => {
-    acc[type] = feedback.filter((f) => f.feedback_type === type).length;
+    acc[type] = (feedback || []).filter((f) => f.feedback_type === type).length;
     return acc;
   }, {} as Record<string, number>);
 
