@@ -31,7 +31,8 @@ export default function InsightsAnalyticsPage() {
       try {
         if (!session) throw new Error('Not authenticated');
 
-        const token = session?.user?.email || 'session-token';
+        const token = (session as any)?.accessToken || (session?.user as any)?.accessToken;
+        if (!token) throw new Error('No access token available');
 
         const [insightsData, progressData, patternsData] = await Promise.all([
           getTrainingInsights(token),

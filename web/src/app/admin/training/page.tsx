@@ -23,8 +23,8 @@ export default function TrainingSystemDashboard() {
       try {
         if (!session) throw new Error('Not authenticated');
 
-        // For next-auth, pass a dummy token since the API will use session cookies
-        const token = session?.user?.email || 'session-token';
+        const token = (session as any)?.accessToken || (session?.user as any)?.accessToken;
+        if (!token) throw new Error('No access token available');
 
         const [statsData, brainData] = await Promise.all([
           getTrainingStats(token),

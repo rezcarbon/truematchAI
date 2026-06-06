@@ -141,9 +141,11 @@ export const authOptions: NextAuthOptions = {
       try {
         console.log("Session callback - token:", token);
         if (session.user) {
-          (session.user as { role?: string }).role = token.role as string;
+          (session.user as { role?: string; accessToken?: string }).role = token.role as string;
+          (session.user as { role?: string; accessToken?: string }).accessToken = token.accessToken as string;
         }
-        (session as { error?: string }).error = token.error as string | undefined;
+        (session as { error?: string; accessToken?: string }).error = token.error as string | undefined;
+        (session as { error?: string; accessToken?: string }).accessToken = token.accessToken as string;
         console.log("Session callback - returning session:", session);
         return session;
       } catch (error) {

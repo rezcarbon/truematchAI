@@ -31,7 +31,8 @@ export default function TrainingFeedbackPage() {
       try {
         if (!session) throw new Error('Not authenticated');
 
-        const token = session?.user?.email || 'session-token';
+        const token = (session as any)?.accessToken || (session?.user as any)?.accessToken;
+        if (!token) throw new Error('No access token available');
         const data = await getTrainingFeedback(token, selectedType || undefined);
         setFeedback(data.items);
       } catch (err) {
