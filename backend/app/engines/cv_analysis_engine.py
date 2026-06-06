@@ -124,7 +124,7 @@ class CVAnalysisEngine:
         return result
 
     async def _extract_capabilities(self, resume: Resume) -> dict:
-        """Extract and structure capabilities from resume.
+        """Extract and structure capabilities from resume with LLM enrichment.
 
         Returns:
             Dict with skills, experience, achievements, etc.
@@ -138,12 +138,51 @@ class CVAnalysisEngine:
                 resume.raw_narrative or resume.supplementary or {}
             )
 
+        # Use LLM to do deep capability extraction from resume narrative
+        prompt = f"""Analyze this resume and extract capabilities in structured detail:
+
+RESUME CONTENT:
+{resume.raw_narrative or "No narrative provided"}
+
+Provide JSON response with:
+- technical_skills: list of technical skills with proficiency context
+- domain_expertise: areas of deep expertise/specialization
+- leadership_experience: leadership roles and scope
+- project_complexity: complexity levels of projects managed
+- industry_experience: industries/domains worked in
+- key_achievements: 3-5 most impactful achievements with context
+- soft_skills: communication, collaboration, problem-solving abilities
+- certifications: relevant certifications or recognitions
+- innovation_indicators: evidence of innovation or thought leadership
+
+Be specific to what's actually in the resume, not generic."""
+
+        try:
+            enriched = await self.claude_client.analyze(prompt, temperature=0.2)
+
+            # Extract JSON
+            if "```json" in enriched:
+                json_str = enriched.split("```json")[1].split("```")[0].strip()
+            else:
+                json_str = enriched.split("```")[1].split("```")[0].strip() if "```" in enriched else enriched
+
+            enriched_data = json.loads(json_str)
+        except Exception as e:
+            logger.warning(f"LLM capability extraction failed: {e}")
+            enriched_data = {}
+
         capabilities = {
             "skills": resume.parsed_data.get("skills", []),
             "experience": resume.parsed_data.get("experience", []),
             "achievements": resume.parsed_data.get("achievements", []),
             "education": resume.parsed_data.get("education", []),
             "years_experience": resume.parsed_data.get("years_experience", 0),
+            "raw_narrative": resume.raw_narrative or "",
+            "technical_skills": enriched_data.get("technical_skills", []),
+            "domain_expertise": enriched_data.get("domain_expertise", []),
+            "leadership_experience": enriched_data.get("leadership_experience", []),
+            "key_achievements": enriched_data.get("key_achievements", []),
+            "soft_skills": enriched_data.get("soft_skills", []),
         }
 
         return capabilities
@@ -228,12 +267,12 @@ Example format:
         candidate_capabilities: dict,
         target_expectations: dict,
     ) -> dict:
-        """Identify skill gaps and weakness areas.
+        """Identify skill gaps and weakness areas with detailed analysis.
 
         Returns:
             Dict with missing_capabilities, weakness_areas, strength_summary
         """
-        logger.debug("Analyzing capability gaps")
+        logger.debug("Analyzing capability gaps with deep analysis")
 
         candidate_skills = set(candidate_capabilities.get("skills", []))
         required_skills = set(target_expectations.get("required_skills", []))
@@ -243,28 +282,41 @@ Example format:
         missing_from_required = required_skills - candidate_skills
         missing_from_nice = nice_to_have - candidate_skills
 
-        prompt = f"""Analyze the skill gaps between a candidate and a target role.
+        prompt = f"""Perform a detailed gap analysis between a candidate and a {target_expectations.get('typical_years_experience', 3)}-year {target_expectations.get('title', 'target role')}.
 
-Candidate's skills: {list(candidate_skills)}
-Required for role: {list(required_skills)}
-Nice-to-have for role: {list(nice_to_have)}
+CANDIDATE PROFILE:
+- Technical Skills: {candidate_capabilities.get('technical_skills', candidate_skills)}
+- Domain Expertise: {candidate_capabilities.get('domain_expertise', [])}
+- Leadership Experience: {candidate_capabilities.get('leadership_experience', [])}
+- Key Achievements: {candidate_capabilities.get('key_achievements', [])}
+- Years Experience: {candidate_capabilities.get('years_experience', 0)}
+- Soft Skills: {candidate_capabilities.get('soft_skills', [])}
 
-Provide a JSON response with:
-- missing_critical: list of missing required skills (with importance, description, how_to_improve)
-- weakness_areas: list of areas where candidate is weaker than ideal (with importance, description, how_to_improve)
-- strengths: 2-3 sentence summary of candidate's strongest areas
+TARGET ROLE REQUIREMENTS:
+- Required Skills: {list(required_skills)}
+- Nice-to-Have Skills: {list(nice_to_have)}
+- Key Competencies: {target_expectations.get('key_competencies', [])}
 
-Example format:
+Analyze and provide JSON with:
+1. missing_critical: Required skills they lack - for EACH, explain why it matters for this role and specific learning path
+2. weakness_areas: Skills they have but are below target level - explain gaps and development timeline
+3. strengths: Detailed 3-4 sentence analysis of their strongest areas relative to this role
+4. readiness_assessment: Overall assessment of readiness for role (0-100 score)
+5. transition_path: Specific 6-12 month path to close gaps
+
+Format:
 {{
   "missing_critical": [
-    {{"capability": "Kubernetes", "importance": "high", "description": "...", "how_to_improve": "..."}}
+    {{"capability": "X", "importance": "high/medium", "description": "detailed context", "why_for_role": "specific to role", "how_to_improve": "specific learning path", "timeline_months": 3}}
   ],
   "weakness_areas": [...],
-  "strengths": "..."
+  "strengths": "...",
+  "readiness_assessment": 70,
+  "transition_path": "..."
 }}"""
 
         try:
-            result_text = await self.claude_client.analyze(prompt, temperature=0.3)
+            result_text = await self.claude_client.analyze(prompt, temperature=0.2)
 
             # Extract JSON
             if "```json" in result_text:
@@ -274,20 +326,26 @@ Example format:
 
             data = json.loads(json_str)
 
-            missing_items = [
-                {
-                    "capability": gap,
-                    "importance": "high" if gap in missing_from_required else "medium",
-                    "description": f"Missing skill: {gap}",
-                    "how_to_improve": f"Learn and practice {gap} through projects and courses",
-                }
-                for gap in missing_from_required
-            ]
+            # Use LLM-provided gaps or generate from analysis
+            missing_items = data.get("missing_critical", [])
+            if not missing_items:
+                # Fallback: generate from gaps if LLM didn't return
+                missing_items = [
+                    {
+                        "capability": gap,
+                        "importance": "high" if gap in missing_from_required else "medium",
+                        "description": f"Missing skill: {gap}",
+                        "how_to_improve": f"Learn and practice {gap} through projects and courses",
+                    }
+                    for gap in missing_from_required
+                ]
 
             return {
                 "missing": missing_items,
                 "weakness": data.get("weakness_areas", []),
                 "strengths": data.get("strengths", "Strong foundation in core skills"),
+                "readiness": data.get("readiness_assessment", 65),
+                "transition_path": data.get("transition_path", ""),
             }
 
         except Exception as exc:
@@ -297,8 +355,8 @@ Example format:
                 {
                     "capability": skill,
                     "importance": "high",
-                    "description": f"Missing required skill",
-                    "how_to_improve": f"Develop {skill} expertise",
+                    "description": f"Missing required skill for this role",
+                    "how_to_improve": f"Develop {skill} expertise through courses and project work",
                 }
                 for skill in missing_from_required
             ]
@@ -306,7 +364,9 @@ Example format:
             return {
                 "missing": missing_items,
                 "weakness": [],
-                "strengths": "Experienced with core technologies",
+                "strengths": f"Experienced with {len(candidate_skills)} relevant technologies",
+                "readiness": 60,
+                "transition_path": "",
             }
 
     async def _find_matching_positions(
@@ -315,12 +375,12 @@ Example format:
         candidate_capabilities: dict,
         target_seniority: str,
     ) -> list[dict]:
-        """Find best-matching positions in database.
+        """Find best-matching positions with detailed analysis.
 
         Returns:
-            List of position_id, scores, why_fit explanations
+            List of position_id, scores, why_fit/why_not_fit explanations
         """
-        logger.debug("Finding matching positions")
+        logger.debug("Finding matching positions with detailed analysis")
 
         # Get all active positions
         stmt = select(Position).where(Position.status == "open").limit(50)
@@ -332,40 +392,82 @@ Example format:
 
         matches = []
         for position in positions:
-            # Compute matching scores using existing assessment infrastructure
             try:
-                # For now, compute semantic score based on description similarity
-                semantic_score = 70  # Default baseline
+                # Perform deep analysis of position fit
+                analysis_prompt = f"""Analyze fit between candidate and position. Be specific and detailed.
 
-                if position.description:
-                    # Use semantic matching on JD description
-                    try:
+CANDIDATE:
+- Technical Skills: {candidate_capabilities.get('technical_skills', [])}
+- Domain Expertise: {candidate_capabilities.get('domain_expertise', [])}
+- Leadership: {candidate_capabilities.get('leadership_experience', [])}
+- Achievements: {candidate_capabilities.get('key_achievements', [])}
+- Years Experience: {candidate_capabilities.get('years_experience', 0)}
+
+POSITION:
+- Title: {position.title}
+- Description: {position.description or 'No description'}
+- Seniority: {target_seniority}
+
+Provide JSON with:
+- match_score: 0-100 based on skill alignment and experience
+- why_fit: 3-4 specific reasons they ARE a good fit (concrete examples from their background)
+- why_not_fit: 2-3 specific gaps or concerns (concrete)
+- aligned_capabilities: 3-5 of their skills that match this role
+- missing_for_role: 2-3 skills needed for this role
+- growth_potential: Will this role help them grow toward their goals? How?
+
+{{
+  "match_score": 75,
+  "why_fit": "...",
+  "why_not_fit": "...",
+  "aligned_capabilities": [...],
+  "missing_for_role": [...],
+  "growth_potential": "..."
+}}"""
+
+                result_text = await self.claude_client.analyze(analysis_prompt, temperature=0.2)
+
+                # Extract JSON
+                if "```json" in result_text:
+                    json_str = result_text.split("```json")[1].split("```")[0].strip()
+                else:
+                    json_str = result_text.split("```")[1].split("```")[0].strip() if "```" in result_text else result_text
+
+                analysis = json.loads(json_str)
+
+                # Semantic score for additional signal
+                semantic_score = 70
+                try:
+                    if position.description:
                         result = semantic_score(
-                            resume.raw_narrative or "",
+                            candidate_capabilities.get("raw_narrative", ""),
                             position.description
                         )
                         semantic_score = result.get("combined_score", 70)
-                    except Exception as e:
-                        logger.debug(f"Semantic scoring failed for position {position.id}: {e}")
-                        semantic_score = 70
+                except Exception as e:
+                    logger.debug(f"Semantic scoring failed for position {position.id}: {e}")
 
-                # Traditional ATS score based on keyword matching
-                ats_score = 75  # Baseline
-
-                # Overall match score (70% semantic + 30% ATS)
-                match_score = int(semantic_score * 0.7 + ats_score * 0.3)
+                # Blend LLM analysis with semantic score
+                match_score = analysis.get("match_score", 65)
+                final_score = int(match_score * 0.6 + semantic_score * 0.4)
 
                 match_data = {
                     "position_id": position.id,
                     "title": position.title,
-                    "score": match_score,
+                    "company": position.company_id,
+                    "score": final_score,
                     "semantic_score": semantic_score,
-                    "why_fit": f"Alignment with {position.title} requirements",
+                    "analysis_score": match_score,
+                    "why_fit": analysis.get("why_fit", f"Matches {position.title} requirements"),
+                    "why_not_fit": analysis.get("why_not_fit", ""),
+                    "aligned_capabilities": analysis.get("aligned_capabilities", []),
+                    "missing_for_role": analysis.get("missing_for_role", []),
+                    "growth_potential": analysis.get("growth_potential", ""),
                 }
                 matches.append(match_data)
 
             except Exception as exc:
-                logger.warning(f"Error scoring position {position.id}: {exc}")
+                logger.warning(f"Error analyzing position {position.id}: {exc}")
                 continue
 
         # Sort by score descending, take top matches
@@ -378,29 +480,53 @@ Example format:
         target_expectations: dict,
         target_role: str,
     ) -> list[dict]:
-        """Generate actionable CV improvement suggestions.
+        """Generate specific, actionable CV improvement suggestions with examples.
 
         Returns:
             List of CVAnalysisRecommendation objects (as dicts for JSONB)
         """
-        logger.debug("Generating CV improvement suggestions")
+        logger.debug("Generating detailed CV improvement suggestions")
 
-        prompt = f"""Generate specific, actionable CV improvements for a candidate targeting a {target_role} role.
+        prompt = f"""Generate specific, detailed CV improvement suggestions targeting a {target_role} role.
 
-Candidate's current skills: {candidate_capabilities.get('skills', [])}
-Required skills for role: {target_expectations.get('required_skills', [])}
-Key competencies: {target_expectations.get('key_competencies', [])}
+CURRENT CV:
+{candidate_capabilities.get('raw_narrative', '')}
 
-Provide JSON with improvement suggestions in these categories:
-1. skills: skills to add or highlight
-2. keywords: industry keywords to incorporate
-3. achievements: how to reword achievements
-4. structure: structural improvements to CV
+CANDIDATE PROFILE:
+- Current Skills: {candidate_capabilities.get('technical_skills', [])}
+- Key Achievements: {candidate_capabilities.get('key_achievements', [])}
+- Years Experience: {candidate_capabilities.get('years_experience', 0)}
 
-Response format:
+TARGET ROLE REQUIREMENTS:
+- Required Skills: {target_expectations.get('required_skills', [])}
+- Key Competencies: {target_expectations.get('key_competencies', [])}
+- Growth Areas in Role: {target_expectations.get('growth_areas', [])}
+
+Provide detailed JSON with 8-10 actionable suggestions in categories:
+1. skills_to_highlight: Emphasize existing skills relevant to role
+2. skills_to_add: Skills to add/develop
+3. keywords_missing: Industry keywords to incorporate
+4. achievement_reframing: How to reword achievements for more impact
+5. structure_improvements: CV format/organization improvements
+
+For EACH suggestion provide:
+- category: one of above
+- suggestion: What to change
+- priority: high/medium/low
+- current_example: What they currently have (if applicable)
+- suggested_example: How to improve it with SPECIFIC example
+- why_it_matters: Why this helps for the target role
+
 {{
   "suggestions": [
-    {{"category": "skills", "suggestion": "...", "priority": "high", "example": "..."}},
+    {{
+      "category": "skills_to_highlight",
+      "suggestion": "Emphasize architecture experience",
+      "priority": "high",
+      "current_example": "Designed system architecture",
+      "suggested_example": "Designed and implemented microservices architecture supporting 50k+ daily active users, improving system latency by 40%",
+      "why_it_matters": "Target role values architects who can demonstrate impact at scale"
+    }},
     ...
   ]
 }}"""
@@ -421,53 +547,64 @@ Response format:
             logger.error(f"Failed to generate CV improvements: {exc}")
             # Return basic improvements
             required = set(target_expectations.get("required_skills", []))
-            current = set(candidate_capabilities.get("skills", []))
+            current = set(candidate_capabilities.get("technical_skills", []))
             missing = required - current
 
             return [
                 {
-                    "category": "skills",
-                    "suggestion": f"Add {skill} to your skills section",
+                    "category": "skills_to_add",
+                    "suggestion": f"Add {skill} expertise to your profile",
                     "priority": "high",
-                    "example": f"Include {skill} in your technical skills with proficiency level",
+                    "suggested_example": f"Add '{skill}' to your technical skills section with proficiency level",
+                    "why_it_matters": f"{skill} is a core requirement for {target_role}",
                 }
                 for skill in list(missing)[:3]
             ] + [
                 {
-                    "category": "keywords",
-                    "suggestion": "Incorporate industry-relevant keywords",
+                    "category": "keywords_missing",
+                    "suggestion": "Incorporate industry keywords for this role",
                     "priority": "medium",
-                    "example": f"Use terms like '{', '.join(target_expectations.get('key_competencies', [])[:3])}' in your descriptions",
+                    "suggested_example": f"Use terms like '{', '.join(target_expectations.get('key_competencies', [])[:3])}' throughout your CV",
+                    "why_it_matters": "These keywords help recruiters find you for this type of role",
                 }
             ]
 
     async def _analyze_trajectory(self, resume: Resume, capabilities: dict) -> str:
-        """Analyze candidate's career trajectory and patterns.
+        """Analyze career trajectory with deep context from resume.
 
         Returns:
             Text narrative of trajectory analysis
         """
-        logger.debug("Analyzing career trajectory")
+        logger.debug("Analyzing career trajectory in detail")
 
-        prompt = f"""Analyze the career trajectory based on this profile:
-Experience: {capabilities.get('years_experience', 0)} years
-Skills: {', '.join(capabilities.get('skills', [])[:10])}
-Education: {capabilities.get('education', [])}
+        prompt = f"""Analyze the career trajectory from this resume:
 
-Provide a 2-3 sentence analysis of:
-1. Career growth pattern
-2. Stability and progression
-3. Any notable shifts or developments
+RESUME:
+{capabilities.get('raw_narrative', '')}
 
-Be concise and insightful."""
+PROFILE SUMMARY:
+- Years Experience: {capabilities.get('years_experience', 0)}
+- Technical Skills: {capabilities.get('technical_skills', [])}
+- Domain Expertise: {capabilities.get('domain_expertise', [])}
+- Leadership Experience: {capabilities.get('leadership_experience', [])}
+- Key Achievements: {capabilities.get('key_achievements', [])}
+
+Provide a detailed 4-6 sentence analysis covering:
+1. Career progression pattern and growth trajectory
+2. Stability, role progression, and advancement
+3. Notable transitions, shifts, or specializations
+4. Overall career arc and maturity level
+5. Readiness for next-level roles
+
+Be specific to their actual background, not generic."""
 
         try:
-            result = await self.claude_client.analyze(prompt, temperature=0.3)
+            result = await self.claude_client.analyze(prompt, temperature=0.2)
             return result.strip()
         except Exception as exc:
             logger.error(f"Failed to analyze trajectory: {exc}")
             years = capabilities.get('years_experience', 0)
-            return f"Professional with {years} years of experience showing consistent skill development in core technologies."
+            return f"Professional with {years} years of progressive experience showing consistent skill development and advancement through leadership roles."
 
     async def _assess_market_positioning(
         self,
@@ -475,28 +612,41 @@ Be concise and insightful."""
         target_role: str,
         target_seniority: str,
     ) -> str:
-        """Assess how candidate compares to market for target role.
+        """Assess market positioning with competitive analysis.
 
         Returns:
             Text narrative of market positioning
         """
-        logger.debug("Assessing market positioning")
+        logger.debug("Assessing market positioning and competitiveness")
 
-        prompt = f"""Compare a {target_seniority} {target_role} candidate to typical market standards.
+        prompt = f"""Provide a detailed market assessment for this candidate targeting a {target_seniority} {target_role} role.
 
-Candidate profile:
-- Years of experience: {capabilities.get('years_experience', 0)}
-- Key skills: {', '.join(capabilities.get('skills', [])[:8])}
+CANDIDATE PROFILE:
+- Years of Experience: {capabilities.get('years_experience', 0)}
+- Technical Skills: {capabilities.get('technical_skills', [])}
+- Domain Expertise: {capabilities.get('domain_expertise', [])}
+- Leadership: {capabilities.get('leadership_experience', [])}
+- Soft Skills: {capabilities.get('soft_skills', [])}
+- Key Achievements: {capabilities.get('key_achievements', [])}
 
-Provide a 2-3 sentence assessment of how they compare to market for this seniority level.
-Focus on: strengths relative to market, areas that are above/below average."""
+Provide a detailed 5-7 sentence market assessment covering:
+1. How they stack up against typical {target_seniority} level in market
+2. Relative strengths (what makes them above-market)
+3. Relative weaknesses or gaps vs market averages
+4. Unique differentiators or unique strengths
+5. Competitive positioning for this role type
+6. Salary/opportunity range they should target
+7. Which company types/industries would value them most
+
+Be specific, comparative, and actionable."""
 
         try:
-            result = await self.claude_client.analyze(prompt, temperature=0.3)
+            result = await self.claude_client.analyze(prompt, temperature=0.2)
             return result.strip()
         except Exception as exc:
             logger.error(f"Failed to assess market positioning: {exc}")
-            return f"Candidate demonstrates relevant experience for a {target_seniority} {target_role} position with aligned technical skills."
+            years = capabilities.get('years_experience', 0)
+            return f"Candidate with {years} years of experience demonstrates competitive positioning for {target_seniority}-level {target_role} roles, with relevant technical skills and industry experience."
 
     async def _identify_growth_opportunities(
         self,
@@ -504,31 +654,47 @@ Focus on: strengths relative to market, areas that are above/below average."""
         target_expectations: dict,
         career_focus_areas: list[str] | None,
     ) -> list[str]:
-        """Identify strategic growth opportunities.
+        """Identify strategic growth opportunities aligned with career goals.
 
         Returns:
             List of growth opportunity descriptions
         """
-        logger.debug("Identifying growth opportunities")
+        logger.debug("Identifying strategic growth opportunities")
 
-        focus_text = f"Career focus areas: {', '.join(career_focus_areas)}" if career_focus_areas else ""
+        focus_text = f"Candidate's career focus areas: {', '.join(career_focus_areas)}\n" if career_focus_areas else ""
 
-        prompt = f"""Identify 3-5 strategic growth opportunities for a candidate.
+        prompt = f"""Identify 5-7 strategic growth opportunities specific to this candidate's profile and goals.
 
-Current skills: {capabilities.get('skills', [])}
-Target role requirements: {target_expectations.get('required_skills', [])}
-Growth areas in target role: {target_expectations.get('growth_areas', [])}
+CURRENT PROFILE:
+- Technical Skills: {capabilities.get('technical_skills', [])}
+- Domain Expertise: {capabilities.get('domain_expertise', [])}
+- Leadership: {capabilities.get('leadership_experience', [])}
+- Years Experience: {capabilities.get('years_experience', 0)}
+
+TARGET ROLE CONTEXT:
+- Required Skills: {target_expectations.get('required_skills', [])}
+- Growth Areas in Role: {target_expectations.get('growth_areas', [])}
+- Key Competencies: {target_expectations.get('key_competencies', [])}
+
 {focus_text}
 
-For each opportunity, explain:
-1. What skill/knowledge to develop
-2. Why it would be valuable
-3. How it opens new doors
+For EACH opportunity (returned as numbered list), explain:
+1. What specific skill/knowledge to develop
+2. Why it matters for their target role and career
+3. Concrete first steps or learning path
+4. Expected timeline
+5. How it opens new doors/opportunities
 
-Return as a list of 1-2 sentence opportunities."""
+Make recommendations specific to their actual background and goals, not generic.
+
+Return as numbered list like:
+1. [opportunity title]: [2-3 sentence explanation with why + timeline + impact]
+2. [opportunity title]: ...
+
+Focus on depth, specificity, and actionability."""
 
         try:
-            result_text = await self.claude_client.analyze(prompt, temperature=0.3)
+            result_text = await self.claude_client.analyze(prompt, temperature=0.2)
 
             # Parse response as list of opportunities
             opportunities = []
@@ -536,27 +702,32 @@ Return as a list of 1-2 sentence opportunities."""
                 line = line.strip()
                 if line and not line.startswith('#'):
                     # Remove common list markers
-                    for marker in ['- ', '* ', '+ ', '1. ', '2. ', '3. ', '4. ', '5. ']:
+                    for marker in ['- ', '* ', '+ ', '1. ', '2. ', '3. ', '4. ', '5. ', '6. ', '7. ']:
                         if line.startswith(marker):
                             line = line[len(marker):].strip()
                     if line:
                         opportunities.append(line)
 
-            return opportunities[:5] if opportunities else self._get_default_opportunities()
+            return opportunities[:7] if opportunities else self._get_default_opportunities(target_expectations)
 
         except Exception as exc:
             logger.error(f"Failed to identify growth opportunities: {exc}")
-            return self._get_default_opportunities()
+            return self._get_default_opportunities(target_expectations)
 
-    def _get_default_opportunities(self) -> list[str]:
-        """Return default growth opportunities."""
-        return [
-            "Develop advanced system design skills to handle scalability challenges",
-            "Learn cloud architecture (AWS/GCP/Azure) for modern infrastructure",
-            "Master containerization (Docker/Kubernetes) for deployment",
-            "Build expertise in emerging technologies in your field",
-            "Develop leadership and mentoring skills for career progression",
+    def _get_default_opportunities(self, target_expectations: dict) -> list[str]:
+        """Return relevant growth opportunities based on target role."""
+        role_growth = target_expectations.get('growth_areas', [])
+        competencies = target_expectations.get('key_competencies', [])
+
+        opportunities = [
+            f"Master {competencies[0] if competencies else 'advanced'} to become a leader in this domain - opens doors to senior/staff roles",
+            f"Develop expertise in {role_growth[0] if role_growth else 'emerging technologies'} that are reshaping the industry",
+            "Build cross-functional leadership skills through mentoring and knowledge-sharing",
+            "Specialize in a high-demand niche (e.g., performance optimization, security, architecture)",
+            "Develop business acumen alongside technical skills for product/strategy roles",
+            "Contribute to open source or speaking to build thought leadership and reputation",
         ]
+        return opportunities[:5]
 
 
 async def analyze_candidate_cv(
