@@ -64,9 +64,21 @@ export default function CVAnalysisResultsPage({
       }
     };
 
-    // Poll if status is not completed
-    const interval = setInterval(fetchResults, 3000);
+    // Initial fetch
     fetchResults();
+
+    // Only poll if status is not completed
+    const interval = setInterval(async () => {
+      const response = await fetch(`/api/proxy/candidates/cv-analysis/${params.id}`);
+      if (response.ok) {
+        const result = await response.json();
+        setData(result);
+        // Stop polling once completed
+        if (result.status === 'completed') {
+          clearInterval(interval);
+        }
+      }
+    }, 3000);
 
     return () => clearInterval(interval);
   }, [params.id]);
