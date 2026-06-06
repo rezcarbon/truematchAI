@@ -23,23 +23,11 @@ export function NotificationCenter() {
   const [loading, setLoading] = useState(true);
   const [isOpen, setIsOpen] = useState(false);
 
-  // Load notifications on mount
+  // Load notifications on mount (disabled - endpoint not available yet)
   useEffect(() => {
-    const loadNotifications = async () => {
-      try {
-        const response = await fetch('/api/proxy/notifications');
-        if (response.ok) {
-          const data = await response.json();
-          setNotifications(data.notifications || []);
-        }
-      } catch (err) {
-        console.error('Failed to load notifications:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadNotifications();
+    // TODO: Implement notifications endpoint on backend at /api/v1/notifications
+    // For now, just mark loading as complete
+    setLoading(false);
   }, []);
 
   // WebSocket real-time notifications (disabled - endpoint not available yet)
@@ -66,39 +54,24 @@ export function NotificationCenter() {
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
+  // Notification handlers (disabled - endpoints not available yet)
   const handleMarkAsRead = async (notificationId: string) => {
-    try {
-      await fetch(`/api/proxy/notifications/${notificationId}/read`, {
-        method: 'PATCH',
-      });
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
-      );
-    } catch (err) {
-      addToast('Failed to mark notification as read', 'error');
-    }
+    // TODO: Implement /api/v1/notifications/{id}/read endpoint
+    setNotifications((prev) =>
+      prev.map((n) => (n.id === notificationId ? { ...n, read: true } : n))
+    );
   };
 
   const handleMarkAllAsRead = async () => {
-    try {
-      await fetch('/api/proxy/notifications/read-all', { method: 'POST' });
-      setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-      addToast('All notifications marked as read', 'success');
-    } catch (err) {
-      addToast('Failed to mark all as read', 'error');
-    }
+    // TODO: Implement /api/v1/notifications/read-all endpoint
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    addToast('All notifications marked as read', 'success');
   };
 
   const handleDelete = async (notificationId: string) => {
-    try {
-      await fetch(`/api/proxy/notifications/${notificationId}`, {
-        method: 'DELETE',
-      });
-      setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
-      addToast('Notification deleted', 'success');
-    } catch (err) {
-      addToast('Failed to delete notification', 'error');
-    }
+    // TODO: Implement /api/v1/notifications/{id} DELETE endpoint
+    setNotifications((prev) => prev.filter((n) => n.id !== notificationId));
+    addToast('Notification deleted', 'success');
   };
 
   return (
