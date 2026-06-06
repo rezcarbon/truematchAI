@@ -131,8 +131,13 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
                 },
             )
 
-            # Run async analysis
-            result = asyncio.run(_run_analysis(analysis_req, request_id))
+            # Run async analysis - create a fresh event loop for Celery worker
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            try:
+                result = loop.run_until_complete(_run_analysis(analysis_req, request_id))
+            finally:
+                loop.close()
 
             # Persist the result in the sync database
             sync_db.add(result)
