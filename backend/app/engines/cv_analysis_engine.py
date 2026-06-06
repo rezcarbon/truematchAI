@@ -17,7 +17,7 @@ from app.models.resume import Resume
 from app.models.user import User
 from app.engines.client import ClaudeClient
 from app.engines.intake import parse_resume, analyze_jd
-from app.engines.semantic_match import compute_semantic_score
+from app.engines.semantic_match import semantic_score
 from app.engines.reasoning import assess_capability
 
 logger = logging.getLogger("truematch.cv_analysis")
@@ -340,10 +340,11 @@ Example format:
                 if position.description:
                     # Use semantic matching on JD description
                     try:
-                        semantic_score = await compute_semantic_score(
-                            resume.parsed_data.get("skills", []),
-                            position.parsed_requirements or {}
+                        result = semantic_score(
+                            resume.raw_narrative or "",
+                            position.description
                         )
+                        semantic_score = result.get("combined_score", 70)
                     except Exception as e:
                         logger.debug(f"Semantic scoring failed for position {position.id}: {e}")
                         semantic_score = 70
