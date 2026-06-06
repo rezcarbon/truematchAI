@@ -1,8 +1,9 @@
 """
-AI-Native Assessment Job Queue - Phase A: Autonomy Layer
+AI-Native Assessment Job Queue - Phase A+B+C+D Integration
 
 Manages queueing and processing of assessment jobs.
 Routes jobs through decision engine and notification system.
+Integrates provenance tracking (C) and learning loop (D).
 Handles retries, failures, and monitoring.
 """
 import asyncio
@@ -15,6 +16,9 @@ from typing import Any, Callable, Dict, List, Optional
 from uuid import UUID, uuid4
 
 from app.config import settings
+from app.workers.provenance_learning_orchestrator import (
+    get_provenance_learning_orchestrator,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -186,6 +190,8 @@ class AssessmentProcessor:
     2. Governance gate validation
     3. Decision making
     4. Notification dispatch
+    5. Provenance tracking (Phase C)
+    6. Learning integration (Phase D)
     """
 
     def __init__(
@@ -195,12 +201,16 @@ class AssessmentProcessor:
         governance_validator: Optional[Callable] = None,
         decision_engine: Optional[Callable] = None,
         notification_dispatcher: Optional[Callable] = None,
+        provenance_learning_orchestrator: Optional[Any] = None,
     ):
         self.queue = queue
         self.assessment_executor = assessment_executor
         self.governance_validator = governance_validator
         self.decision_engine = decision_engine
         self.notification_dispatcher = notification_dispatcher
+        self.provenance_learning = (
+            provenance_learning_orchestrator or get_provenance_learning_orchestrator()
+        )
         self.is_running = False
 
     async def process_job(self, job: AssessmentJob) -> Dict[str, Any]:
@@ -212,7 +222,10 @@ class AssessmentProcessor:
         2. Validate governance gates
         3. Apply decision logic
         4. Send notification
+        5. Create provenance record (Phase C)
+        6. Process training feedback (Phase D)
         """
+        start_time = datetime.utcnow()
         try:
             logger.info(f"Processing job: {job.job_id}")
 
@@ -238,17 +251,72 @@ class AssessmentProcessor:
                     job.metadata["reason"] = gates_result.get("reason", "Governance gate validation failed")
 
             # Step 3: Apply decision logic
+            decision = "UNKNOWN"
+            decision_reasoning = {}
             if self.decision_engine:
                 decision = await self.decision_engine(job, assessment_result, gates_result)
                 job.metadata["decision"] = decision
                 job.status = JobStatus.DECIDED
+                decision_reasoning = {"decision": decision, "source": "decision_engine"}
 
                 logger.info(f"Decision made: {job.job_id} -> {decision}")
 
             # Step 4: Send notification
+            notifications_sent = []
             if self.notification_dispatcher:
                 await self.notification_dispatcher(job)
                 job.status = JobStatus.NOTIFIED
+                notifications_sent = ["notification_service"]
+
+            # Step 5: Create provenance record (Phase C)
+            # Get CV and JD content for input hashing
+            cv_content = job.metadata.get("cv_content", "")
+            jd_content = job.metadata.get("jd_content", job.jd_text or "")
+
+            execution_time_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            assessment_result["execution_time_ms"] = execution_time_ms
+
+            if self.provenance_learning:
+                try:
+                    provenance_result = await self.provenance_learning.create_full_provenance_record(
+                        assessment_id=job.job_id,
+                        cv_content=cv_content,
+                        jd_content=jd_content,
+                        assessment_inputs={
+                            "cv_filename": job.metadata.get("cv_filename"),
+                            "jd_id": job.jd_id,
+                            "user_id": job.user_id,
+                        },
+                        assessment_results=assessment_result,
+                        governance_results=gates_result or {},
+                        decision=decision,
+                        decision_reasoning=decision_reasoning,
+                        notifications_sent=notifications_sent,
+                        actor=job.user_id or "system",
+                    )
+                    job.metadata["provenance"] = provenance_result
+                    logger.info(f"Provenance record created: {job.job_id}")
+                except Exception as e:
+                    logger.error(f"Error creating provenance record: {e}")
+                    # Don't fail the job if provenance tracking fails
+                    job.metadata["provenance_error"] = str(e)
+
+            # Step 6: Process training feedback (Phase D)
+            if job.metadata.get("training_feedback") and self.provenance_learning:
+                try:
+                    feedback_type = job.metadata["training_feedback"].get("type")
+                    feedback_data = job.metadata["training_feedback"].get("data")
+
+                    learning_result = await self.provenance_learning.process_training_and_learn(
+                        feedback_type=feedback_type,
+                        feedback_data=feedback_data,
+                        source="api",
+                    )
+                    job.metadata["learning"] = learning_result
+                    logger.info(f"Training feedback processed: {job.job_id}")
+                except Exception as e:
+                    logger.error(f"Error processing training feedback: {e}")
+                    job.metadata["learning_error"] = str(e)
 
             # Mark completed
             await self.queue.mark_completed(job.job_id, job.metadata)

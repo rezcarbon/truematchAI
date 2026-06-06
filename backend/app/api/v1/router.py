@@ -10,6 +10,7 @@ from app.api.v1 import (
     ats,
     auth,
     bulk_actions,
+    compliance,
     cv_analysis,
     decisions,
     dei_analytics,
@@ -54,3 +55,5 @@ api_router.include_router(uploads.router)
 api_router.include_router(scrapers.router)
 # Real-time WebSocket updates
 api_router.include_router(websocket_api.router)
+# Phase C+D: Provenance, Audit Trail, Reproducibility, Learning Integration
+api_router.include_router(compliance.router)
