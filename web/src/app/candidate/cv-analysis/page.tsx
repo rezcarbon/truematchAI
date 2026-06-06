@@ -37,7 +37,9 @@ export default function CVAnalysisPage() {
     const fetchResumes = async () => {
       try {
         setLoadingResumes(true);
-        const response = await fetch('/api/proxy/files/resumes');
+        // Use backend API directly (port 8000)
+        const backendUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+        const response = await fetch(`${backendUrl}/api/v1/resumes`);
         if (!response.ok) {
           throw new Error('Failed to fetch resumes');
         }
@@ -79,7 +81,9 @@ export default function CVAnalysisPage() {
     setLoading(true);
 
     try {
-      const response = await fetch('/api/proxy/candidates/cv-analysis', {
+      // Use backend API directly (port 8000)
+      const backendUrl = `${window.location.protocol}//${window.location.hostname}:8000`;
+      const response = await fetch(`${backendUrl}/api/v1/cv-analysis`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
