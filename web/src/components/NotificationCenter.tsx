@@ -42,7 +42,7 @@ export function NotificationCenter() {
     loadNotifications();
   }, []);
 
-  // WebSocket real-time notifications
+  // WebSocket real-time notifications (disabled - endpoint not available yet)
   useNotificationWebSocket(
     (message) => {
       if (message.type !== 'pong' && message.type !== 'connected') {
@@ -61,7 +61,7 @@ export function NotificationCenter() {
         addToast(newNotification.title, 'info');
       }
     },
-    true
+    false  // Disabled until WebSocket endpoint is available
   );
 
   const unreadCount = notifications.filter((n) => !n.read).length;
