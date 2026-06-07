@@ -103,6 +103,7 @@ class CVAnalysisEngine:
             candidate_capabilities,
             target_expectations,
             request.career_focus_areas,
+            request.target_role,
         )
 
         # Create result
@@ -529,8 +530,15 @@ Assess (4-5 sentences): market standing, strengths, gaps, competitive positionin
         capabilities: dict,
         target_expectations: dict,
         career_focus_areas: list[str] | None,
+        target_role: str,
     ) -> list[str]:
         """Identify strategic growth opportunities aligned with career goals.
+
+        Args:
+            capabilities: Candidate capability profile
+            target_expectations: Target role expectations
+            career_focus_areas: User's career focus areas
+            target_role: The target role title
 
         Returns:
             List of growth opportunity descriptions
