@@ -65,7 +65,7 @@ def _audit(db: Session, request_id: uuid.UUID, event_type: str, data: dict) -> N
     )
 
 
-async def _run_analysis(
+async def _run_analysis_async(
     analysis_req: CVAnalysisRequest,
     request_id: str,
 ) -> dict:
@@ -78,16 +78,23 @@ async def _run_analysis(
     Returns:
         Dict with analysis results
     """
-    # Create a new async session for this analysis
-    async_session_factory = _async_session_factory()
-    async with async_session_factory() as async_db:
-        # Initialize Claude client
-        claude_client = ClaudeClient(api_key=settings.anthropic_api_key)
+    # Create a FRESH async engine & session factory for this thread
+    # This ensures no event loop contamination from parent process
+    async_engine = create_async_engine(settings.database_url, pool_pre_ping=True, future=True)
+    AsyncSessionFactory = async_sessionmaker(bind=async_engine, expire_on_commit=False)
 
-        # Run the analysis engine
-        result = await analyze_candidate_cv(async_db, claude_client, analysis_req)
+    try:
+        async with AsyncSessionFactory() as async_db:
+            # Initialize Claude client
+            claude_client = ClaudeClient(api_key=settings.anthropic_api_key)
 
-        return result
+            # Run the analysis engine
+            result = await analyze_candidate_cv(async_db, claude_client, analysis_req)
+
+            return result
+    finally:
+        # Clean up the engine
+        await async_engine.dispose()
 
 
 @celery_app.task(name="app.workers.cv_analysis.process_cv_analysis_task", bind=True, max_retries=2)
@@ -137,17 +144,19 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
             def _run_analysis_in_thread():
                 """Run async analysis in a separate thread with its own event loop."""
                 try:
+                    # Create fresh event loop in this thread
                     loop = asyncio.new_event_loop()
                     asyncio.set_event_loop(loop)
                     try:
-                        return loop.run_until_complete(_run_analysis(analysis_req, request_id))
+                        # Run the async analysis with fresh async engine
+                        return loop.run_until_complete(_run_analysis_async(analysis_req, request_id))
                     finally:
                         loop.close()
                 except Exception as e:
                     logger.error(f"Error in analysis thread: {e}", exc_info=True)
                     raise
 
-            # Execute in thread pool to isolate async context
+            # Execute in thread pool to isolate async context completely
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(_run_analysis_in_thread)
                 result = future.result(timeout=600)  # 10 minute timeout
