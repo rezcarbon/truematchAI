@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import uuid
+from concurrent.futures import ThreadPoolExecutor
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
@@ -131,13 +132,25 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
                 },
             )
 
-            # Run async analysis - create a fresh event loop for Celery worker
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-            try:
-                result = loop.run_until_complete(_run_analysis(analysis_req, request_id))
-            finally:
-                loop.close()
+            # Run async analysis in a separate thread to avoid event loop conflicts
+            # ThreadPoolExecutor completely isolates the async context from Celery's sync context
+            def _run_analysis_in_thread():
+                """Run async analysis in a separate thread with its own event loop."""
+                try:
+                    loop = asyncio.new_event_loop()
+                    asyncio.set_event_loop(loop)
+                    try:
+                        return loop.run_until_complete(_run_analysis(analysis_req, request_id))
+                    finally:
+                        loop.close()
+                except Exception as e:
+                    logger.error(f"Error in analysis thread: {e}", exc_info=True)
+                    raise
+
+            # Execute in thread pool to isolate async context
+            with ThreadPoolExecutor(max_workers=1) as executor:
+                future = executor.submit(_run_analysis_in_thread)
+                result = future.result(timeout=600)  # 10 minute timeout
 
             # Persist the result in the sync database
             sync_db.add(result)
@@ -182,7 +195,23 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
                 _audit(sync_db, req_id, "analysis.failed", {"error": str(exc)})
                 sync_db.commit()
 
-            logger.exception("CV analysis failed for %s", request_id)
+            # Log detailed error information for debugging
+            logger.error(
+                "CV analysis failed for %s",
+                request_id,
+                extra={
+                    "error_type": type(exc).__name__,
+                    "error_message": str(exc),
+                    "request_retries": self.request.retries,
+                },
+                exc_info=True,
+            )
 
-            # Retry with exponential backoff
-            raise self.retry(exc=exc, countdown=2 ** self.request.retries)
+            # Retry with exponential backoff (2s, 4s, 8s, then fail)
+            retry_countdown = 2 ** self.request.retries
+            logger.info(
+                "Retrying CV analysis in %s seconds",
+                retry_countdown,
+                extra={"request_id": request_id, "attempt": self.request.retries + 1},
+            )
+            raise self.retry(exc=exc, countdown=retry_countdown)
