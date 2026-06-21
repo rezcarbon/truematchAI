@@ -43,6 +43,8 @@ targets:
           - CFBundleURLName: ai.truematch.app
             CFBundleURLSchemes:
               - truematch
+        NSMicrophoneUsageDescription: TrueMatch uses the microphone so you can dictate messages to the AI assistant.
+        NSSpeechRecognitionUsageDescription: TrueMatch transcribes your voice on-device to fill the message field.
         UIBackgroundModes:
           - remote-notification
           - fetch

@@ -38,6 +38,68 @@ struct AuthTokenResponse: Codable {
     let refreshToken: String
     let expiresIn: Int
     let userId: String
+
+    private enum CodingKeys: String, CodingKey {
+        case accessToken, refreshToken, expiresIn, userId
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        accessToken = try c.decode(String.self, forKey: .accessToken)
+        refreshToken = try c.decode(String.self, forKey: .refreshToken)
+        // The backend's login/refresh response only returns the tokens; user id
+        // and expiry live inside the JWT. Fall back to the access-token claims
+        // (`sub`, `exp`) when the fields aren't sent explicitly so decoding a
+        // valid 200 response never fails.
+        let claims = JWTClaims(accessToken)
+        userId = (try? c.decode(String.self, forKey: .userId)) ?? claims.subject ?? ""
+        if let explicit = try? c.decode(Int.self, forKey: .expiresIn) {
+            expiresIn = explicit
+        } else {
+            expiresIn = claims.secondsUntilExpiry ?? 1800
+        }
+    }
+
+    init(accessToken: String, refreshToken: String, expiresIn: Int, userId: String) {
+        self.accessToken = accessToken
+        self.refreshToken = refreshToken
+        self.expiresIn = expiresIn
+        self.userId = userId
+    }
+}
+
+/// Minimal, dependency-free decoder for the unverified payload claims of a JWT.
+/// Used only to read `sub`/`exp` for local session bookkeeping — never for trust
+/// decisions (the server validates the signature).
+private struct JWTClaims {
+    let subject: String?
+    let secondsUntilExpiry: Int?
+
+    init(_ token: String) {
+        let parts = token.split(separator: ".")
+        guard parts.count >= 2,
+              let payloadData = JWTClaims.base64URLDecode(String(parts[1])),
+              let json = try? JSONSerialization.jsonObject(with: payloadData) as? [String: Any]
+        else {
+            subject = nil
+            secondsUntilExpiry = nil
+            return
+        }
+        subject = json["sub"] as? String
+        if let exp = json["exp"] as? Double {
+            secondsUntilExpiry = max(0, Int(exp - Date().timeIntervalSince1970))
+        } else {
+            secondsUntilExpiry = nil
+        }
+    }
+
+    private static func base64URLDecode(_ s: String) -> Data? {
+        var base64 = s.replacingOccurrences(of: "-", with: "+")
+                      .replacingOccurrences(of: "_", with: "/")
+        let pad = base64.count % 4
+        if pad > 0 { base64 += String(repeating: "=", count: 4 - pad) }
+        return Data(base64Encoded: base64)
+    }
 }
 
 // MARK: - File Models

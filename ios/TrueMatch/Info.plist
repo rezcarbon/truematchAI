@@ -41,6 +41,10 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 	</dict>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>TrueMatch uses the microphone so you can dictate messages to the AI assistant.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>TrueMatch transcribes your voice on-device to fill the message field.</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

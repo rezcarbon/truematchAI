@@ -19,18 +19,46 @@ final class SessionManager {
 
     private init() {}
 
+    // In-memory cache layered over the keychain. The keychain remains the
+    // at-rest store (persists across launches on signed builds), but reads
+    // prefer this process-lifetime cache so the session keeps working even when
+    // a keychain write is unavailable — e.g. unsigned simulator builds without a
+    // keychain-access-group entitlement, where SecItemAdd can silently fail.
+    private var cachedAccessToken: String?
+    private var cachedRefreshToken: String?
+
     // MARK: - Public API
 
     var accessToken: String? {
-        readKeychain(key: accessTokenKey)
+        cachedAccessToken ?? readKeychain(key: accessTokenKey)
     }
 
     var refreshToken: String? {
-        readKeychain(key: refreshTokenKey)
+        cachedRefreshToken ?? readKeychain(key: refreshTokenKey)
     }
 
     var userId: String? {
         UserDefaults.standard.string(forKey: userIdKey)
+    }
+
+    /// The user's role ("candidate" | "recruiter" | "admin"), read from the
+    /// `role` claim of the access-token JWT. Drives role-aware navigation.
+    /// Not a trust boundary — the server authorizes every request.
+    var role: String? {
+        guard let token = accessToken else { return nil }
+        let parts = token.split(separator: ".")
+        guard parts.count >= 2,
+              let data = SessionManager._b64urlDecode(String(parts[1])),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
+        else { return nil }
+        return json["role"] as? String
+    }
+
+    private static func _b64urlDecode(_ s: String) -> Data? {
+        var b = s.replacingOccurrences(of: "-", with: "+").replacingOccurrences(of: "_", with: "/")
+        let pad = b.count % 4
+        if pad > 0 { b += String(repeating: "=", count: 4 - pad) }
+        return Data(base64Encoded: b)
     }
 
     var displayName: String? {
@@ -70,6 +98,8 @@ final class SessionManager {
     }
 
     func saveSession(accessToken: String, refreshToken: String, userId: String, expiresIn: Int) {
+        cachedAccessToken = accessToken
+        cachedRefreshToken = refreshToken
         saveKeychain(key: accessTokenKey, value: accessToken)
         saveKeychain(key: refreshTokenKey, value: refreshToken)
         UserDefaults.standard.set(userId, forKey: userIdKey)
@@ -80,6 +110,8 @@ final class SessionManager {
     }
 
     func clearSession() {
+        cachedAccessToken = nil
+        cachedRefreshToken = nil
         deleteKeychain(key: accessTokenKey)
         deleteKeychain(key: refreshTokenKey)
         UserDefaults.standard.removeObject(forKey: userIdKey)

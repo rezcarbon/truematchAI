@@ -10,11 +10,15 @@ enum AppConfiguration {
     // MARK: - API
 
     enum API {
+        // NOTE: The APIEndpoint URL builder appends "/\(apiVersion)/\(path)", so
+        // this base must end at "/api" (NOT "/api/v1") — otherwise every REST
+        // path resolves to a broken "/api/v1/v1/...". The WebSocket URLs below
+        // are built separately and keep the full "/api/v1" prefix.
         static let baseURL: URL = {
             #if DEBUG
-            return URL(string: "http://127.0.0.1:8000/api/v1")!
+            return URL(string: "http://127.0.0.1:8000/api")!
             #else
-            return URL(string: "https://api.truematch.ai/api/v1")!
+            return URL(string: "https://api.truematch.ai/api")!
             #endif
         }()
 
