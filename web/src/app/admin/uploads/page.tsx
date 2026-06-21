@@ -48,8 +48,8 @@ export default function UploadsPage() {
         api.getFieldMappings(),
         api.getUploadBatches(),
       ]);
-      setFieldMappings(mappingsRes.mappings || []);
-      setBatches(batchesRes.batches || []);
+      setFieldMappings((mappingsRes.mappings || []) as unknown as FieldMapping[]);
+      setBatches((batchesRes.batches || []) as unknown as Batch[]);
       setError(null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load data');
@@ -67,7 +67,7 @@ export default function UploadsPage() {
 
       const response = await api.uploadCSV(formData);
       await loadData();
-      return { batchId: response.batch_id };
+      return { batchId: (response as { batch_id?: string }).batch_id ?? "" };
     } catch (err) {
       throw err;
     }

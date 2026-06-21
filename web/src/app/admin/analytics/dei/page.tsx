@@ -318,15 +318,15 @@ export default function DEIAnalyticsPage() {
             ))}
           </div>
 
-          {analytics.compliance.four_fifths_rule.groups_below_threshold.length > 0 && (
+          {(analytics.compliance.four_fifths_rule.groups_below_threshold as string[]).length > 0 && (
             <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-start gap-2">
                 <AlertTriangle className="h-4 w-4 text-red-600 mt-1" />
                 <div>
                   <p className="font-medium text-sm text-red-900">4/5 Rule Violation</p>
-                  {analytics.compliance.four_fifths_rule.groups_below_threshold.map((group: string) => (
+                  {(analytics.compliance.four_fifths_rule.groups_below_threshold as string[]).map((group: string) => (
                     <p key={group} className="text-xs text-red-700 mt-1">
-                      {group} - below {analytics.compliance.four_fifths_rule.threshold}% threshold
+                      {group} - below {String(analytics.compliance.four_fifths_rule.threshold)}% threshold
                     </p>
                   ))}
                 </div>

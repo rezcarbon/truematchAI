@@ -38,7 +38,7 @@ export default function UploadResultsPage() {
       if (!session || !uploadId) return;
 
       try {
-        const token = (session as Record<string, unknown>)?.accessToken || (session?.user as Record<string, unknown>)?.accessToken;
+        const token = (session as unknown as Record<string, unknown>)?.accessToken || (session?.user as unknown as Record<string, unknown>)?.accessToken;
         if (!token || typeof token !== 'string') throw new Error('No access token');
         const typedToken = token as string;
 

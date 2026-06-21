@@ -36,13 +36,13 @@ export function NotificationCenter() {
       if (message.type !== 'pong' && message.type !== 'connected') {
         // Add new notification to top
         const newNotification: Notification = {
-          id: message.notification_id || `notif-${Date.now()}`,
+          id: (message.notification_id as string) || `notif-${Date.now()}`,
           type: message.type,
-          title: message.title || 'New Notification',
-          message: message.message || '',
+          title: (message.title as string) || 'New Notification',
+          message: (message.message as string) || '',
           timestamp: new Date().toISOString(),
           read: false,
-          action_url: message.action_url,
+          action_url: message.action_url as string | undefined,
         };
 
         setNotifications((prev) => [newNotification, ...prev]);

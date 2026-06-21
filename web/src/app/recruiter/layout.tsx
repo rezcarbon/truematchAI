@@ -3,6 +3,7 @@ import { AppShell, type NavItem } from "@/components/shared/AppShell";
 
 const nav: NavItem[] = [
   { href: "/recruiter/dashboard",      label: "Dashboard" },
+  { href: "/chat",                     label: "AI Assistant" },
   { href: "/recruiter/profile",        label: "Profile" },
   { divider: true },
   { href: "/recruiter/pipeline",       label: "Pipeline" },
@@ -11,6 +12,8 @@ const nav: NavItem[] = [
   { href: "/recruiter/upload-resume",  label: "Upload Resume" },
   { divider: true },
   { href: "/recruiter/compare",        label: "Compare" },
+  { href: "/recruiter/internal-mobility", label: "Internal Mobility" },
+  { href: "/recruiter/transition-metrics", label: "Mandate Impact" },
   { href: "/recruiter/jd-quality",     label: "JD Quality" },
   { href: "/recruiter/jd-simulation",  label: "JD Simulation" },
   { href: "/recruiter/decisions",      label: "Decisions" },

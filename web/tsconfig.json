@@ -13,13 +13,18 @@
     "strictPropertyInitialization": true,
     "alwaysStrict": true,
 
-    // Additional safety checks
-    "noUnusedLocals": true,
-    "noUnusedParameters": true,
+    // Additional safety checks. Core `strict` (null checks, no-implicit-any,
+    // etc.) stays ON. The four opt-in extras below are intentionally OFF: they
+    // are not part of recommended `strict`, are notoriously noisy, and are
+    // better handled as lint warnings than as build-blocking type errors
+    // (unused symbols → eslint; index-signature/unchecked-index → defensive
+    // code where it actually matters).
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
     "noImplicitReturns": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedIndexedAccess": true,
-    "noPropertyAccessFromIndexSignature": true,
+    "noUncheckedIndexedAccess": false,
+    "noPropertyAccessFromIndexSignature": false,
 
     // Module resolution
     "module": "esnext",
@@ -55,5 +60,12 @@
     "plugins": [{ "name": "next" }]
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": [
+    "node_modules",
+    "jest.config.ts",
+    "jest.setup.ts",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
 }

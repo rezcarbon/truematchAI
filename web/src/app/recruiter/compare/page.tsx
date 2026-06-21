@@ -7,6 +7,7 @@ import Link from "next/link";
 import type { PipelineCandidate } from "@/lib/types";
 import { PageHeader } from "@/components/shared/AppShell";
 import { ScoreTrio } from "@/components/shared/ScoreTrio";
+import { GapMatrix } from "@/components/shared/GapMatrix";
 import { MatchTypeBadge } from "@/components/shared/MatchTypeBadge";
 import { GovernanceBadge } from "@/components/shared/GovernanceBadge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,6 +45,18 @@ function CompareContent({ candidates }: { candidates: PipelineCandidate[] }): Re
       <PageHeader
         title="Compare Candidates"
         subtitle="Select 2–4 candidates to compare scores, fit, and governance across roles."
+      />
+
+      {/* Ranked capability-gap overview — hidden gems rise to the top */}
+      <GapMatrix
+        rows={candidates.map((c) => ({
+          id: c.id,
+          label: c.name,
+          sublabel: c.appliedFor,
+          keyword: Math.round(c.traditionalScore),
+          capability: Math.round(c.capabilityScore),
+          verdict: c.matchType,
+        }))}
       />
 
       {/* Selection sidebar + comparison grid */}

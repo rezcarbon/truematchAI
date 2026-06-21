@@ -109,6 +109,11 @@ export interface Assessment {
   jdQuality: JDQuality;
   trajectory: TrajectoryPoint[];
   governance: Governance;
+  /** ISO code of the CV's original language when non-English (an English pivot
+   * was scored). Undefined/"en" for English input. Drives the translation badge. */
+  sourceLanguage?: string;
+  /** ISO code of the job description's original language when non-English. */
+  jdSourceLanguage?: string;
 }
 
 export interface PipelineCandidate {

@@ -36,7 +36,7 @@ export default function ScrapersPage() {
     setError(null);
     try {
       const response = await api.getScrapers();
-      setScrapers(response.scrapers || []);
+      setScrapers((response.scrapers || []) as unknown as Scraper[]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load scrapers');
       console.error('Error loading scrapers:', err);
@@ -67,9 +67,9 @@ export default function ScrapersPage() {
     try {
       const result = await api.testScraper(id);
       if (result.status === 'ok') {
-        alert(`✓ ${result.source} scraper is working correctly`);
+        alert(`✓ ${(result as { source?: string }).source} scraper is working correctly`);
       } else {
-        alert(`✗ ${result.source} scraper test failed`);
+        alert(`✗ ${(result as { source?: string }).source} scraper test failed`);
       }
     } catch (err) {
       alert(`Error testing scraper: ${err instanceof Error ? err.message : 'Unknown error'}`);

@@ -57,11 +57,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setThemeState(newTheme);
   };
 
-  // Don't render until mounted to avoid hydration mismatch
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // Always provide the context — even before mount (SSR/prerender). Returning
+  // children WITHOUT the provider made useTheme() throw during static
+  // generation. The `mounted` flag already gates the client-only effects
+  // (localStorage/document); initial values (theme='system', isDark=false)
+  // are identical on server and first client render, so there's no hydration
+  // mismatch.
   return (
     <ThemeContext.Provider value={{ theme, setTheme, isDark }}>
       {children}

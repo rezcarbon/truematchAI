@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +22,8 @@ interface FormState {
 }
 
 export default function CVAnalysisPage() {
+  const router = useRouter();
+  const { data: session } = useSession();
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [loadingResumes, setLoadingResumes] = useState(true);
   const [form, setForm] = useState<FormState>({
@@ -37,16 +41,26 @@ export default function CVAnalysisPage() {
     const fetchResumes = async () => {
       try {
         setLoadingResumes(true);
-        // Use proxy which handles authentication injection
-        const response = await fetch('/api/proxy/files/resumes');
+        const accessToken = (session?.user as { accessToken?: string })?.accessToken;
+        if (!accessToken) {
+          throw new Error('Not authenticated - please log in again');
+        }
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${apiUrl}/api/v1/files/resumes`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
         if (!response.ok) {
           throw new Error('Failed to fetch resumes');
         }
         const data = await response.json();
-        setResumes(data.items || []);
+        const resumeList = Array.isArray(data) ? data : data.items || [];
+        setResumes(resumeList);
         // Auto-select the first resume if available
-        if (data.items && data.items.length > 0) {
-          setForm(prev => ({ ...prev, resumeId: data.items[0].id }));
+        if (resumeList.length > 0) {
+          setForm(prev => ({ ...prev, resumeId: resumeList[0].id }));
         }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load resumes');
@@ -55,8 +69,10 @@ export default function CVAnalysisPage() {
       }
     };
 
-    fetchResumes();
-  }, []);
+    if (session?.user) {
+      fetchResumes();
+    }
+  }, [session]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,11 +96,17 @@ export default function CVAnalysisPage() {
     setLoading(true);
 
     try {
-      // Use proxy which handles authentication injection
-      const response = await fetch('/api/proxy/candidates/cv-analysis', {
+      const accessToken = (session?.user as { accessToken?: string })?.accessToken;
+      if (!accessToken) {
+        throw new Error('Not authenticated - please log in again');
+      }
+
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+      const response = await fetch(`${apiUrl}/api/v1/candidates/cv-analysis`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           resume_id: form.resumeId,
@@ -100,14 +122,28 @@ export default function CVAnalysisPage() {
       }
 
       const result = await response.json();
-      setSuccess(true);
+      const analysisId = result.analysis_id || result.id;
 
-      // Redirect to results page after a short delay
-      setTimeout(() => {
-        window.location.href = `/candidate/cv-analysis/${result.analysis_id}`;
-      }, 500);
+      if (!analysisId) {
+        throw new Error('No analysis ID returned from server');
+      }
+
+      console.log('Analysis started:', analysisId);
+      setSuccess(true);
+      setLoading(false);
+
+      // Redirect to results page with error handling
+      try {
+        router.push(`/candidate/cv-analysis/${analysisId}`);
+      } catch (navError) {
+        console.error('Navigation failed:', navError);
+        setError('Failed to navigate to results page');
+        setLoading(false);
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
+      const errorMsg = err instanceof Error ? err.message : 'An error occurred';
+      console.error('Analysis submission error:', errorMsg);
+      setError(errorMsg);
       setLoading(false);
     }
   };

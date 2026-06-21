@@ -3,6 +3,7 @@ import { PageHeader } from "@/components/shared/AppShell";
 import { ScoreTrio } from "@/components/shared/ScoreTrio";
 import { CounterRecCard } from "@/components/shared/CounterRecCard";
 import { GovernanceBadge } from "@/components/shared/GovernanceBadge";
+import { LanguageBadge, languageName } from "@/components/shared/LanguageBadge";
 import { SubstitutionPanel } from "@/components/recruiter/SubstitutionPanel";
 import { SignalProgression } from "@/components/assessment/SignalProgression";
 import { CapabilityNarrative } from "@/components/assessment/CapabilityNarrative";
@@ -83,10 +84,21 @@ export default async function CandidateDetailPage({ params }: { params: { id: st
           <ArrowLeft className="h-3 w-3" /> Positions
         </Link>
         <div className="flex items-start justify-between gap-4">
-          <PageHeader
-            title={a.candidateName}
-            subtitle={`Assessment for ${a.positionTitle}`}
-          />
+          <div>
+            <PageHeader
+              title={a.candidateName}
+              subtitle={`Assessment for ${a.positionTitle}`}
+            />
+            {(languageName(a.sourceLanguage) || languageName(a.jdSourceLanguage)) && (
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <LanguageBadge language={a.sourceLanguage} label="CV translated from" />
+                <LanguageBadge language={a.jdSourceLanguage} label="JD translated from" />
+                <span className="text-[11px] text-muted-foreground">
+                  scored on a faithful English translation; original retained
+                </span>
+              </div>
+            )}
+          </div>
           <div className="flex gap-2 shrink-0 pt-1">
             <Button variant="outline" size="sm"><Calendar className="mr-1.5 h-4 w-4" />Schedule</Button>
             <Button variant="outline" size="sm"><FileText className="mr-1.5 h-4 w-4" />Export</Button>

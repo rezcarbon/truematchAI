@@ -3,6 +3,8 @@
  * These types define all domain objects, API contracts, and UI component shapes
  */
 
+import type { PipelineCandidate } from "@/lib/types";
+
 // ============================================================================
 // Session & Authentication Types
 // ============================================================================

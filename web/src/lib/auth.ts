@@ -7,12 +7,10 @@
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-const BACKEND = process.env.BACKEND_API_URL || "https://api.truematch.ai/v1";
-
-// Debug: Log the BACKEND URL to see what it's set to
-if (typeof window === "undefined") {
-  console.log("[NextAuth] BACKEND_API_URL:", process.env.BACKEND_API_URL);
-  console.log("[NextAuth] BACKEND constant:", BACKEND);
+// Get BACKEND URL - read dynamically to ensure env vars are loaded
+function getBackendUrl(): string {
+  const backend = process.env.BACKEND_API_URL || "https://api.truematch.ai/v1";
+  return backend;
 }
 
 function decodeExpMs(jwt: string): number {
@@ -27,7 +25,8 @@ function decodeExpMs(jwt: string): number {
 
 async function refreshTokens(token: Record<string, unknown>) {
   try {
-    const res = await fetch(`${BACKEND}/auth/refresh`, {
+    const backend = getBackendUrl();
+    const res = await fetch(`${backend}/auth/refresh`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ refresh_token: token.refreshToken }),
@@ -48,8 +47,11 @@ async function refreshTokens(token: Record<string, unknown>) {
 
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET,
-  pages: { signIn: "/login" },
+  secret: process.env.NEXTAUTH_SECRET || "dev-secret-change-in-production",
+  pages: {
+    signIn: "/login",
+    error: "/login?error=auth_failed",
+  },
   providers: [
     CredentialsProvider({
       name: "Email",
@@ -59,18 +61,17 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         try {
-          console.log("[NextAuth] authorize() called with BACKEND:", BACKEND);
+          const backend = getBackendUrl();
           if (!credentials?.email || !credentials?.password) {
             console.error("Missing email or password");
             return null;
           }
-          console.log("[NextAuth] Making login request to:", `${BACKEND}/auth/login`);
           const controller = new AbortController();
           const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
           let login;
           try {
-            login = await fetch(`${BACKEND}/auth/login`, {
+            login = await fetch(`${backend}/auth/login`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ email: credentials.email, password: credentials.password }),
@@ -79,7 +80,6 @@ export const authOptions: NextAuthOptions = {
           } finally {
             clearTimeout(timeoutId);
           }
-          console.log("Login response status:", login.status);
           if (!login.ok) {
             const errorText = await login.text();
             console.error("Login failed:", errorText);
@@ -87,19 +87,15 @@ export const authOptions: NextAuthOptions = {
             return null;
           }
           const tokens = await login.json();
-          console.log("Tokens received:", { hasAccessToken: !!tokens.access_token, hasRefreshToken: !!tokens.refresh_token });
-          console.log("Calling /me endpoint at:", `${BACKEND}/auth/me`);
-          const meRes = await fetch(`${BACKEND}/auth/me`, {
+          const meRes = await fetch(`${backend}/auth/me`, {
             headers: { Authorization: `Bearer ${tokens.access_token}` },
           });
-          console.log("Me response status:", meRes.status);
           if (!meRes.ok) {
             const errorText = await meRes.text();
             console.error("/me endpoint failed:", errorText);
             return null;
           }
           const me = await meRes.json();
-          console.log("Me data received:", { id: me.id, email: me.email, role: me.role });
           const result = {
             id: me.id,
             email: me.email,
@@ -108,7 +104,6 @@ export const authOptions: NextAuthOptions = {
             accessToken: tokens.access_token,
             refreshToken: tokens.refresh_token,
           } as unknown as { id: string };
-          console.log("Authorization successful, returning user object");
           return result;
         } catch (error) {
           console.error("Authorization error:", error);
@@ -139,14 +134,12 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       try {
-        console.log("Session callback - token:", token);
         if (session.user) {
           (session.user as { role?: string; accessToken?: string }).role = token.role as string;
           (session.user as { role?: string; accessToken?: string }).accessToken = token.accessToken as string;
         }
         (session as { error?: string; accessToken?: string }).error = token.error as string | undefined;
         (session as { error?: string; accessToken?: string }).accessToken = token.accessToken as string;
-        console.log("Session callback - returning session:", session);
         return session;
       } catch (error) {
         console.error("Session callback error:", error);

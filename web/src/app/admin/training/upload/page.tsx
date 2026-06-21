@@ -45,7 +45,7 @@ export default function TrainingUploadPage() {
 
     setLoading(true);
     try {
-      const token = (session as Record<string, unknown>)?.accessToken || (session?.user as Record<string, unknown>)?.accessToken;
+      const token = (session as unknown as Record<string, unknown>)?.accessToken || (session?.user as unknown as Record<string, unknown>)?.accessToken;
       if (!token || typeof token !== 'string') throw new Error('No access token');
       const typedToken = token as string;
 
@@ -164,7 +164,7 @@ export default function TrainingUploadPage() {
                       <div>
                         <p className="font-medium">{upload.filename}</p>
                         <p className="text-sm text-muted-foreground">
-                          {upload.row_count} rows • {upload.format.toUpperCase()}
+                          {upload.row_count} rows • {upload.format?.toUpperCase()}
                         </p>
                       </div>
                     </div>

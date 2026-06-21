@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -40,24 +41,42 @@ export default function CVAnalysisResultsPage({
 }: {
   params: { id: string };
 }) {
+  const { data: session } = useSession();
   const [data, setData] = useState<CVAnalysisResultData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // NOTE: this is a SHARED results route — CV analysis is offered to candidates
+  // AND admins/recruiters (admin/cv-analysis redirects here on completion). Do
+  // NOT gate it by role; the backend enforces per-user ownership via the token.
 
   useEffect(() => {
     const fetchResults = async () => {
       try {
         setLoading(true);
-        // Use proxy which handles authentication injection
-        const response = await fetch(`/api/proxy/candidates/cv-analysis/${params.id}`);
+        // Get access token from session
+        const accessToken = (session?.user as { accessToken?: string })?.accessToken;
+        if (!accessToken) {
+          throw new Error('No access token - please log in again');
+        }
+
+        // Call backend API directly
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${apiUrl}/api/v1/candidates/cv-analysis/${params.id}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
 
         if (!response.ok) {
-          throw new Error('Failed to fetch analysis results');
+          throw new Error(`API error: ${response.status}`);
         }
 
         const result = await response.json();
         setData(result);
       } catch (err) {
+        console.error('CV analysis fetch error:', err);
         setError(err instanceof Error ? err.message : 'Failed to load results');
       } finally {
         setLoading(false);
@@ -65,23 +84,37 @@ export default function CVAnalysisResultsPage({
     };
 
     // Initial fetch
-    fetchResults();
+    if (session?.user) {
+      fetchResults();
+    }
 
     // Only poll if status is not completed
     const interval = setInterval(async () => {
-      const response = await fetch(`/api/proxy/candidates/cv-analysis/${params.id}`);
-      if (response.ok) {
-        const result = await response.json();
-        setData(result);
-        // Stop polling once completed
-        if (result.status === 'completed') {
-          clearInterval(interval);
+      try {
+        const accessToken = (session?.user as { accessToken?: string })?.accessToken;
+        if (!accessToken) return;
+
+        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+        const response = await fetch(`${apiUrl}/api/v1/candidates/cv-analysis/${params.id}`, {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+          },
+        });
+        if (response.ok) {
+          const result = await response.json();
+          setData(result);
+          // Stop polling once completed
+          if (result.status === 'completed') {
+            clearInterval(interval);
+          }
         }
+      } catch (err) {
+        console.error('Polling error:', err);
       }
-    }, 3000);
+    }, 2000);
 
     return () => clearInterval(interval);
-  }, [params.id]);
+  }, [params.id, session]);
 
   if (loading) {
     return (
@@ -95,6 +128,18 @@ export default function CVAnalysisResultsPage({
             <p className="text-center text-xs text-muted-foreground">
               This typically takes 30-60 seconds
             </p>
+            {/* Progress bar */}
+            <div className="w-full mt-4">
+              <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full animate-pulse"
+                  style={{ width: '45%' }}
+                />
+              </div>
+              <p className="text-center text-xs text-muted-foreground mt-2">
+                ~45% complete
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>
@@ -126,17 +171,30 @@ export default function CVAnalysisResultsPage({
   }
 
   if (data.status === 'pending' || data.status === 'analyzing') {
+    const progress = data.status === 'pending' ? 15 : 60;
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Card className="w-full max-w-sm">
           <CardContent className="flex flex-col items-center gap-4 pt-6">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
             <p className="text-center text-sm text-muted-foreground">
-              Still analyzing your CV...
+              {data.status === 'pending' ? 'Queued for analysis...' : 'Analyzing your CV...'}
             </p>
             <p className="text-center text-xs text-muted-foreground">
               This typically takes 30-60 seconds
             </p>
+            {/* Progress bar */}
+            <div className="w-full mt-4">
+              <div className="h-2 bg-secondary rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-primary rounded-full transition-all duration-500"
+                  style={{ width: `${progress}%` }}
+                />
+              </div>
+              <p className="text-center text-xs text-muted-foreground mt-2">
+                ~{progress}% complete
+              </p>
+            </div>
           </CardContent>
         </Card>
       </div>

@@ -16,11 +16,10 @@ export function usePipelineWebSocket(
   const wsRef = useRef<WebSocket | null>(null);
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
 
-  useEffect(() => {
-    if (!enabled || !positionId) return;
+  const accessToken = (session as Session | null)?.accessToken;
 
-    const accessToken = (session as Session | null)?.accessToken;
-    if (!accessToken) return;
+  useEffect(() => {
+    if (!enabled || !positionId || !accessToken) return;
 
     const connectWebSocket = () => {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -69,7 +68,7 @@ export function usePipelineWebSocket(
         wsRef.current.close();
       }
     };
-  }, [enabled, (session as Session | null)?.accessToken, positionId, onMessage]);
+  }, [enabled, accessToken, positionId, onMessage]);
 
   const send = useCallback((message: WebSocketMessage) => {
     if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) {
@@ -93,8 +92,9 @@ export function useNotificationWebSocket(
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const hasLoggedErrorRef = useRef(false);
 
+  const accessToken = (session as Session | null)?.accessToken;
+
   useEffect(() => {
-    const accessToken = (session as Session | null)?.accessToken;
     if (!enabled || !accessToken) return;
 
     const connectWebSocket = () => {
@@ -156,7 +156,7 @@ export function useNotificationWebSocket(
         wsRef.current.close();
       }
     };
-  }, [enabled, (session as Session | null)?.accessToken, onNotification]);
+  }, [enabled, accessToken, onNotification]);
 
   return { isConnected: wsRef.current?.readyState === WebSocket.OPEN };
 }

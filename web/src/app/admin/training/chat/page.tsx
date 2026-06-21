@@ -9,6 +9,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Send, Bot, User, Lightbulb, TrendingUp, Sparkles } from 'lucide-react';
 
+// Generate a valid UUID v4
+function generateUUID(): string {
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    const r = Math.random() * 16 | 0;
+    const v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 interface TrainingSignal {
   type?: string;
   description?: string;
@@ -23,7 +32,10 @@ interface Message {
   content: string;
   feedback_type?: string;
   extracted_training_signal?: TrainingSignal | null;
-  learning_impact?: number | null;
+  learning_impact?: {
+    estimated_model_improvement?: string | number;
+    dominant_themes?: string[];
+  } | null;
   created_at: string;
 }
 
@@ -38,8 +50,8 @@ export default function TrainingChatPage() {
   // Initialize session
   useEffect(() => {
     if (session && !sessionId) {
-      // Generate a new session ID
-      setSessionId(`session-${Date.now()}`);
+      // Generate a new session ID (valid UUID format)
+      setSessionId(generateUUID());
     }
   }, [session, sessionId]);
 
@@ -68,7 +80,7 @@ export default function TrainingChatPage() {
     setLoading(true);
 
     try {
-      const token = (session as Record<string, unknown>)?.accessToken || (session?.user as Record<string, unknown>)?.accessToken;
+      const token = (session as unknown as Record<string, unknown>)?.accessToken || (session?.user as unknown as Record<string, unknown>)?.accessToken;
       if (!token || typeof token !== 'string') throw new Error('No access token');
       const typedToken = token as string;
 
@@ -90,7 +102,10 @@ export default function TrainingChatPage() {
         ai_response: string;
         feedback_type?: string;
         extracted_training_signal?: TrainingSignal | null;
-        learning_impact?: number | null;
+        learning_impact?: {
+    estimated_model_improvement?: string | number;
+    dominant_themes?: string[];
+  } | null;
       };
 
       const assistantMessage: Message = {

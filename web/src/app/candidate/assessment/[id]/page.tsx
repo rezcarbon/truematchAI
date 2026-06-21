@@ -7,13 +7,24 @@ import { CounterRecommendation } from "@/components/assessment/CounterRecommenda
 import { SignalProgression } from "@/components/assessment/SignalProgression";
 import { GovernanceBadges } from "@/components/assessment/GovernanceBadges";
 import { DeltaVisualization } from "@/components/assessment/DeltaVisualization";
+import { LanguageBadge, languageName } from "@/components/shared/LanguageBadge";
 import { api } from "@/lib/api";
 
 export default async function AssessmentPage({ params }: { params: { id: string } }) {
   const a = await api.getAssessment(params.id);
+  const translated = languageName(a.sourceLanguage) || languageName(a.jdSourceLanguage);
   return (
     <div className="mx-auto max-w-5xl">
       <PageHeader title={`Assessment — ${a.positionTitle}`} subtitle={`Candidate: ${a.candidateName}`} />
+      {translated && (
+        <div className="mb-4 flex flex-wrap items-center gap-2">
+          <LanguageBadge language={a.sourceLanguage} label="CV translated from" />
+          <LanguageBadge language={a.jdSourceLanguage} label="JD translated from" />
+          <span className="text-xs text-muted-foreground">
+            Scored on a faithful English translation; the original text is retained.
+          </span>
+        </div>
+      )}
       <div className="space-y-6">
         <SignalProgression
           traditionalScore={a.traditionalScore}

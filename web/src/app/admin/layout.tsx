@@ -3,6 +3,7 @@ import { AppShell, type NavItem } from "@/components/shared/AppShell";
 
 const nav: NavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard" },
+  { href: "/chat", label: "AI Assistant" },
   { href: "/admin/profile", label: "Profile" },
   { divider: true },
   { href: "/admin/configuration", label: "Configuration" },
@@ -22,6 +23,7 @@ const nav: NavItem[] = [
   { href: "/admin/uploads", label: "Bulk Upload" },
   { divider: true },
   { href: "/admin/users", label: "Users" },
+  { href: "/admin/billing", label: "Billing & Fulfillment" },
   { href: "/admin/audit", label: "Audit" },
   { href: "/admin/compliance", label: "Compliance" },
   { divider: true },
