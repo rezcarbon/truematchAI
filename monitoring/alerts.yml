@@ -1,0 +1,116 @@
+groups:
+  - name: truematch_alerts
+    interval: 30s
+    rules:
+      # High error rate alert
+      - alert: HighErrorRate
+        expr: (sum(rate(http_requests_total{status=~"5.."}[5m])) / sum(rate(http_requests_total[5m]))) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: truematch-backend
+        annotations:
+          summary: "High error rate detected (> 5%)"
+          description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes"
+
+      # High latency alert
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket[5m])) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: truematch-backend
+        annotations:
+          summary: "High API latency detected (p95 > 1s)"
+          description: "P95 latency is {{ $value }}s over the last 5 minutes"
+
+      # Database unavailable
+      - alert: DatabaseUnavailable
+        expr: up{job="database"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: truematch-database
+        annotations:
+          summary: "Database is unavailable"
+          description: "Database has been down for more than 1 minute"
+
+      # Redis unavailable
+      - alert: RedisUnavailable
+        expr: up{job="redis"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          service: truematch-redis
+        annotations:
+          summary: "Redis is unavailable"
+          description: "Redis has been down for more than 1 minute"
+
+      # Low disk space (on monitoring stack)
+      - alert: LowDiskSpace
+        expr: (node_filesystem_avail_bytes / node_filesystem_size_bytes) < 0.1
+        for: 5m
+        labels:
+          severity: warning
+          service: monitoring
+        annotations:
+          summary: "Low disk space remaining (< 10%)"
+          description: "Only {{ $value | humanizePercentage }} of disk space remaining"
+
+      # High memory usage
+      - alert: HighMemoryUsage
+        expr: (container_memory_usage_bytes / container_spec_memory_limit_bytes) > 0.85
+        for: 5m
+        labels:
+          severity: warning
+          service: truematch
+        annotations:
+          summary: "High memory usage (> 85%)"
+          description: "Memory usage is {{ $value | humanizePercentage }}"
+
+      # Celery task failures
+      - alert: CeleryTaskFailures
+        expr: increase(celery_task_failed_total[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          service: truematch-workers
+        annotations:
+          summary: "Multiple Celery task failures detected"
+          description: "{{ $value }} tasks failed in the last 5 minutes"
+
+      # High queue depth
+      - alert: HighQueueDepth
+        expr: celery_queue_length > 100
+        for: 10m
+        labels:
+          severity: warning
+          service: truematch-workers
+        annotations:
+          summary: "Celery queue backlog high"
+          description: "{{ $value }} tasks waiting in queue"
+
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      # Prometheus scrape failures
+      - alert: PrometheusScrapeFailures
+        expr: increase(prometheus_sd_consul_rpc_failures_total[5m]) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: monitoring
+        annotations:
+          summary: "Prometheus scrape failures detected"
+          description: "Prometheus is having trouble scraping metrics"
+
+      # Loki errors
+      - alert: LokiErrors
+        expr: increase(loki_request_duration_seconds_bucket{job="loki"}[5m]) > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: logging
+        annotations:
+          summary: "Loki reporting errors"
+          description: "Loki has reported {{ $value }} errors in the last 5 minutes"

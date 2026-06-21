@@ -1,0 +1,35 @@
+global:
+  scrape_interval: 15s          # Default scrape interval
+  evaluation_interval: 15s       # Default evaluation interval
+  external_labels:
+    monitor: 'truematch-monitor'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - localhost:9093
+
+# Rule files
+rule_files:
+  - "alerts.yml"
+
+scrape_configs:
+  # TrueMatch Backend API metrics
+  - job_name: 'truematch-backend'
+    static_configs:
+      - targets: ['localhost:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 10s
+    scrape_timeout: 5s
+
+  # Prometheus self-monitoring
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  # AlertManager metrics
+  - job_name: 'alertmanager'
+    static_configs:
+      - targets: ['localhost:9093']

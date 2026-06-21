@@ -1,0 +1,79 @@
+global:
+  resolve_timeout: 5m
+  slack_api_url: ''  # Set your Slack webhook URL here for production
+  pagerduty_url: 'https://events.pagerduty.com/v2/enqueue'
+
+route:
+  # Default receiver
+  receiver: 'null'
+
+  # Group alerts by alertname and service
+  group_by: ['alertname', 'cluster', 'service']
+
+  # Group wait: how long to wait before sending the first notification
+  group_wait: 10s
+
+  # Group interval: how long to wait before sending additional notifications
+  group_interval: 10s
+
+  # Repeat interval: how long to wait before re-sending a notification
+  repeat_interval: 4h
+
+  routes:
+    # Critical alerts → Page on-call
+    - match:
+        severity: critical
+      receiver: 'pagerduty'
+      group_wait: 0s
+      group_interval: 5m
+      repeat_interval: 30m
+
+    # Warning alerts → Slack
+    - match:
+        severity: warning
+      receiver: 'slack'
+      group_wait: 30s
+      group_interval: 1h
+      repeat_interval: 24h
+
+receivers:
+  # Null receiver (discard alerts)
+  - name: 'null'
+
+  # Slack receiver
+  - name: 'slack'
+    slack_configs:
+      - channel: '#alerts'
+        title: 'Alert: {{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.summary }}: {{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+        actions:
+          - type: button
+            text: 'View in Grafana'
+            url: 'http://localhost:3001'
+
+  # PagerDuty receiver (for critical alerts)
+  - name: 'pagerduty'
+    pagerduty_configs:
+      - service_key: 'YOUR_PAGERDUTY_KEY'  # Set in production
+        description: '{{ .GroupLabels.alertname }}'
+        details:
+          firing: '{{ range .Alerts.Firing }}{{ .Annotations.summary }}{{ end }}'
+          resolved: '{{ range .Alerts.Resolved }}{{ .Annotations.summary }}{{ end }}'
+
+# Inhibition rules
+inhibit_rules:
+  # Inhibit warning alerts if critical alert with same service is firing
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['service']
+
+  # Inhibit info alerts if warning alert with same service is firing
+  - source_match:
+      severity: 'warning'
+    target_match:
+      severity: 'info'
+    equal: ['service']
