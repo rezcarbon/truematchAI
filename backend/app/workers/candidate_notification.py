@@ -14,18 +14,15 @@ Features:
 - Error handling and reporting
 """
 
-import asyncio
 import logging
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
-from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.email_service import EmailService, EmailTemplate
-from app.models.resume import Resume
 from app.models.notification import EmailLog
 
 logger = logging.getLogger("truematch.candidate_notification")
@@ -79,7 +76,7 @@ class CandidateNotificationWorker:
         """
         try:
             logger.info(
-                f"[CandidateNotif] Sending assessment_started email",
+                "[CandidateNotif] Sending assessment_started email",
                 extra={
                     "assessment_id": str(assessment_id),
                     "candidate_email": candidate_email,
@@ -110,7 +107,7 @@ class CandidateNotificationWorker:
                     assessment_id,
                 )
                 logger.info(
-                    f"[CandidateNotif] assessment_started email sent",
+                    "[CandidateNotif] assessment_started email sent",
                     extra={"assessment_id": str(assessment_id)}
                 )
             else:
@@ -125,7 +122,7 @@ class CandidateNotificationWorker:
 
         except Exception as e:
             logger.error(
-                f"[CandidateNotif] Error sending assessment_started notification",
+                "[CandidateNotif] Error sending assessment_started notification",
                 extra={
                     "assessment_id": str(assessment_id),
                     "candidate_email": candidate_email,
@@ -170,7 +167,7 @@ class CandidateNotificationWorker:
         """
         try:
             logger.info(
-                f"[CandidateNotif] Sending assessment_approved email",
+                "[CandidateNotif] Sending assessment_approved email",
                 extra={
                     "assessment_id": str(assessment_id),
                     "candidate_email": candidate_email,
@@ -202,7 +199,7 @@ class CandidateNotificationWorker:
                     metadata={"strengths_count": len(strengths or [])},
                 )
                 logger.info(
-                    f"[CandidateNotif] assessment_approved email sent",
+                    "[CandidateNotif] assessment_approved email sent",
                     extra={"assessment_id": str(assessment_id)}
                 )
             else:
@@ -217,7 +214,7 @@ class CandidateNotificationWorker:
 
         except Exception as e:
             logger.error(
-                f"[CandidateNotif] Error sending assessment_approved notification",
+                "[CandidateNotif] Error sending assessment_approved notification",
                 extra={
                     "assessment_id": str(assessment_id),
                     "candidate_email": candidate_email,
@@ -262,7 +259,7 @@ class CandidateNotificationWorker:
         """
         try:
             logger.info(
-                f"[CandidateNotif] Sending assessment_rejected email",
+                "[CandidateNotif] Sending assessment_rejected email",
                 extra={
                     "assessment_id": str(assessment_id),
                     "candidate_email": candidate_email,
@@ -293,7 +290,7 @@ class CandidateNotificationWorker:
                     assessment_id,
                 )
                 logger.info(
-                    f"[CandidateNotif] assessment_rejected email sent",
+                    "[CandidateNotif] assessment_rejected email sent",
                     extra={"assessment_id": str(assessment_id)}
                 )
             else:
@@ -308,7 +305,7 @@ class CandidateNotificationWorker:
 
         except Exception as e:
             logger.error(
-                f"[CandidateNotif] Error sending assessment_rejected notification",
+                "[CandidateNotif] Error sending assessment_rejected notification",
                 extra={
                     "assessment_id": str(assessment_id),
                     "candidate_email": candidate_email,
@@ -354,7 +351,7 @@ class CandidateNotificationWorker:
             await self.db.commit()
 
             logger.debug(
-                f"[CandidateNotif] Email logged to database",
+                "[CandidateNotif] Email logged to database",
                 extra={
                     "recipient": recipient_email,
                     "template": template_name.value,
@@ -362,7 +359,7 @@ class CandidateNotificationWorker:
             )
         except Exception as e:
             logger.error(
-                f"[CandidateNotif] Failed to log email send",
+                "[CandidateNotif] Failed to log email send",
                 extra={"error": str(e)},
                 exc_info=True
             )
@@ -397,7 +394,7 @@ class CandidateNotificationWorker:
             await self.db.commit()
 
             logger.debug(
-                f"[CandidateNotif] Email failure logged to database",
+                "[CandidateNotif] Email failure logged to database",
                 extra={
                     "recipient": recipient_email,
                     "template": template_name.value,
@@ -405,7 +402,7 @@ class CandidateNotificationWorker:
             )
         except Exception as e:
             logger.error(
-                f"[CandidateNotif] Failed to log email failure",
+                "[CandidateNotif] Failed to log email failure",
                 extra={"error": str(e)},
                 exc_info=True
             )

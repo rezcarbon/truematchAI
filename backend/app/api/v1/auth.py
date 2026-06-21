@@ -136,7 +136,7 @@ async def logout(
         await denylist.add_token_to_denylist(token_jti, expiry_seconds)
         await denylist.add_user_token(user.id, token_jti, expiry_seconds)
 
-        logger.info(f"User logged out", extra={"user_id": str(user.id), "token_jti": token_jti})
+        logger.info("User logged out", extra={"user_id": str(user.id), "token_jti": token_jti})
 
     except JWTError as e:
         logger.warning(f"Failed to logout - invalid token: {e}")

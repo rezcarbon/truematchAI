@@ -7,12 +7,11 @@ from __future__ import annotations
 import csv
 import json
 from datetime import datetime
-from io import StringIO, BytesIO
-from typing import AsyncGenerator, Optional
-import uuid
+from io import StringIO
+from typing import AsyncGenerator
 
 from app.scrapers.base import JobPosting
-from app.models.job_scraping import UploadType, MassUploadBatch, BatchStatus
+from app.models.job_scraping import UploadType
 
 
 class FieldMappingValidator:

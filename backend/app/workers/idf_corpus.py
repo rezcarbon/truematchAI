@@ -12,14 +12,12 @@ Key concepts:
 - Corpus domain: Terms that are common in tech jobs are less discriminative
 - Learning: As corpus grows, IDF scores refine and improve matching
 """
-import json
 import logging
 import math
-from collections import Counter, defaultdict
+from collections import defaultdict
 from dataclasses import dataclass, asdict
-from datetime import datetime
-from typing import Any, Dict, List, Optional, Set
-from uuid import uuid4
+from app.core.clock import utcnow
+from typing import Any, Dict, List, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +37,9 @@ class CorpusDocument:
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow().isoformat()
+            self.created_at = utcnow().isoformat()
         if self.updated_at is None:
-            self.updated_at = datetime.utcnow().isoformat()
+            self.updated_at = utcnow().isoformat()
 
     def term_count(self, term: str) -> int:
         """Get frequency of term in document."""
@@ -266,10 +264,6 @@ class IDFCorpus:
 
         Shows which outcomes (hire/reject/review) are associated with term.
         """
-        total_occurrences = sum(
-            count for count in self.outcome_term_stats.values()
-            for count in count.values() if isinstance(count, (int, float))
-        )
         wait_let_me_recalculate = sum(
             self.outcome_term_stats[outcome].get(term, 0)
             for outcome in self.outcome_term_stats

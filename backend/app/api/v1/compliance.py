@@ -9,7 +9,7 @@ Endpoints for:
 - Learning metrics
 """
 import logging
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from fastapi import APIRouter, HTTPException, Query
 
@@ -19,7 +19,7 @@ from app.workers.provenance_learning_orchestrator import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/compliance", tags=["compliance"])
+router = APIRouter(prefix="/compliance", tags=["compliance"])
 
 
 @router.get("/assessment/{assessment_id}/provenance")

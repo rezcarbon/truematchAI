@@ -240,10 +240,5 @@ class TrainingStatsResponse(BaseModel):
     )
     current_model: Dict[str, Any] = Field(
         ...,
-        description={
-            "version": "Model version",
-            "match_accuracy": "% accurate matches",
-            "hire_success_accuracy": "% accurate hire success predictions",
-            "total_patterns": "Patterns learned",
-        },
+        description="Current model state: {version, match_accuracy, hire_success_accuracy, total_patterns}",
     )

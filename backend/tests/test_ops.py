@@ -19,9 +19,18 @@ async def test_readiness_reports_components(monkeypatch):
 
     monkeypatch.setattr(health, "check_db", _ok)
     monkeypatch.setattr(health, "check_redis", _bad)
+    monkeypatch.setattr(health, "check_s3", _ok)
+    monkeypatch.setattr(health, "check_llm", _ok)
+    monkeypatch.setattr(health, "check_singpass", _ok)
     ready, components = await health.readiness()
     assert ready is False
-    assert components == {"database": True, "redis": False}
+    assert components == {
+        "database": True,
+        "redis": False,
+        "s3": True,
+        "llm": True,
+        "singpass": True,
+    }
 
 
 @pytest.mark.asyncio
@@ -31,6 +40,9 @@ async def test_readiness_all_ok(monkeypatch):
 
     monkeypatch.setattr(health, "check_db", _ok)
     monkeypatch.setattr(health, "check_redis", _ok)
+    monkeypatch.setattr(health, "check_s3", _ok)
+    monkeypatch.setattr(health, "check_llm", _ok)
+    monkeypatch.setattr(health, "check_singpass", _ok)
     ready, components = await health.readiness()
     assert ready is True
 

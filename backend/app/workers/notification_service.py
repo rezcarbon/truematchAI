@@ -6,12 +6,10 @@ Sends assessment results to recruiters via:
 - Email notifications
 - In-app dashboard updates
 """
-import asyncio
-import json
 import logging
 from typing import Any, Dict, List, Optional
 
-import aiohttp
+import httpx
 
 from app.config import settings
 
@@ -63,12 +61,12 @@ class SlackNotifier:
                     {"title": "Gaps", "value": ", ".join(gaps[:5]), "short": False}
                 )
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(self.webhook_url, json=message) as resp:
-                    if resp.status == 200:
-                        logger.info(f"Slack notification sent for {assessment_id}")
-                    else:
-                        logger.error(f"Failed to send Slack notification: {resp.status}")
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(self.webhook_url, json=message)
+                if resp.status_code == 200:
+                    logger.info(f"Slack notification sent for {assessment_id}")
+                else:
+                    logger.error(f"Failed to send Slack notification: {resp.status_code}")
 
         except Exception as e:
             logger.error(f"Error sending Slack notification: {e}")
@@ -89,12 +87,12 @@ class SlackNotifier:
                 ]
             }
 
-            async with aiohttp.ClientSession() as session:
-                async with session.post(self.webhook_url, json=message) as resp:
-                    if resp.status == 200:
-                        logger.info(f"Error alert sent to Slack for {job_id}")
-                    else:
-                        logger.error(f"Failed to send error alert: {resp.status}")
+            async with httpx.AsyncClient() as client:
+                resp = await client.post(self.webhook_url, json=message)
+                if resp.status_code == 200:
+                    logger.info(f"Error alert sent to Slack for {job_id}")
+                else:
+                    logger.error(f"Failed to send error alert: {resp.status_code}")
 
         except Exception as e:
             logger.error(f"Error sending error alert: {e}")
@@ -145,7 +143,7 @@ class InAppNotifier:
                 "id": notification_id,
                 "user_id": user_id,
                 "type": "assessment_complete",
-                "title": f"Assessment complete",
+                "title": "Assessment complete",
                 "description": f"Assessment {job.job_id} is ready for review",
                 "data": {
                     "assessment_id": job.job_id,

@@ -3,6 +3,7 @@ Pydantic schemas for training data endpoints.
 """
 from datetime import datetime
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
 
@@ -13,7 +14,7 @@ from pydantic import BaseModel, Field
 class TrainingDataItemSchema(BaseModel):
     """Individual training data item."""
 
-    id: str
+    id: UUID
     candidate_name: Optional[str] = None
     candidate_email: Optional[str] = None
     decision: str  # hire, reject, applied, interested, not_interested
@@ -31,7 +32,7 @@ class TrainingDataItemSchema(BaseModel):
 class TrainingDataUploadSchema(BaseModel):
     """Training data upload response."""
 
-    id: str
+    id: UUID
     filename: str
     format: str  # csv, json
     row_count: int
@@ -56,7 +57,7 @@ class TrainingDataUploadDetailSchema(TrainingDataUploadSchema):
 class UploadResultSchema(BaseModel):
     """Results from processing an upload."""
 
-    upload_id: str
+    upload_id: UUID
     items_processed: int
     items_failed: int
     insights_extracted: int
@@ -72,7 +73,7 @@ class UploadResultSchema(BaseModel):
 class TrainingChatMessageSchema(BaseModel):
     """Training chat message."""
 
-    id: str
+    id: UUID
     user_message: str
     ai_response: str
     feedback_type: Optional[str] = None
@@ -98,14 +99,14 @@ class TrainingChatResponseSchema(BaseModel):
     ai_response: str
     feedback_type: Optional[str] = None
     extracted_training_signal: Optional[dict] = None
-    applied_changes: Optional[dict] = None
+    applied_changes: Optional[str] = None  # Specific action the system should take
     learning_impact: Optional[dict] = None
 
 
 class TrainingChatHistorySchema(BaseModel):
     """Chat history response."""
 
-    session_id: str
+    session_id: UUID
     messages: list[TrainingChatMessageSchema]
     total_insights: int
     total_updates: int
@@ -113,6 +114,23 @@ class TrainingChatHistorySchema(BaseModel):
 
 
 # ─ Learning Status/Metrics ──────────────────────────────────────────────────
+
+
+class TrainingFeedbackResponseSchema(BaseModel):
+    """Training feedback item for frontend display."""
+
+    id: UUID
+    user_id: UUID
+    feedback_type: str  # hire, reject, applied, interested, not_interested, maybe
+    rating: Optional[int] = None
+    comments: Optional[str] = None
+    time_to_action_seconds: Optional[int] = None
+    outcome: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True
 
 
 class LearningMetricsSchema(BaseModel):
@@ -168,7 +186,7 @@ class ImprovementMetricsSchema(BaseModel):
 class TrainingInsightBatchSchema(BaseModel):
     """Results from learning batch."""
 
-    id: str
+    id: UUID
     source: str  # upload, chat, auto
     insights: list[str]
     new_capabilities: list[str]
@@ -191,7 +209,7 @@ class TrainingInsightBatchSchema(BaseModel):
 class TrainingLearningSessionSchema(BaseModel):
     """Training learning session."""
 
-    id: str
+    id: UUID
     title: Optional[str] = None
     message_count: int
     insights_extracted: int
@@ -200,6 +218,9 @@ class TrainingLearningSessionSchema(BaseModel):
     status: str  # active, archived
     created_at: datetime
     last_message_at: Optional[datetime] = None
+
+    class Config:
+        from_attributes = True
 
 
 class CreateSessionRequestSchema(BaseModel):

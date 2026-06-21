@@ -20,7 +20,6 @@ from app.models.job_scraping import (
     UploadFieldMapping,
 )
 from app.models.user import User
-from app.scrapers import MassUploadProcessor, DEFAULT_FIELD_MAPPINGS
 from app.schemas.uploads import (
     BatchUploadResponse,
     BatchStatusResponse,
@@ -108,7 +107,7 @@ async def upload_csv(
     # Read file content
     try:
         content = await file.read()
-        text_content = content.decode("utf-8")
+        content.decode("utf-8")  # validate UTF-8; raises -> 400 below
     except Exception as e:
         logger.error(f"Failed to read CSV file: {str(e)}")
         raise HTTPException(
@@ -175,7 +174,7 @@ async def upload_json(
     # Read file content
     try:
         content = await file.read()
-        text_content = content.decode("utf-8")
+        content.decode("utf-8")  # validate UTF-8; raises -> 400 below
     except Exception as e:
         logger.error(f"Failed to read JSON file: {str(e)}")
         raise HTTPException(

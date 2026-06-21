@@ -58,6 +58,11 @@ class AssessmentDetail(AssessmentSummary):
     verified_evidence: dict | None = None
     substitutions: dict | None = None
     governance_audit_id: uuid.UUID | None = None
+    # Detected source language of the original CV / JD when non-English (an English
+    # pivot was scored). None or "en" means the input was English. Lets the UI show
+    # a "translated from …" badge so reviewers know the text was machine-translated.
+    source_language: str | None = None
+    jd_source_language: str | None = None
 
 
 class NarrativeResponse(BaseModel):

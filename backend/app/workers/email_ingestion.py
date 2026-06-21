@@ -10,6 +10,7 @@ import hashlib
 import logging
 import re
 from datetime import datetime, timedelta
+from app.core.clock import utcnow
 from email import message_from_bytes
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -18,8 +19,6 @@ from uuid import UUID
 
 import aioimap
 import aiosmtplib
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.database import AsyncSessionLocal
@@ -29,7 +28,6 @@ from app.models.ingest_queue import (
     IngestStatus,
     IngestType,
 )
-from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 
@@ -53,7 +51,7 @@ class EmailAttachment:
         self.email_subject = email_subject
         self.message_id = message_id
         self.content_hash = hashlib.sha256(content).hexdigest()
-        self.received_at = datetime.utcnow()
+        self.received_at = utcnow()
 
     def is_supported(self) -> bool:
         """Check if attachment is supported format."""
@@ -247,7 +245,7 @@ TrueMatch Assessment System
                 await imap.select(settings.ingest_imap_folder)
 
                 # Search for recent unseen emails
-                search_date = self.last_check or (datetime.utcnow() - timedelta(hours=1))
+                search_date = self.last_check or (utcnow() - timedelta(hours=1))
                 search_criteria = f'(UNSEEN SINCE "{self._format_date_for_imap(search_date)}")'
                 status, message_ids = await imap.search(search_criteria)
 
@@ -312,7 +310,7 @@ TrueMatch Assessment System
                         logger.error(f"Error processing message {message_id}: {e}")
 
                 # Update last check time
-                self.last_check = datetime.utcnow()
+                self.last_check = utcnow()
 
             finally:
                 await imap.logout()

@@ -1,6 +1,7 @@
 """File endpoints — multipart upload to S3 (boto3, stub credentials)."""
 from __future__ import annotations
 
+import base64
 import logging
 import uuid
 
@@ -17,6 +18,27 @@ from app.models.resume import Resume
 
 router = APIRouter()
 logger = logging.getLogger("truematch.files")
+
+_IMAGE_TYPES = {
+    "image/jpeg": "image/jpeg",
+    "image/jpg": "image/jpeg",
+    "image/png": "image/png",
+    "image/webp": "image/webp",
+    "image/gif": "image/gif",
+}
+
+_AUDIO_TYPES = {
+    "audio/mpeg": "mp3",
+    "audio/mp3": "mp3",
+    "audio/mp4": "m4a",
+    "audio/x-m4a": "m4a",
+    "audio/m4a": "m4a",
+    "audio/wav": "wav",
+    "audio/x-wav": "wav",
+    "audio/webm": "webm",
+    "audio/ogg": "ogg",
+    "audio/flac": "flac",
+}
 
 _ALLOWED_TYPES = {
     "application/pdf": "pdf",
@@ -170,6 +192,139 @@ async def upload_resume(
     db.add(resume)
     await db.flush()
     return UploadResponse(resume_id=resume.id, file_id=key, file_type=file_type)
+
+
+@router.post("/resume/image", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_resume_image(
+    user: CurrentUser,
+    db: DBSession,
+    file: UploadFile = File(...),
+) -> UploadResponse:
+    """Multimodal intake: accept a photo/scan of a resume, transcribe it with
+    Claude vision, and create a Resume from the extracted text — so a user can
+    snap a picture instead of uploading a PDF/DOCX."""
+    media_type = _IMAGE_TYPES.get((file.content_type or "").lower())
+    if media_type is None:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported image type. Supported: JPEG, PNG, WEBP, GIF. Got: {file.content_type}",
+        )
+
+    body = await file.read()
+    if not body:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty image")
+    if len(body) > settings.max_upload_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Image exceeds the {settings.max_upload_bytes} byte limit",
+        )
+
+    from app.engines.client import extract_text_from_image, is_live, LLMError
+
+    if not is_live():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Image transcription requires the language model to be configured.",
+        )
+    try:
+        image_b64 = base64.b64encode(body).decode("ascii")
+        extracted_text = extract_text_from_image(image_b64, media_type)
+    except LLMError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Could not transcribe the image: {exc}",
+        ) from exc
+    if not extracted_text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No readable text found in the image.",
+        )
+
+    key = f"resumes/{user.id}/{uuid.uuid4()}-{file.filename or 'photo'}"
+    resume = Resume(
+        user_id=user.id,
+        file_id=key,
+        file_type="image",
+        supplementary={
+            "original_filename": file.filename,
+            "s3_uploaded": False,
+            "intake": "vision",
+            "extracted_text": extracted_text,
+        },
+    )
+    db.add(resume)
+    await db.flush()
+    logger.info(
+        "Resume created via vision intake",
+        extra={"user_id": str(user.id), "extracted_length": len(extracted_text)},
+    )
+    return UploadResponse(resume_id=resume.id, file_id=key, file_type="image")
+
+
+@router.post("/resume/audio", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
+async def upload_resume_audio(
+    user: CurrentUser,
+    db: DBSession,
+    file: UploadFile = File(...),
+) -> UploadResponse:
+    """Multimodal intake: accept a spoken resume (audio), transcribe it with a
+    speech-to-text provider, and create a Resume from the transcript — so a user
+    can record themselves instead of uploading a document."""
+    from app.engines.transcription import TranscriptionError, is_configured, transcribe_audio
+
+    ext = _AUDIO_TYPES.get((file.content_type or "").lower())
+    if ext is None:
+        raise HTTPException(
+            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
+            detail=f"Unsupported audio type. Supported: mp3, m4a, wav, webm, ogg, flac. Got: {file.content_type}",
+        )
+
+    body = await file.read()
+    if not body:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Empty audio file")
+    if len(body) > settings.transcription_max_bytes:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Audio exceeds the {settings.transcription_max_bytes} byte limit",
+        )
+
+    if not is_configured():
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Audio transcription requires a speech-to-text provider to be configured.",
+        )
+    try:
+        transcript = transcribe_audio(body, file.filename or f"audio.{ext}", file.content_type or "")
+    except TranscriptionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Could not transcribe the audio: {exc}",
+        ) from exc
+    if not transcript.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No speech detected in the audio.",
+        )
+
+    key = f"resumes/{user.id}/{uuid.uuid4()}-{file.filename or 'audio'}"
+    resume = Resume(
+        user_id=user.id,
+        file_id=key,
+        file_type="audio",
+        supplementary={
+            "original_filename": file.filename,
+            "s3_uploaded": False,
+            "intake": "audio",
+            "extracted_text": transcript,
+        },
+    )
+    db.add(resume)
+    await db.flush()
+    logger.info(
+        "Resume created via audio intake",
+        extra={"user_id": str(user.id), "transcript_length": len(transcript)},
+    )
+    return UploadResponse(resume_id=resume.id, file_id=key, file_type="audio")
 
 
 class ResumeListItem(BaseModel):

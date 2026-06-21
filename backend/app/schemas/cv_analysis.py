@@ -27,8 +27,11 @@ class CVAnalysisGapItem(BaseModel):
     """A single skill gap or weakness."""
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    capability: str
-    importance: str = Field(..., description="high/medium/low")
+    # Defaults keep a completed analysis renderable even when the LLM omits a
+    # field in a sub-item (partial structured output shouldn't 500 the whole
+    # result).
+    capability: str = ""
+    importance: str = Field(default="medium", description="high/medium/low")
     description: Optional[str] = None
     how_to_improve: Optional[str] = None
 
@@ -37,9 +40,9 @@ class CVAnalysisRecommendation(BaseModel):
     """A single CV improvement recommendation."""
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    category: str = Field(..., description="skills/achievements/keywords/structure")
-    suggestion: str
-    priority: str = Field(..., description="high/medium/low")
+    category: str = Field(default="skills", description="skills/achievements/keywords/structure")
+    suggestion: str = ""
+    priority: str = Field(default="medium", description="high/medium/low")
     example: Optional[str] = None
 
 
@@ -47,12 +50,12 @@ class JobFitMatch(BaseModel):
     """A job position match result."""
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
 
-    position_id: UUID
-    job_title: str
+    position_id: Optional[UUID] = None
+    job_title: str = ""
     company: Optional[str] = None
-    match_score: int = Field(..., ge=0, le=100)
-    semantic_score: int = Field(..., ge=0, le=100)
-    why_fit: str
+    match_score: int = Field(default=0, ge=0, le=100)
+    semantic_score: int = Field(default=0, ge=0, le=100)
+    why_fit: str = ""
     why_not_fit: Optional[str] = None
     key_aligned_capabilities: list[str] = []
     missing_capabilities: list[str] = []

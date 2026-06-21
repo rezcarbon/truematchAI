@@ -11,9 +11,16 @@ celery_app = Celery(
     backend=settings.celery_result_backend,
     include=[
         "app.workers.tasks",
+        "app.workers.retention",
         "app.workers.agents.ingest_cv",
         "app.workers.agents.ingest_jd",
         "app.workers.cv_analysis",
+        "app.workers.capability_translation",
+        "app.workers.transition_intelligence",
+        "app.workers.jd_simulation",
+        "app.workers.alerts",
+        "app.workers.dlq",
+        "app.workers.user_memory",
     ],
 )
 
@@ -47,6 +54,49 @@ celery_app.conf.update(
         "poll-cv-email": {
             "task": "app.workers.agents.ingest_cv.poll_email",
             "schedule": settings.ingest_email_poll_seconds,
+        },
+        "retention-daily-sweep": {
+            "task": "app.workers.retention.retention_daily_sweep",
+            "schedule": 86400,  # Every 24 hours
+            "options": {
+                "expires": 3600,  # Task expires after 1 hour if not executed
+            },
+        },
+        # --- Proactive alerts (intelligence-driven, not intake-driven) ---
+        "check-stale-candidates": {
+            "task": "app.workers.alerts.check_stale_candidates",
+            "schedule": 21600,  # Every 6 hours
+            "options": {"expires": 3600},
+        },
+        "daily-digest": {
+            "task": "app.workers.alerts.daily_digest",
+            "schedule": 86400,  # Once a day
+            "options": {"expires": 3600},
+        },
+        # --- Durable user memory: merge fresh chat activity hourly ---
+        "merge-user-memories": {
+            "task": "app.workers.user_memory.merge_stale_user_memories",
+            "schedule": 3600,
+            "options": {"expires": 1800},
+        },
+        # --- Self-learned role taxonomy: re-cluster JDs every 6h ---
+        "rebuild-role-taxonomy": {
+            "task": "app.workers.tasks.rebuild_role_taxonomy",
+            "schedule": 21600,
+            "options": {"expires": 3600},
+        },
+        # --- Durable agent plans: re-enqueue any stalled background plan ---
+        "resume-stalled-plans": {
+            "task": "app.workers.tasks.resume_stalled_plans",
+            "schedule": 120,
+            "options": {"expires": 110},
+        },
+        # --- Phase 3: re-assess tracked transitions whose quarterly review is due.
+        # Sweeps daily; each analysis only re-runs when its own next_review_at lapses.
+        "reassess-due-transitions": {
+            "task": "app.workers.transition_intelligence.reassess_due_transitions",
+            "schedule": 86400,  # daily sweep
+            "options": {"expires": 43200},
         },
     },
 )

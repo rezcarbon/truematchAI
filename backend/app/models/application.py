@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from app.core.clock import utcnow
 from enum import Enum
 
 from sqlalchemy import DateTime, String, ForeignKey, Index
@@ -34,16 +35,18 @@ class Application(Base):
 
     # Pipeline tracking
     stage: Mapped[PipelineStage] = mapped_column(String(50), nullable=False, default=PipelineStage.applied)
-    stage_entered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    stage_entered_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
     # Application metadata
     source: Mapped[str | None] = mapped_column(String(50), nullable=True)  # linkedin, referral, indeed, etc
     tags: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # custom tags
+    # External ATS provenance, e.g. "greenhouse:application:9876" — idempotent import.
+    external_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Timestamps
-    applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
 
     # Relationships (lazy import to avoid circular dependency)
     interviews: Mapped[list] = relationship("Interview", back_populates="application", cascade="all, delete-orphan", foreign_keys="Interview.application_id")
@@ -53,4 +56,5 @@ class Application(Base):
         Index("ix_applications_stage", "stage"),
         Index("ix_applications_source", "source"),
         Index("ix_applications_user_id", "user_id"),
+        Index("ix_applications_external_ref", "external_ref"),
     )

@@ -3,17 +3,14 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 from sqlalchemy import select, func
 
-from app.core.exceptions import ConflictError, NotFoundError
-from app.database import AsyncSession
+from app.core.exceptions import NotFoundError
 from app.deps import CurrentUser, DBSession
-from app.models.jd_simulation import JDSimulationRequest, JDSimulationResult, JDSimulationStatus, SimulationType
+from app.models.jd_simulation import JDSimulationRequest, JDSimulationResult, JDSimulationStatus
 from app.models.position import Position
-from app.models.user import User
 from app.schemas.jd_simulation import (
     ArchetypeFit,
     CapabilityGapItem,

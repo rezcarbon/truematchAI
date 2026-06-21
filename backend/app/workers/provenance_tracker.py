@@ -8,12 +8,10 @@ Tracks complete provenance of every assessment:
 - Full assessment reproducibility
 """
 import hashlib
-import json
 import logging
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from app.core.clock import utcnow
 from typing import Any, Dict, List, Optional
-from uuid import uuid4
 
 from app.config import settings
 
@@ -33,7 +31,7 @@ class ModelVersion:
 
     def __post_init__(self):
         if self.timestamp is None:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utcnow().isoformat()
 
     def to_dict(self) -> Dict[str, str]:
         return asdict(self)
@@ -121,7 +119,7 @@ class ProvenanceTracker:
         """
         record = AssessmentProvenanceRecord(
             assessment_id=assessment_id,
-            created_at=datetime.utcnow().isoformat(),
+            created_at=utcnow().isoformat(),
             input_hashes={
                 "cv_hash": self.calculate_input_hash(cv_content),
                 "jd_hash": self.calculate_input_hash(jd_content),
@@ -146,7 +144,7 @@ class ProvenanceTracker:
             decision=decision,
             decision_reasoning=decision_reasoning,
             notifications_sent=notifications_sent,
-            completed_at=datetime.utcnow().isoformat(),
+            completed_at=utcnow().isoformat(),
         )
 
         self.records[assessment_id] = record

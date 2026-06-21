@@ -2,18 +2,23 @@
 from __future__ import annotations
 
 import logging
+import uuid
 from datetime import datetime, timedelta
-from typing import Sequence
+from app.core.clock import utcnow
+from typing import Optional, Sequence
 
-from fastapi import APIRouter, HTTPException, status, Query
-from sqlalchemy import select, func, and_
+from fastapi import APIRouter, File, HTTPException, status, Query, UploadFile
+from pydantic import BaseModel, Field
+from sqlalchemy import select, func
 from sqlalchemy.orm import selectinload
 
-from app.deps import CurrentUser, DBSession
+from app.config import settings
+from app.deps import CurrentUser, CurrentRecruiter, DBSession
 from app.models.application import Application, PipelineStage
-from app.models.interview import Interview, InterviewSlot, Scorecard
+from app.models.interview import Interview, Scorecard
 from app.models.position import Position
 from app.models.resume import Resume
+from app.models.user import User
 from app.schemas.ats import (
     ApplicationCreate,
     ApplicationUpdate,
@@ -109,7 +114,7 @@ async def update_application(
         try:
             new_stage = PipelineStage(payload.stage)
             application.stage = new_stage
-            application.stage_entered_at = datetime.utcnow()
+            application.stage_entered_at = utcnow()
             logger.info(
                 f"Application stage updated to {payload.stage}",
                 extra={"application_id": str(application.id)},
@@ -149,6 +154,129 @@ async def update_application(
 # ============================================================================
 # INTERVIEW ENDPOINTS
 # ============================================================================
+
+class SlotCreate(BaseModel):
+    interviewer_id: uuid.UUID
+    start_time: datetime
+    end_time: datetime
+
+
+@router.post("/interview-slots", status_code=status.HTTP_201_CREATED)
+async def create_interview_slot(
+    payload: SlotCreate, user: CurrentRecruiter, db: DBSession
+) -> dict:
+    """Declare interviewer availability the auto-scheduler can book against."""
+    from app.models.interview import InterviewSlot
+
+    if payload.end_time <= payload.start_time:
+        raise HTTPException(status_code=400, detail="end_time must be after start_time")
+    slot = InterviewSlot(
+        interviewer_id=payload.interviewer_id,
+        start_time=payload.start_time,
+        end_time=payload.end_time,
+        available=True,
+    )
+    db.add(slot)
+    await db.flush()
+    return {"id": str(slot.id), "interviewer_id": str(payload.interviewer_id),
+            "start_time": payload.start_time.isoformat(), "end_time": payload.end_time.isoformat()}
+
+
+class AutoScheduleRequest(BaseModel):
+    application_id: uuid.UUID
+    position_id: uuid.UUID
+    interviewer_ids: list[uuid.UUID] = Field(default_factory=list)
+    duration_minutes: Optional[int] = None
+    earliest: Optional[datetime] = None
+    latest: Optional[datetime] = None
+    candidate_email: Optional[str] = None
+
+
+@router.post("/interviews/auto-schedule", status_code=status.HTTP_201_CREATED)
+async def auto_schedule_interview(
+    payload: AutoScheduleRequest, user: CurrentRecruiter, db: DBSession
+) -> dict:
+    """Find the earliest slot all interviewers are free and book the interview.
+
+    Deterministic slot search over declared availability (minus existing
+    bookings). If a calendar provider is configured, the interview is mirrored
+    as a real external event with an online-meeting link; otherwise it is
+    booked locally only.
+    """
+    from app.services.calendar_sync import push_event
+    from app.services.interview_scheduling import find_earliest_slot
+
+    application = await db.get(Application, payload.application_id)
+    if application is None:
+        raise HTTPException(status_code=404, detail="Application not found")
+    position = await db.get(Position, payload.position_id)
+    if position is None:
+        raise HTTPException(status_code=404, detail="Position not found")
+
+    duration = payload.duration_minutes or settings.interview_default_minutes
+    earliest = payload.earliest or utcnow() + timedelta(hours=1)
+    latest = payload.latest or earliest + timedelta(days=14)
+
+    slot = await find_earliest_slot(db, list(payload.interviewer_ids), duration, earliest, latest)
+    if slot is None:
+        raise HTTPException(
+            status_code=409,
+            detail="No common availability found for the interviewers in the window.",
+        )
+
+    interview = Interview(
+        application_id=payload.application_id,
+        position_id=payload.position_id,
+        interviewer_ids=list(payload.interviewer_ids),
+        candidate_email=payload.candidate_email,
+        scheduled_at=slot,
+    )
+    db.add(interview)
+    await db.flush()
+
+    # Mirror to an external calendar when configured (gated; failures are soft).
+    attendees = [payload.candidate_email] if payload.candidate_email else []
+    ext = await __import__("asyncio").to_thread(
+        push_event,
+        subject=f"Interview — {position.title}",
+        start=slot,
+        duration_minutes=duration,
+        attendee_emails=attendees,
+        body=f"TrueMatch interview for {position.title}.",
+    )
+    if ext:
+        interview.calendar_provider = ext.get("provider")
+        interview.calendar_event_id = ext.get("event_id")
+        if ext.get("meeting_link"):
+            interview.meeting_link = ext["meeting_link"]
+            interview.meeting_platform = ext.get("provider")
+        await db.flush()
+
+    from app.services.notification_service import NotificationService
+    try:
+        for iid in payload.interviewer_ids or []:
+            await NotificationService.create_notification(
+                db=db,
+                user_id=iid,
+                notification_type="interview_scheduled",
+                title="Interview auto-scheduled",
+                message=f"Interview for {position.title} at {slot.isoformat()}.",
+                action_url=f"/interviews/{interview.id}",
+                broadcast_websocket=True,
+            )
+    except Exception as e:  # noqa: BLE001
+        logger.error(f"auto-schedule notification failed: {e}")
+
+    return {
+        "interview_id": str(interview.id),
+        "scheduled_at": slot.isoformat(),
+        "duration_minutes": duration,
+        "interviewer_ids": [str(i) for i in payload.interviewer_ids],
+        "calendar_synced": bool(ext),
+        "calendar_provider": interview.calendar_provider,
+        "meeting_link": interview.meeting_link,
+    }
+
 
 @router.post("/interviews", response_model=InterviewResponse, status_code=status.HTTP_201_CREATED)
 async def schedule_interview(
@@ -209,6 +337,55 @@ async def get_interview(interview_id: str, user: CurrentUser, db: DBSession) -> 
     if not interview:
         raise HTTPException(status_code=404, detail="Interview not found")
     return interview
+
+
+@router.get("/interviews/{interview_id}/ics")
+async def get_interview_ics(interview_id: str, user: CurrentUser, db: DBSession):
+    """Download the interview as an iCalendar (.ics) file.
+
+    Calendar 'integration' without any third-party API: every calendar client
+    (Google, Outlook, Apple) imports standards-compliant ICS. Clients link or
+    attach this in interview emails/UI.
+    """
+    from starlette.responses import Response
+
+    interview = await db.get(Interview, interview_id)
+    if not interview:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    if interview.scheduled_at is None:
+        raise HTTPException(status_code=409, detail="Interview has no scheduled time")
+
+    position = await db.get(Position, interview.position_id)
+    title = f"Interview — {position.title if position else 'TrueMatch'}"
+    start = interview.scheduled_at.strftime("%Y%m%dT%H%M%SZ")
+    end_dt = interview.scheduled_at + timedelta(minutes=60)
+    end = end_dt.strftime("%Y%m%dT%H%M%SZ")
+    location = interview.meeting_link or ""
+    uid = f"{interview.id}@truematch.ai"
+
+    ics = "\r\n".join([
+        "BEGIN:VCALENDAR",
+        "VERSION:2.0",
+        "PRODID:-//TrueMatch//Hiring//EN",
+        "METHOD:PUBLISH",
+        "BEGIN:VEVENT",
+        f"UID:{uid}",
+        f"DTSTAMP:{utcnow().strftime('%Y%m%dT%H%M%SZ')}",
+        f"DTSTART:{start}",
+        f"DTEND:{end}",
+        f"SUMMARY:{title}",
+        f"LOCATION:{location}",
+        f"DESCRIPTION:TrueMatch interview. Join: {location}",
+        "STATUS:CONFIRMED",
+        "END:VEVENT",
+        "END:VCALENDAR",
+        "",
+    ])
+    return Response(
+        content=ics,
+        media_type="text/calendar",
+        headers={"Content-Disposition": f'attachment; filename="interview-{str(interview.id)[:8]}.ics"'},
+    )
 
 
 @router.get("/applications/{application_id}/interviews", response_model=InterviewListResponse)
@@ -282,7 +459,7 @@ async def submit_scorecard(
         competency_scores=payload.competency_scores,
         feedback=payload.feedback,
         overall_recommendation=payload.overall_recommendation,
-        submitted_at=datetime.utcnow(),
+        submitted_at=utcnow(),
     )
     db.add(scorecard)
     await db.flush()
@@ -324,6 +501,124 @@ async def get_interview_scorecards(
 
 
 # ============================================================================
+# INTERVIEW-CONTENT ANALYSIS
+# ============================================================================
+
+async def _ai_scorecard_from_transcript(
+    db, interview: Interview, transcript: str, actor: User
+) -> Scorecard:
+    """Analyze a transcript and persist an AI-generated scorecard."""
+    import asyncio
+
+    from app.engines.interview_analysis import analyze_interview
+
+    position = await db.get(Position, interview.position_id)
+    requirements = (position.parsed_requirements if position else None) or {}
+    context = {
+        "interview_id": str(interview.id),
+        "meeting_platform": interview.meeting_platform,
+    }
+    # The engine is sync (call_claude_json); run off the event loop.
+    analysis = await asyncio.to_thread(analyze_interview, transcript, requirements, context)
+
+    scorecard = Scorecard(
+        interview_id=interview.id,
+        interviewer_id=actor.id,
+        position_id=interview.position_id,
+        competency_scores=analysis.get("competency_scores") or {},
+        feedback=analysis.get("summary"),
+        overall_recommendation=analysis.get("overall_recommendation"),
+        source="ai",
+        transcript=transcript,
+        ai_analysis=analysis,
+        submitted_at=utcnow(),
+    )
+    db.add(scorecard)
+    await db.flush()
+    logger.info(
+        "AI interview scorecard created",
+        extra={"interview_id": str(interview.id), "method": analysis.get("method"),
+               "recommendation": analysis.get("overall_recommendation")},
+    )
+    return scorecard
+
+
+class TranscriptAnalyzeRequest(BaseModel):
+    transcript: str = Field(..., min_length=1, max_length=200_000)
+
+
+@router.post("/interviews/{interview_id}/analyze")
+async def analyze_interview_transcript(
+    interview_id: str,
+    payload: TranscriptAnalyzeRequest,
+    user: CurrentRecruiter,
+    db: DBSession,
+) -> dict:
+    """Analyze a provided interview transcript into an AI scorecard."""
+    interview = await db.get(Interview, interview_id)
+    if interview is None:
+        raise HTTPException(status_code=404, detail="Interview not found")
+    scorecard = await _ai_scorecard_from_transcript(db, interview, payload.transcript, user)
+    return {
+        "scorecard_id": str(scorecard.id),
+        "interview_id": interview_id,
+        "source": "ai",
+        "competency_scores": scorecard.competency_scores,
+        "overall_recommendation": scorecard.overall_recommendation,
+        "analysis": scorecard.ai_analysis,
+    }
+
+
+@router.post("/interviews/{interview_id}/analyze-recording")
+async def analyze_interview_recording(
+    interview_id: str,
+    user: CurrentRecruiter,
+    db: DBSession,
+    file: UploadFile = File(...),
+) -> dict:
+    """Transcribe an interview audio recording, then analyze it into a scorecard.
+
+    Transcription is gated on a configured speech-to-text provider (returns 503
+    otherwise). The transcript is stored encrypted on the scorecard.
+    """
+    from app.engines.transcription import TranscriptionError, is_configured, transcribe_audio
+
+    interview = await db.get(Interview, interview_id)
+    if interview is None:
+        raise HTTPException(status_code=404, detail="Interview not found")
+
+    body = await file.read()
+    if not body:
+        raise HTTPException(status_code=400, detail="Empty recording")
+    if len(body) > settings.transcription_max_bytes:
+        raise HTTPException(status_code=413, detail="Recording exceeds size limit")
+    if not is_configured():
+        raise HTTPException(
+            status_code=503,
+            detail="Interview transcription requires a speech-to-text provider to be configured.",
+        )
+    try:
+        transcript = await __import__("asyncio").to_thread(
+            transcribe_audio, body, file.filename or "interview", file.content_type or ""
+        )
+    except TranscriptionError as exc:
+        raise HTTPException(status_code=502, detail=f"Could not transcribe: {exc}") from exc
+    if not transcript.strip():
+        raise HTTPException(status_code=422, detail="No speech detected in the recording.")
+
+    scorecard = await _ai_scorecard_from_transcript(db, interview, transcript, user)
+    return {
+        "scorecard_id": str(scorecard.id),
+        "interview_id": interview_id,
+        "source": "ai",
+        "transcript_length": len(transcript),
+        "competency_scores": scorecard.competency_scores,
+        "overall_recommendation": scorecard.overall_recommendation,
+        "analysis": scorecard.ai_analysis,
+    }
+
+
+# ============================================================================
 # ANALYTICS ENDPOINTS
 # ============================================================================
 
@@ -344,7 +639,7 @@ async def get_pipeline_analytics(
         count = len([a for a in apps_list if a.stage == stage])
         if count > 0:
             # Calculate days in stage
-            now = datetime.utcnow()
+            now = utcnow()
             stage_apps = [a for a in apps_list if a.stage == stage]
             days_in_stage = [
                 (now - a.stage_entered_at).days for a in stage_apps

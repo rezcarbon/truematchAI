@@ -1,11 +1,13 @@
 """Position endpoints."""
 from __future__ import annotations
 
+import logging
 import uuid
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import func, select
 
+from app.config import settings
 from app.deps import CurrentUser, DBSession
 from app.engines import corpus, jd_evolution, reasoning
 from app.engines.intake import analyze_jd
@@ -20,6 +22,7 @@ from app.schemas.position import (
 )
 
 router = APIRouter()
+logger = logging.getLogger("truematch.positions")
 
 
 def _require_recruiter(user: CurrentUser) -> None:
@@ -93,6 +96,53 @@ async def list_positions(user: CurrentUser, db: DBSession) -> PositionList:
     )
 
 
+@router.get("/taxonomy")
+async def get_role_taxonomy(user: CurrentUser, db: DBSession) -> dict:
+    """The self-learned role taxonomy: clusters (role families) + members.
+
+    Declared before /{position_id} so 'taxonomy' is not parsed as a UUID.
+    """
+    from app.models.role_cluster import RoleCluster
+
+    clusters = list(
+        (await db.scalars(select(RoleCluster).order_by(RoleCluster.size.desc()))).all()
+    )
+    out = []
+    for c in clusters:
+        members = list(
+            (
+                await db.scalars(
+                    select(Position).where(Position.role_cluster_id == c.id)
+                )
+            ).all()
+        )
+        out.append(
+            {
+                "id": str(c.id),
+                "label": c.label,
+                "size": c.size,
+                "top_capabilities": c.top_capabilities or [],
+                "method": c.method,
+                "members": [{"id": str(p.id), "title": p.title} for p in members],
+            }
+        )
+    return {"clusters": out, "total": len(out)}
+
+
+@router.post("/taxonomy/rebuild")
+async def rebuild_role_taxonomy_endpoint(user: CurrentUser, db: DBSession) -> dict:
+    """Trigger a recompute of the role taxonomy (recruiter/admin)."""
+    _require_recruiter(user)
+    try:
+        from app.workers.tasks import rebuild_role_taxonomy
+
+        rebuild_role_taxonomy.delay()
+        return {"status": "queued"}
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("Could not enqueue taxonomy rebuild: %s", exc)
+        raise HTTPException(status_code=503, detail="Could not enqueue rebuild") from exc
+
+
 @router.get("/{position_id}", response_model=PositionResponse)
 async def get_position(
     position_id: uuid.UUID, user: CurrentUser, db: DBSession
@@ -125,6 +175,22 @@ async def update_position(
         await db.flush()
         await _snapshot_jd(db, position)
         await corpus.record_jd(db, position.description or "")  # corpus learning
+        # Auto-rescore: if this JD edit drifted, re-run assessments for the
+        # position's candidates. The task recomputes drift deterministically
+        # and no-ops when there are no drift signals; commit first so it sees
+        # the new version row.
+        if settings.auto_rescore_on_drift:
+            # Commit so the worker (separate connection) sees the new JD
+            # version, then refresh so the response model can still serialize
+            # the (otherwise expired) position attributes.
+            await db.commit()
+            await db.refresh(position)
+            try:
+                from app.workers.tasks import rescore_position_on_drift
+
+                rescore_position_on_drift.delay(str(position.id))
+            except Exception:  # noqa: BLE001 — broker hiccup must not fail the edit
+                logger.warning("Could not enqueue drift rescore for %s", position.id)
     else:
         await db.flush()
     return position

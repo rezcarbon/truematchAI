@@ -23,17 +23,15 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime, timedelta
-from typing import Optional
+from app.core.clock import utcnow
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models.assessment import Assessment, AssessmentStatus
+from app.models.assessment import Assessment
 from app.models.ingest_queue import IngestQueueItem, IngestStatus
 from app.models.audit import AuditTrailEntry
-from app.schemas.decision import DecisionType
 from app.websocket.agents_operator import get_operator_manager
 from app.workers.notification_service import get_notification_dispatcher
 
@@ -218,7 +216,7 @@ class AutoApproveWorker:
             .values(
                 status=IngestStatus.APPROVED,
                 review_notes=f"Auto-approved (score: {assessment_score:.2f})",
-                updated_at=datetime.utcnow(),
+                updated_at=utcnow(),
             )
         )
         await self.db.execute(stmt)
@@ -236,7 +234,7 @@ class AutoApproveWorker:
                 'auto_approved': True,
                 'assessment_score': float(assessment_score),
             },
-            timestamp=datetime.utcnow(),
+            timestamp=utcnow(),
         )
         self.db.add(audit_entry)
         await self.db.commit()

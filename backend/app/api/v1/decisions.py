@@ -58,6 +58,16 @@ async def create_decision(
         )
     )
     await db.flush()
+
+    # Close the learning loop: turn this decision into a training signal and
+    # reinforce the position's success pattern so future assessments benefit.
+    from app.services.decision_learning import (
+        bridge_decision_to_feedback,
+        reinforce_from_decision,
+    )
+    await bridge_decision_to_feedback(db, decision, assessment)
+    await reinforce_from_decision(db, decision, assessment)
+    await db.flush()
     return decision
 
 

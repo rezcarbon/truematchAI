@@ -18,10 +18,10 @@ import logging
 from typing import Any, Callable, Optional
 
 from app.config import settings
-from app.workers.assessment_queue import AssessmentProcessor, AssessmentQueue, get_assessment_queue, get_assessment_processor
+from app.workers.assessment_queue import get_assessment_queue, get_assessment_processor
 from app.workers.decision_engine import DecisionThresholds, configure_decision_thresholds, get_decision_engine
 from app.workers.email_ingestion import get_email_ingestor, start_email_ingestion, stop_email_ingestion
-from app.workers.file_ingestion import get_file_monitor, start_file_monitoring, stop_file_monitoring
+from app.workers.file_ingestion import get_file_monitor
 from app.workers.governance_gates import get_governance_validator
 from app.workers.notification_service import get_notification_dispatcher
 from app.workers.provenance_learning_orchestrator import (
@@ -140,7 +140,7 @@ class TrueMatchOrchestrator:
         logger.info(f"Starting assessment processor ({settings.max_concurrent_assessments} workers)...")
         try:
             asyncio.create_task(self.assessment_processor.start())
-            logger.info(f"  ✓ Assessment processor active")
+            logger.info("  ✓ Assessment processor active")
         except Exception as e:
             logger.error(f"  ✗ Assessment processor failed to start: {e}")
 
@@ -168,10 +168,10 @@ class TrueMatchOrchestrator:
         logger.info("  ✓ Notifications (Slack/email/in-app)")
         logger.info("")
         logger.info("Phase B: Governance Layer")
-        logger.info(f"  ✓ Coherence gate (mandatory)")
-        logger.info(f"  ✓ Consistency gate (mandatory)")
-        logger.info(f"  ✓ Fidelity gate (mandatory)")
-        logger.info(f"  ✓ Bias detection gate (mandatory)")
+        logger.info("  ✓ Coherence gate (mandatory)")
+        logger.info("  ✓ Consistency gate (mandatory)")
+        logger.info("  ✓ Fidelity gate (mandatory)")
+        logger.info("  ✓ Bias detection gate (mandatory)")
         logger.info("")
         logger.info("Phase C: Provenance & Reproducibility")
         logger.info("  ✓ SHA-256 input hashing")
@@ -185,7 +185,7 @@ class TrueMatchOrchestrator:
         logger.info("  ✓ Automatic recalibration")
         logger.info("  ✓ Batch re-scoring")
         logger.info("")
-        logger.info(f"Decision Thresholds:")
+        logger.info("Decision Thresholds:")
         logger.info(f"  • Auto-Approve: {settings.decision_auto_approve_threshold}")
         logger.info(f"  • Review: {settings.decision_review_threshold}")
         logger.info(f"  • Auto-Reject: {settings.decision_auto_reject_threshold}")

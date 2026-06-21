@@ -7,13 +7,11 @@ Integrates provenance tracking (C) and learning loop (D).
 Handles retries, failures, and monitoring.
 """
 import asyncio
-import json
 import logging
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from app.core.clock import utcnow
 from enum import Enum
-from typing import Any, Callable, Dict, List, Optional
-from uuid import UUID, uuid4
+from typing import Any, Callable, Dict, Optional
 
 from app.config import settings
 from app.workers.provenance_learning_orchestrator import (
@@ -67,7 +65,7 @@ class AssessmentJob:
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow().isoformat()
+            self.created_at = utcnow().isoformat()
         if self.metadata is None:
             self.metadata = {}
 
@@ -131,7 +129,7 @@ class AssessmentQueue:
         if job:
             job.status = JobStatus.COMPLETED
             job.metadata["result"] = result
-            job.metadata["completed_at"] = datetime.utcnow().isoformat()
+            job.metadata["completed_at"] = utcnow().isoformat()
 
             # Keep last 1000 completed jobs
             self.completed[job_id] = job
@@ -147,7 +145,7 @@ class AssessmentQueue:
         if job:
             job.status = JobStatus.FAILED
             job.metadata["error"] = error
-            job.metadata["failed_at"] = datetime.utcnow().isoformat()
+            job.metadata["failed_at"] = utcnow().isoformat()
 
             # Keep last 1000 failed jobs
             self.failed[job_id] = job
@@ -225,7 +223,7 @@ class AssessmentProcessor:
         5. Create provenance record (Phase C)
         6. Process training feedback (Phase D)
         """
-        start_time = datetime.utcnow()
+        start_time = utcnow()
         try:
             logger.info(f"Processing job: {job.job_id}")
 
@@ -273,7 +271,7 @@ class AssessmentProcessor:
             cv_content = job.metadata.get("cv_content", "")
             jd_content = job.metadata.get("jd_content", job.jd_text or "")
 
-            execution_time_ms = int((datetime.utcnow() - start_time).total_seconds() * 1000)
+            execution_time_ms = int((utcnow() - start_time).total_seconds() * 1000)
             assessment_result["execution_time_ms"] = execution_time_ms
 
             if self.provenance_learning:

@@ -4,9 +4,9 @@ from __future__ import annotations
 import uuid
 
 import pytest
-from fastapi import HTTPException
 
 from app.api.v1.assessments import create_self_assessment
+from app.core.exceptions import AuthorizationError, NotFoundError
 from app.models.assessment import Assessment
 from app.models.position import Position
 from app.models.resume import Resume
@@ -79,7 +79,7 @@ async def test_self_assessment_rejects_other_users_resume(captured_delay):
     resume.id = uuid.uuid4()
     db = FakeAsyncSession({Resume: resume})
     payload = SelfAssessmentCreate(resume_id=resume.id, jd_text=JD)
-    with pytest.raises(HTTPException) as exc:
+    with pytest.raises(AuthorizationError) as exc:
         await create_self_assessment(payload, user, db)
     assert exc.value.status_code == 403
     assert captured_delay == []
@@ -90,6 +90,6 @@ async def test_self_assessment_missing_resume_404(captured_delay):
     user = _user()
     db = FakeAsyncSession({})  # no resume
     payload = SelfAssessmentCreate(resume_id=uuid.uuid4(), jd_text=JD)
-    with pytest.raises(HTTPException) as exc:
+    with pytest.raises(NotFoundError) as exc:
         await create_self_assessment(payload, user, db)
     assert exc.value.status_code == 404

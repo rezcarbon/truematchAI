@@ -96,3 +96,13 @@ async def get_current_admin(
 
 
 CurrentAdmin = Annotated[User, Depends(get_current_admin)]
+
+
+async def get_current_recruiter(
+    user: Annotated[User, Depends(require_role(UserRole.recruiter, UserRole.admin))],
+) -> User:
+    """Recruiter-or-admin gate for staff-only ATS endpoints."""
+    return user
+
+
+CurrentRecruiter = Annotated[User, Depends(get_current_recruiter)]

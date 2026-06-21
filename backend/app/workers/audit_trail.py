@@ -7,11 +7,10 @@ Enables compliance (GDPR, SOC2) and legal discovery.
 import json
 import logging
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from app.core.clock import utcnow
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +71,7 @@ class ImmutableAuditTrail:
         """
         event = AuditEvent(
             event_id=str(uuid4()),
-            timestamp=datetime.utcnow().isoformat(),
+            timestamp=utcnow().isoformat(),
             event_type=event_type,
             assessment_id=assessment_id,
             actor=actor,

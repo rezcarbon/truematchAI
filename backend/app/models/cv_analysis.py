@@ -94,6 +94,13 @@ class CVAnalysisResult(Base, TimestampMixin):
     market_positioning: Mapped[str | None] = mapped_column(Text, nullable=True)
     growth_opportunities: Mapped[list | None] = mapped_column(JSONB, nullable=True)
 
+    # Governance checks (quality assurance)
+    governance_coherence: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    governance_consistency: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    governance_fidelity: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    governance_bias_flags: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    governance_passed: Mapped[bool | None] = mapped_column(default=True, nullable=True)
+
     __table_args__ = (
         Index("ix_cv_analysis_results_request_id", "cv_analysis_request_id"),
     )

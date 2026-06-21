@@ -11,6 +11,7 @@ import json
 import logging
 from typing import Any
 
+from app.config import settings
 from app.engines import text_utils
 from app.engines.client import call_claude_json, is_live
 from app.engines.prompts import get_prompt
@@ -34,7 +35,10 @@ def parse_resume(resume_text: str, supplementary: dict | None = None) -> dict[st
     )
     if not is_live():
         return _mock_parsed_resume()
-    data = call_claude_json(system=prompt.system, user_content=user, max_tokens=3000)
+    # Mechanical extraction — route to the cheaper/faster model; judgment calls
+    # (capability verdict, substitution, counter-rec, translation) stay on primary.
+    data = call_claude_json(system=prompt.system, user_content=user, max_tokens=4096,
+                            model=settings.anthropic_fast_model)
     data.setdefault("skills", [])
     data.setdefault("experience", [])
     data.setdefault("narrative", data.get("summary", ""))
@@ -47,7 +51,9 @@ def analyze_jd(jd_text: str) -> dict[str, Any]:
     user = prompt.render_user(jd_text=jd_text or "")
     if not is_live():
         return _mock_requirements()
-    data = call_claude_json(system=prompt.system, user_content=user, max_tokens=2000)
+    # Mechanical extraction — fast model (see parse_resume).
+    data = call_claude_json(system=prompt.system, user_content=user, max_tokens=2000,
+                            model=settings.anthropic_fast_model)
     data.setdefault("required_capabilities", [])
     data.setdefault("preferred_capabilities", [])
     return data

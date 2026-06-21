@@ -56,7 +56,8 @@ services:
 
   worker:
     build: .
-    command: celery -A app.workers.celery_app.celery_app worker --loglevel=info
+    # threads pool matches run-local.sh — correct for the blocking LLM/IO pipeline.
+    command: celery -A app.workers.celery_app.celery_app worker --pool=threads --concurrency=4 --loglevel=info
     env_file: .env
     environment:
       DATABASE_URL: postgresql+asyncpg://truematch:password@postgres:5432/truematch
@@ -64,6 +65,20 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Celery Beat — REQUIRED for scheduled work (CV/JD/email ingestion polling,
+  # retention sweep, stale-candidate alerts, daily digest). Without it those
+  # autonomous/proactive features never fire.
+  beat:
+    build: .
+    command: celery -A app.workers.celery_app.celery_app beat --loglevel=info
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://truematch:password@postgres:5432/truematch
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
       redis:
         condition: service_healthy
 

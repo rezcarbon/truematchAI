@@ -15,7 +15,7 @@ import asyncio
 import json
 import logging
 from dataclasses import dataclass, asdict
-from datetime import datetime
+from app.core.clock import utcnow
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set
 from uuid import uuid4
@@ -61,7 +61,7 @@ class ProgressEvent:
 
     def __post_init__(self):
         if self.timestamp is None:
-            self.timestamp = datetime.utcnow().isoformat()
+            self.timestamp = utcnow().isoformat()
         if self.details is None:
             self.details = {}
 
@@ -101,7 +101,7 @@ class ProgressTracker:
             self.event_history[assessment_id] = []
             self.current_progress[assessment_id] = {
                 "assessment_id": assessment_id,
-                "started_at": datetime.utcnow().isoformat(),
+                "started_at": utcnow().isoformat(),
                 "progress_percent": 0,
                 "current_stage": "pending",
             }
@@ -113,7 +113,7 @@ class ProgressTracker:
     def subscribe_global(self, callback: Callable) -> str:
         """Subscribe to all progress updates."""
         self.global_subscribers.add(callback)
-        logger.info(f"Subscribed to global progress updates")
+        logger.info("Subscribed to global progress updates")
         return f"sub_global_{len(self.global_subscribers)}"
 
     def unsubscribe_from_assessment(self, assessment_id: str, callback: Callable):

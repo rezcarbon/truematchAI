@@ -5,11 +5,13 @@ import asyncio
 import logging
 from datetime import datetime, timezone
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
+from app.api.v1 import dsar
 from app.api.v1.router import api_router
 from app.config import settings
 from app.core import health
@@ -105,6 +107,49 @@ async def validation_error_handler(request: Request, exc: RequestValidationError
     )
 
 
+# Map plain HTTP status codes to the platform's ProblemDetail error taxonomy so
+# every error response (auth, 404, 403, conflict, …) follows ONE contract —
+# not just the custom TrueMatchError/validation paths. Backward-compatible:
+# `detail` and the HTTP status code are preserved; type/title/instance are added.
+_HTTP_STATUS_TYPE: dict[int, tuple[str, str]] = {
+    400: ("bad_request", "Bad Request"),
+    401: ("authentication_failed", "Authentication Failed"),
+    402: ("payment_required", "Payment Required"),
+    403: ("authorization_failed", "Authorization Failed"),
+    404: ("resource_not_found", "Resource Not Found"),
+    409: ("conflict", "Conflict"),
+    422: ("validation_error", "Validation Error"),
+    429: ("rate_limit_exceeded", "Rate Limit Exceeded"),
+}
+
+
+@app.exception_handler(StarletteHTTPException)
+async def http_exception_handler(request: Request, exc: StarletteHTTPException) -> JSONResponse:
+    """Render plain HTTPExceptions as ProblemDetail (uniform error contract)."""
+    request_id = get_request_id()
+    error_type, title = _HTTP_STATUS_TYPE.get(
+        exc.status_code, ("http_error", "HTTP Error")
+    )
+    detail = exc.detail if isinstance(exc.detail, str) else str(exc.detail)
+    problem_detail = ProblemDetail(
+        type=error_type,
+        title=title,
+        status=exc.status_code,
+        detail=detail,
+        request_id=request_id,
+        timestamp=datetime.now(timezone.utc).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        instance=str(request.url.path),
+    )
+    headers = {"X-Request-ID": request_id}
+    if getattr(exc, "headers", None):
+        headers.update(exc.headers)
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=problem_detail.model_dump(exclude_none=True),
+        headers=headers,
+    )
+
+
 @app.exception_handler(Exception)
 async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     """Handle unhandled exceptions (HTTP 500)."""
@@ -156,6 +201,7 @@ app.add_middleware(RequestContextMiddleware)
 setup_metrics(app)
 
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(dsar.router)  # DSAR endpoints (includes /api/v1/dsar prefix)
 
 
 # ─ Lifecycle Events ──────────────────────────────────────────────────────
@@ -213,6 +259,15 @@ async def start_ingestion_workers():
     else:
         logger.info("Email ingestion disabled in configuration")
 
+    # Start autonomous agent loop for background task processing
+    try:
+        from app.agents.autonomous_loop import start_autonomous_loop
+
+        await start_autonomous_loop()
+        logger.info("Autonomous agent loop started")
+    except Exception as e:
+        logger.error(f"Failed to start autonomous loop: {e}")
+
 
 @app.on_event("shutdown")
 async def shutdown_event():
@@ -236,6 +291,15 @@ async def shutdown_event():
             logger.info("Email ingestion worker stopped")
         except Exception as e:
             logger.error(f"Error stopping email ingestor: {e}")
+
+    # Stop autonomous agent loop
+    try:
+        from app.agents.autonomous_loop import stop_autonomous_loop
+
+        await stop_autonomous_loop()
+        logger.info("Autonomous agent loop stopped")
+    except Exception as e:
+        logger.error(f"Error stopping autonomous loop: {e}")
 
     logger.info("Draining in-flight requests...")
     # Grace period for in-flight requests to complete

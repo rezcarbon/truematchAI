@@ -3,7 +3,6 @@ Tests for mass upload processor functionality.
 """
 
 import json
-from datetime import datetime
 
 import pytest
 
@@ -14,7 +13,6 @@ from app.scrapers.mass_upload import (
     FieldMappingValidator,
     DEFAULT_FIELD_MAPPINGS,
 )
-from app.scrapers.base import JobPosting
 
 
 class TestFieldMappingValidator:

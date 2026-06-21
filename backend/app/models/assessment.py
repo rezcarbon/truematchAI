@@ -6,7 +6,7 @@ import uuid
 
 from sqlalchemy import Boolean
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy import ForeignKey, Index, Integer
+from sqlalchemy import ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
@@ -25,6 +25,18 @@ class AssessmentStatus(str, enum.Enum):
     # assessment is withheld from automated surfacing and routed to human review
     # rather than presented as a confident result.
     flagged_for_review = "flagged_for_review"
+
+
+class DecisionType(str, enum.Enum):
+    """EU AI Act compliance decision types (Article 14).
+
+    approval: Autonomous approval (confidence >= 0.90 + governance passed)
+    advisory: Recommendation requiring human review (confidence 0.40-0.90)
+    escalate: Escalation to human (confidence < 0.40 OR governance failed)
+    """
+    approval = "approval"
+    advisory = "advisory"
+    escalate = "escalate"
 
 
 class Assessment(Base, TimestampMixin):
@@ -102,9 +114,30 @@ class Assessment(Base, TimestampMixin):
     # Difference between capability and traditional scoring
     score_delta: Mapped[int | None] = mapped_column(Integer, nullable=True)
 
+    # SHA-256 over (resume text + JD text + prompt-registry version). Identical
+    # inputs can reuse a prior completed result instead of re-running the LLM
+    # pipeline — effective determinism + zero cost for repeats.
+    input_hash: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    # Dead Letter Queue (DLQ) error tracking — populated when assessment fails
+    # after max retries and is sent to DLQ handler.
+    dlq_error: Mapped[str | None] = mapped_column(EncryptedText, nullable=True)
+    dlq_context: Mapped[dict | None] = mapped_column(EncryptedJSON, nullable=True)
+
+    # EU AI Act compliance fields (Article 14)
+    decision_type: Mapped[DecisionType | None] = mapped_column(
+        SAEnum(DecisionType, name="decision_type"),
+        nullable=True,
+    )
+    human_review_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    article_14_compliant: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    review_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
     __table_args__ = (
         Index("ix_assessments_user_id", "user_id"),
         Index("ix_assessments_position_id", "position_id"),
         Index("ix_assessments_resume_id", "resume_id"),
         Index("ix_assessments_status", "status"),
+        Index("ix_assessments_decision_type", "decision_type"),
+        Index("ix_assessments_input_hash", "input_hash"),
     )

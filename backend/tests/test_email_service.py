@@ -10,39 +10,18 @@ Tests cover:
 - Email logging
 """
 
-import asyncio
 import uuid
-from datetime import datetime, timezone
 from pathlib import Path
-from typing import AsyncGenerator
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.core.email_service import EmailService, EmailTemplate, EmailServiceError
-from app.models.base import Base
 from app.models.notification import EmailLog
 from app.workers.candidate_notification import CandidateNotificationWorker
 
-
-@pytest.fixture
-async def test_db() -> AsyncGenerator[AsyncSession, None]:
-    """Create in-memory test database."""
-    engine = create_async_engine("sqlite+aiosqlite:///:memory:", echo=False)
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    SessionLocal = sessionmaker(
-        engine, class_=AsyncSession, expire_on_commit=False
-    )
-
-    async with SessionLocal() as session:
-        yield session
-
-    await engine.dispose()
+# Use global db_session fixture from conftest.py for PostgreSQL-compatible testing
 
 
 class TestEmailService:
@@ -171,16 +150,16 @@ class TestCandidateNotificationWorker:
     """Test CandidateNotificationWorker functionality."""
 
     @pytest.mark.asyncio
-    async def test_worker_initialization(self, test_db: AsyncSession):
+    async def test_worker_initialization(self, db_session: AsyncSession):
         """Test worker initializes correctly."""
-        worker = CandidateNotificationWorker(test_db)
-        assert worker.db is test_db
+        worker = CandidateNotificationWorker(db_session)
+        assert worker.db is db_session
         assert worker.email_service is not None
 
     @pytest.mark.asyncio
-    async def test_log_email_sent(self, test_db: AsyncSession):
+    async def test_log_email_sent(self, db_session: AsyncSession):
         """Test logging successful email send."""
-        worker = CandidateNotificationWorker(test_db)
+        worker = CandidateNotificationWorker(db_session)
         assessment_id = uuid.uuid4()
 
         await worker._log_email_sent(
@@ -192,7 +171,7 @@ class TestCandidateNotificationWorker:
 
         # Verify log was created
         from sqlalchemy import select
-        result = await test_db.execute(select(EmailLog))
+        result = await db_session.execute(select(EmailLog))
         logs = result.scalars().all()
 
         assert len(logs) == 1
@@ -202,9 +181,9 @@ class TestCandidateNotificationWorker:
         assert logs[0].assessment_id == assessment_id
 
     @pytest.mark.asyncio
-    async def test_log_email_failed(self, test_db: AsyncSession):
+    async def test_log_email_failed(self, db_session: AsyncSession):
         """Test logging failed email send."""
-        worker = CandidateNotificationWorker(test_db)
+        worker = CandidateNotificationWorker(db_session)
         assessment_id = uuid.uuid4()
 
         await worker._log_email_failed(
@@ -216,7 +195,7 @@ class TestCandidateNotificationWorker:
 
         # Verify log was created
         from sqlalchemy import select
-        result = await test_db.execute(select(EmailLog))
+        result = await db_session.execute(select(EmailLog))
         logs = result.scalars().all()
 
         assert len(logs) == 1

@@ -14,13 +14,12 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_current_user, get_db
-from app.models.job_scraping import JobScrapingConfig, JobSourceType, ScrapingRun, BatchStatus
+from app.models.job_scraping import JobScrapingConfig, JobSourceType, ScrapingRun
 from app.models.user import User
 from app.schemas.scrapers import (
     ScraperConfigResponse,
     ScraperConfigCreateRequest,
     ListScrapersResponse,
-    ScraperRunResponse,
 )
 
 logger = logging.getLogger("truematch.scrapers")

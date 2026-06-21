@@ -2,13 +2,11 @@
 from __future__ import annotations
 
 import logging
-from datetime import datetime
-from typing import Optional
+from app.core.clock import utcnow
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import select, update, desc
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import CurrentUser, DBSession
 from app.models import Notification
@@ -67,7 +65,7 @@ async def list_notifications(
     query = select(Notification).where(Notification.user_id == user.id)
 
     if unread_only:
-        query = query.where(Notification.read == False)
+        query = query.where(Notification.read.is_(False))
 
     # Order by created_at descending (newest first)
     query = query.order_by(desc(Notification.created_at)).limit(limit).offset(offset)
@@ -78,7 +76,7 @@ async def list_notifications(
     # Get unread count
     unread_query = select(Notification).where(
         Notification.user_id == user.id,
-        Notification.read == False,
+        Notification.read.is_(False),
     )
     unread_result = await db.execute(unread_query)
     unread_count = len(unread_result.scalars().all())
@@ -124,7 +122,7 @@ async def mark_notification_read(notification_id: str, user: CurrentUser, db: DB
     update_query = (
         update(Notification)
         .where(Notification.id == notification_uuid)
-        .values(read=True, read_at=datetime.utcnow())
+        .values(read=True, read_at=utcnow())
     )
     await db.execute(update_query)
     await db.commit()
@@ -144,9 +142,9 @@ async def mark_all_notifications_read(user: CurrentUser, db: DBSession) -> None:
         update(Notification)
         .where(
             Notification.user_id == user.id,
-            Notification.read == False,
+            Notification.read.is_(False),
         )
-        .values(read=True, read_at=datetime.utcnow())
+        .values(read=True, read_at=utcnow())
     )
     result = await db.execute(update_query)
     await db.commit()

@@ -3,19 +3,15 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 from sqlalchemy import select, func
-from sqlalchemy.orm import selectinload
 
-from app.core.exceptions import ConflictError, NotFoundError
-from app.database import AsyncSession
+from app.core.exceptions import NotFoundError
 from app.deps import CurrentUser, DBSession
 from app.models.cv_analysis import CVAnalysisRequest, CVAnalysisResult, CVAnalysisStatus
 from app.models.position import Position
 from app.models.resume import Resume
-from app.models.user import User
 from app.schemas.cv_analysis import (
     CVAnalysisGapItem,
     CVAnalysisListItem,
@@ -137,19 +133,17 @@ async def get_cv_analysis(
         )
 
     # Deserialize JSONB lists into schema objects
-    missing_caps = []
-    if results.missing_capabilities:
-        missing_caps = [
-            CVAnalysisGapItem(**item) if isinstance(item, dict) else item
-            for item in results.missing_capabilities
-        ]
+    def _as_gap(item):
+        # The engine writes gap items as dicts OR as bare strings depending on
+        # the LLM output — coerce both into a CVAnalysisGapItem.
+        if isinstance(item, dict):
+            return CVAnalysisGapItem(**item)
+        if isinstance(item, str):
+            return CVAnalysisGapItem(capability=item)
+        return item
 
-    weakness_caps = []
-    if results.weakness_areas:
-        weakness_caps = [
-            CVAnalysisGapItem(**item) if isinstance(item, dict) else item
-            for item in results.weakness_areas
-        ]
+    missing_caps = [_as_gap(i) for i in (results.missing_capabilities or [])]
+    weakness_caps = [_as_gap(i) for i in (results.weakness_areas or [])]
 
     # Deserialize top_matching_positions from job_fit_scores and position IDs
     top_matching = []
@@ -168,20 +162,22 @@ async def get_cv_analysis(
                     JobFitMatch(
                         position_id=uuid.UUID(position_id),
                         job_title=position.title,
-                        company=position.company_id,
+                        company=str(position.company_id) if position.company_id else None,
                         match_score=int(score) if score else 0,
                         semantic_score=int(score) if score else 0,
                         why_fit=f"Matched to {position.title}",
                     )
                 )
 
-    # Deserialize improvement suggestions
-    improvement_sugg = []
-    if results.improvement_suggestions:
-        improvement_sugg = [
-            CVAnalysisRecommendation(**item) if isinstance(item, dict) else item
-            for item in results.improvement_suggestions
-        ]
+    # Deserialize improvement suggestions (dicts or bare strings).
+    def _as_rec(item):
+        if isinstance(item, dict):
+            return CVAnalysisRecommendation(**item)
+        if isinstance(item, str):
+            return CVAnalysisRecommendation(suggestion=item)
+        return item
+
+    improvement_sugg = [_as_rec(i) for i in (results.improvement_suggestions or [])]
 
     return CVAnalysisResultSchema(
         analysis_id=analysis_id,
@@ -331,7 +327,7 @@ async def get_job_matches(
                     JobFitMatch(
                         position_id=uuid.UUID(position_id),
                         job_title=position.title,
-                        company=position.company_id,
+                        company=str(position.company_id) if position.company_id else None,
                         match_score=int(score) if score else 0,
                         semantic_score=int(score) if score else 0,
                         why_fit=f"Aligned to {position.title}",

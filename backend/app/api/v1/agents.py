@@ -23,12 +23,14 @@ import asyncio
 import json
 import logging
 import uuid
-from datetime import datetime, timedelta
+from datetime import timedelta
+from app.core.clock import utcnow
 
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel
 from sqlalchemy import select, func
 
+from app.config import settings
 from app.deps import CurrentUser, DBSession
 from app.models.ingest_queue import IngestQueueItem, IngestStatus
 from app.models.position import Position
@@ -295,7 +297,7 @@ async def get_quick_status(user: CurrentUser, db: DBSession) -> AgentsStatusResp
     Returns:
         AgentsStatusResponse with CV, JD, and Email agent status summaries.
     """
-    now = datetime.utcnow()
+    now = utcnow()
     hours_24_ago = now - timedelta(hours=24)
 
     async def get_agent_status(ingest_type: str) -> AgentStatusResponse:
@@ -351,10 +353,12 @@ async def get_quick_status(user: CurrentUser, db: DBSession) -> AgentsStatusResp
 
     cv_status = await get_agent_status("cv")
     jd_status = await get_agent_status("jd_draft")
-    # Email agent would use a different model; for now, create a placeholder
+    # The email ingestion agent polls IMAP and feeds the CV ingest queue, so its
+    # "running" state is whether IMAP is actually configured (real, not a
+    # placeholder). Throughput is counted under the CV agent.
     email_status = AgentStatusResponse(
         agent_type="email",
-        running=False,
+        running=bool(settings.ingest_imap_host),
         queue_size=0,
         processed_24h=0,
         failed_24h=0,
@@ -367,47 +371,6 @@ async def get_quick_status(user: CurrentUser, db: DBSession) -> AgentsStatusResp
         timestamp=now,
     )
 
-
-@router.get("/queue", response_model=list[QueueItemDetailSchema])
-async def list_queue(
-    user: CurrentUser,
-    db: DBSession,
-    status_filter: str | None = Query(None, alias="status"),
-    awaiting_review: bool = Query(False, description="Filter to awaiting_review items only"),
-    sort: str = Query("created_at", description="Sort by: created_at, updated_at, retry_count"),
-    limit: int = Query(50, ge=1, le=200),
-) -> list[QueueItemDetailSchema]:
-    """
-    Get ingest queue items with optional filtering.
-
-    Args:
-        status_filter: Filter by status (e.g., 'pending', 'processing')
-        awaiting_review: If True, only return items awaiting human review
-        sort: Sort field (created_at, updated_at, retry_count)
-        limit: Maximum items to return
-
-    Returns:
-        List of queue items with decision support fields.
-    """
-    stmt = select(IngestQueueItem)
-
-    if awaiting_review:
-        stmt = stmt.where(IngestQueueItem.status == IngestStatus.awaiting_review)
-    elif status_filter:
-        stmt = stmt.where(IngestQueueItem.status == status_filter)
-
-    # Apply sorting
-    if sort == "updated_at":
-        stmt = stmt.order_by(IngestQueueItem.updated_at.desc())
-    elif sort == "retry_count":
-        stmt = stmt.order_by(IngestQueueItem.retry_count.desc())
-    else:
-        stmt = stmt.order_by(IngestQueueItem.created_at.desc())
-
-    stmt = stmt.limit(limit)
-    items = list((await db.scalars(stmt)).all())
-
-    return [_to_detail_schema(item) for item in items]
 
 
 # ── WebSocket real-time feed ──────────────────────────────────────────────────

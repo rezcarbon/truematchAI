@@ -31,7 +31,6 @@ class JobPosting:
     def fingerprint_data(self) -> str:
         """Generate deduplication fingerprint"""
         import hashlib
-        from difflib import SequenceMatcher
 
         # Normalize text for comparison
         normalized_title = self.title.lower().strip()

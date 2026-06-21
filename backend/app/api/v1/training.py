@@ -10,7 +10,7 @@ This module provides admin-only endpoints to:
 Admin-only access required for all endpoints.
 """
 import logging
-from datetime import datetime
+from app.core.clock import utcnow
 from typing import Optional, List
 from uuid import UUID
 
@@ -22,7 +22,6 @@ from app.deps import get_session, get_current_user
 from app.models import User, UserRole
 from app.models.training import (
     TrainingFeedback,
-    FeedbackType,
     CapabilityMapping,
     CredentialMapping,
     SuccessPattern,
@@ -210,7 +209,7 @@ async def update_feedback_outcome(
         )
 
     feedback.outcome = outcome
-    feedback.outcome_date = datetime.utcnow()
+    feedback.outcome_date = utcnow()
     if hire_success is not None:
         feedback.hire_success = hire_success
 
@@ -550,13 +549,13 @@ async def get_training_insights(
 
     Access: Admin only
     """
-    query = select(TrainingInsight).where(TrainingInsight.is_public == True)
+    query = select(TrainingInsight).where(TrainingInsight.is_public.is_(True))
 
     if insight_type:
         query = query.where(TrainingInsight.insight_type == insight_type)
 
     if is_trending:
-        query = query.where(TrainingInsight.is_trending == True)
+        query = query.where(TrainingInsight.is_trending.is_(True))
 
     query = query.order_by(desc(TrainingInsight.created_at)).limit(limit)
 
@@ -609,7 +608,7 @@ async def get_virtual_brain_state(
     """
     result = await db.execute(
         select(VirtualBrainState)
-        .where(VirtualBrainState.is_active == True)
+        .where(VirtualBrainState.is_active.is_(True))
         .order_by(desc(VirtualBrainState.created_at))
     )
     state = result.scalar_one_or_none()
@@ -698,7 +697,7 @@ async def get_training_stats(
 
     # Get current brain state
     result = await db.execute(
-        select(VirtualBrainState).where(VirtualBrainState.is_active == True)
+        select(VirtualBrainState).where(VirtualBrainState.is_active.is_(True))
     )
     brain_state = result.scalar_one_or_none()
 

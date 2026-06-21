@@ -6,7 +6,6 @@ from pydantic import BaseModel, Field
 from typing import Optional
 
 from app.models.jd_simulation import JDSimulationStatus, SimulationType
-from app.models.cv_analysis import SeniorityLevel
 
 
 class JDSimulationStartRequest(BaseModel):
@@ -32,26 +31,28 @@ class JDSimulationStartResponse(BaseModel):
     status: JDSimulationStatus = Field(..., description="Initial status (always 'pending')")
 
 
+# Defaults below keep a completed simulation renderable when the LLM omits a
+# field in a sub-item (partial structured output shouldn't 500 the result).
 class CapabilityGapItem(BaseModel):
     """A single capability gap finding."""
-    capability: str
+    capability: str = ""
     current_description: Optional[str] = None
-    recommended_description: str
+    recommended_description: str = ""
     market_example: Optional[str] = None
 
 
 class CreepWarning(BaseModel):
     """A requirement creep warning."""
-    severity: str = Field(..., description="high/medium/low")
-    issue: str
+    severity: str = Field(default="medium", description="high/medium/low")
+    issue: str = ""
     context: Optional[str] = None
     suggestion: Optional[str] = None
 
 
 class ArchetypeFit(BaseModel):
     """Candidate archetype fit analysis."""
-    archetype: str = Field(..., description="junior/mid/senior/lead")
-    fit_score: int = Field(..., ge=0, le=100)
+    archetype: str = Field(default="mid", description="junior/mid/senior/lead")
+    fit_score: int = Field(default=0, ge=0, le=100)
     matched_capabilities: list[str] = []
     missing_capabilities: list[str] = []
     talent_pool_estimate: Optional[str] = None
@@ -59,10 +60,10 @@ class ArchetypeFit(BaseModel):
 
 class WordingSuggestion(BaseModel):
     """Suggested wording for a capability."""
-    capability_area: str
+    capability_area: str = ""
     current_phrasing: Optional[str] = None
     suggested_alternatives: list[str] = []
-    reasoning: str
+    reasoning: str = ""
 
 
 class JDSimulationResult(BaseModel):
@@ -76,7 +77,9 @@ class JDSimulationResult(BaseModel):
     capability_recommendations: list[CapabilityGapItem] = []
 
     # Requirement creep
-    requirement_difficulty_score: int = Field(..., ge=0, le=100)
+    # Optional so a pending/processing simulation can be returned before the
+    # engine has computed scores (the result row doesn't exist yet).
+    requirement_difficulty_score: Optional[int] = Field(default=None, ge=0, le=100)
     experience_years_assessment: Optional[str] = None
     tech_stack_balance: Optional[str] = None
     creep_warnings: list[CreepWarning] = []
@@ -87,7 +90,7 @@ class JDSimulationResult(BaseModel):
     talent_pool_estimate: Optional[str] = None
 
     # Quality assessment
-    quality_score: int = Field(..., ge=0, le=100)
+    quality_score: Optional[int] = Field(default=None, ge=0, le=100)
     market_positioning: Optional[str] = None
     missing_sections: list[str] = []
     quality_issues: list[str] = []

@@ -101,7 +101,14 @@ async def check_singpass() -> bool:
 
 
 async def readiness() -> tuple[bool, dict[str, bool]]:
-    """Check all dependencies for readiness (HTTP 503 if any fail)."""
+    """Check dependencies for readiness.
+
+    Readiness gates ONLY on components required to serve traffic — the database
+    and Redis. Optional integrations (S3 file storage [DB fallback exists], the
+    LLM [has a configured failover provider], and Singpass [optional auth]) are
+    reported for observability but do NOT 503 the instance: a flaky optional
+    dependency must not pull every pod out of the load-balancer rotation.
+    """
     components = {
         "database": await check_db(),
         "redis": await check_redis(),
@@ -109,4 +116,6 @@ async def readiness() -> tuple[bool, dict[str, bool]]:
         "llm": await check_llm(),
         "singpass": await check_singpass(),
     }
-    return all(components.values()), components
+    required = ("database", "redis")
+    ready = all(components[c] for c in required)
+    return ready, components

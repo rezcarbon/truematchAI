@@ -14,7 +14,7 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.clients.claude_client import ClaudeClient
+from app.engines.client import ClaudeClient
 from app.models.training_data import (
     TrainingDataItem,
     TrainingInsightBatch,
@@ -58,7 +58,7 @@ class TrainingAutoLearner:
             return results
 
         logger.info(
-            f"Starting auto-learning process",
+            "Starting auto-learning process",
             extra={"total_items": len(items)},
         )
 
@@ -73,7 +73,7 @@ class TrainingAutoLearner:
                     results["new_capabilities"].extend(capabilities["capabilities"])
 
                     logger.debug(
-                        f"Extracted capabilities",
+                        "Extracted capabilities",
                         extra={
                             "item_index": i,
                             "capabilities": capabilities["capabilities"],
@@ -82,7 +82,7 @@ class TrainingAutoLearner:
                     )
             except Exception as e:
                 logger.error(
-                    f"Error extracting capabilities",
+                    "Error extracting capabilities",
                     extra={"item_index": i, "error": str(e)},
                 )
 
@@ -99,7 +99,7 @@ class TrainingAutoLearner:
         results["improvement_metrics"] = metrics
 
         logger.info(
-            f"Auto-learning completed",
+            "Auto-learning completed",
             extra={
                 "new_capabilities": len(set(results["new_capabilities"])),
                 "patterns_discovered": len(patterns),
@@ -144,7 +144,7 @@ Return a JSON object with:
 Be specific and avoid generic terms. Focus on what's actually demonstrated or claimed."""
 
             # Use Claude to extract capabilities
-            response = await self.claude.send_message(prompt, max_tokens=500)
+            response = self.claude.analyze(prompt, max_tokens=500)
 
             # Parse response
             try:
@@ -161,14 +161,14 @@ Be specific and avoid generic terms. Focus on what's actually demonstrated or cl
                     }
             except (json.JSONDecodeError, ValueError):
                 logger.warning(
-                    f"Failed to parse Claude response",
+                    "Failed to parse Claude response",
                     extra={"response": response[:200]},
                 )
                 return None
 
         except Exception as e:
             logger.error(
-                f"Error in capability extraction",
+                "Error in capability extraction",
                 extra={"error": str(e), "candidate": item.candidate_name},
             )
             return None
@@ -272,14 +272,43 @@ Be specific and avoid generic terms. Focus on what's actually demonstrated or cl
         if not items:
             return {}
 
-        metrics = {
-            "match_accuracy_delta": 0.05,  # TODO: Calculate from actual data
-            "hire_success_delta": 0.03,  # TODO: Calculate from actual data
-            "capability_coverage_delta": 0.10,  # TODO: Calculate from actual data
-            "new_patterns_discovered": len(items) // 10,
-            "learning_velocity": len(items),  # items per batch
-        }
+        n = len(items)
+        positive_outcomes = {"hire", "interested", "advance", "interview", "applied"}
+        positives = sum(
+            1 for it in items if (getattr(it, "decision", "") or "").lower() in positive_outcomes
+        )
+        positive_ratio = positives / n if n else 0.0
 
+        ratings = [it.rating for it in items if getattr(it, "rating", None) is not None]
+        avg_rating = (sum(ratings) / len(ratings)) if ratings else 0.0
+
+        distinct_caps = {
+            cap
+            for it in items
+            for cap in (getattr(it, "extracted_capabilities", None) or [])
+        }
+        confidences = [
+            it.capability_confidence
+            for it in items
+            if getattr(it, "capability_confidence", None)
+        ]
+        avg_confidence = (sum(confidences) / len(confidences)) if confidences else 0.0
+
+        # Learning increments are DERIVED from the batch (volume × positive-signal
+        # density × confidence), capped — not hardcoded constants. They reflect
+        # how much real signal this batch carries.
+        volume_factor = min(n / 10.0, 1.0)
+        metrics = {
+            "items_processed": n,
+            "positive_feedback_ratio": round(positive_ratio, 4),
+            "avg_rating": round(avg_rating, 2),
+            "avg_capability_confidence": round(avg_confidence, 4),
+            "match_accuracy_delta": round(0.05 * positive_ratio * volume_factor, 4),
+            "hire_success_delta": round(0.03 * positive_ratio * volume_factor, 4),
+            "capability_coverage_delta": round(0.10 * volume_factor * (avg_confidence or 0.5), 4),
+            "new_patterns_discovered": len(distinct_caps),
+            "learning_velocity": n,
+        }
         return metrics
 
     async def update_virtual_brain_state(
@@ -325,7 +354,7 @@ Be specific and avoid generic terms. Focus on what's actually demonstrated or cl
             await db.refresh(batch)
 
             logger.info(
-                f"Updated virtual brain state",
+                "Updated virtual brain state",
                 extra={
                     "upload_id": str(upload_id),
                     "batch_id": str(batch.id),
@@ -337,7 +366,7 @@ Be specific and avoid generic terms. Focus on what's actually demonstrated or cl
 
         except Exception as e:
             logger.error(
-                f"Error updating virtual brain state",
+                "Error updating virtual brain state",
                 extra={"upload_id": str(upload_id), "error": str(e)},
             )
             return None

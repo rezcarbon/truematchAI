@@ -17,7 +17,6 @@ import secrets
 from pathlib import Path
 from typing import Any
 
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -49,12 +48,29 @@ class SecretValidator:
         self.validate_singpass_keys()
         self.validate_database_url()
         self.validate_redis_url()
+        self.validate_anthropic_key()
 
         self._log_results()
 
         if self.errors:
             error_msg = "\n".join([f"  - {e}" for e in self.errors])
             raise ValueError(f"Configuration validation failed:\n{error_msg}")
+
+    def validate_anthropic_key(self) -> None:
+        """In production, refuse to boot on a placeholder Anthropic key — otherwise
+        the entire AI pipeline silently runs on mock fixtures."""
+        from app.engines.client import _PLACEHOLDER_KEYS
+
+        key = (self.settings.anthropic_api_key or "").strip()
+        if self.settings.is_production and key in _PLACEHOLDER_KEYS:
+            self.errors.append(
+                "ANTHROPIC_API_KEY must be set in production "
+                "(placeholder key would serve mock AI results)."
+            )
+        elif key in _PLACEHOLDER_KEYS:
+            self.warnings.append(
+                "ANTHROPIC_API_KEY is a placeholder — AI features run on mock fixtures."
+            )
 
     def validate_encryption_keys(self) -> None:
         """Validate field-level encryption keys.

@@ -13,12 +13,11 @@ Legal Status: SAFE - No TOS violations
 from __future__ import annotations
 
 from datetime import datetime, timedelta
-from typing import Optional
 
 import httpx
 
 from app.models.job_scraping import JobSourceType
-from app.scrapers.base import APIBasedScraper, JobPosting, ScrapingFilters
+from app.scrapers.base import APIBasedScraper, JobPosting
 
 
 class USAJobsScraper(APIBasedScraper):
@@ -188,7 +187,6 @@ class USAJobsScraper(APIBasedScraper):
 
         city = loc.get("CityName")
         state = loc.get("StateCode")
-        country = loc.get("CountryCode")
 
         if city and state:
             return f"{city}, {state}"

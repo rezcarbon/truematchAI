@@ -7,15 +7,11 @@ Tests the complete pipeline:
 import asyncio
 import tempfile
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
-from uuid import uuid4
+from unittest.mock import AsyncMock, patch
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.config import settings
-from app.database import Base
 from app.models.ingest_queue import (
     IngestQueueItem,
     IngestSource,
@@ -23,37 +19,14 @@ from app.models.ingest_queue import (
     IngestType,
 )
 
-
-@pytest.fixture
-async def test_db():
-    """Create an in-memory SQLite database for testing."""
-    # Use SQLite in-memory for testing
-    engine = create_async_engine(
-        "sqlite+aiosqlite:///:memory:",
-        echo=False,
-    )
-
-    async with engine.begin() as conn:
-        await conn.run_sync(Base.metadata.create_all)
-
-    TestSessionLocal = sessionmaker(
-        bind=engine,
-        class_=AsyncSession,
-        expire_on_commit=False,
-    )
-
-    async with TestSessionLocal() as session:
-        yield session
-        await session.rollback()
-
-    await engine.dispose()
+# Use global db_session fixture from conftest.py for PostgreSQL-compatible testing
 
 
 class TestFileIngestionWorker:
     """Test file ingestion worker."""
 
     @pytest.mark.asyncio
-    async def test_cv_file_processing(self, test_db: AsyncSession):
+    async def test_cv_file_processing(self, db_session: AsyncSession):
         """Test CV file is detected, extracted, and enqueued."""
         from app.workers.file_ingestion import DocumentFileEventHandler
 
@@ -69,9 +42,9 @@ class TestFileIngestionWorker:
                 test_file = Path(f.name)
 
             try:
-                # Mock AsyncSessionLocal to use test_db
+                # Mock AsyncSessionLocal to use db_session
                 with patch("app.workers.file_ingestion.AsyncSessionLocal") as mock_session:
-                    mock_session.return_value.__aenter__ = AsyncMock(return_value=test_db)
+                    mock_session.return_value.__aenter__ = AsyncMock(return_value=db_session)
                     mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
 
                     # Mock Celery task
@@ -85,10 +58,12 @@ class TestFileIngestionWorker:
                         mock_enqueue.assert_called_once()
 
             finally:
-                test_file.unlink()
+                # File may have been archived, so check existence before cleanup
+                if test_file.exists():
+                    test_file.unlink()
 
     @pytest.mark.asyncio
-    async def test_jd_file_processing(self, test_db: AsyncSession):
+    async def test_jd_file_processing(self, db_session: AsyncSession):
         """Test JD file is detected and processed."""
         from app.workers.file_ingestion import DocumentFileEventHandler
 
@@ -103,7 +78,7 @@ class TestFileIngestionWorker:
 
             try:
                 with patch("app.workers.file_ingestion.AsyncSessionLocal") as mock_session:
-                    mock_session.return_value.__aenter__ = AsyncMock(return_value=test_db)
+                    mock_session.return_value.__aenter__ = AsyncMock(return_value=db_session)
                     mock_session.return_value.__aexit__ = AsyncMock(return_value=None)
 
                     with patch("app.workers.file_ingestion.DocumentFileEventHandler._enqueue_processing_task"):
@@ -113,7 +88,9 @@ class TestFileIngestionWorker:
                         assert handler.folder_type == "jd"
 
             finally:
-                test_file.unlink()
+                # File may have been archived, so check existence before cleanup
+                if test_file.exists():
+                    test_file.unlink()
 
     @pytest.mark.asyncio
     async def test_duplicate_file_detection(self):
@@ -225,7 +202,7 @@ class TestIngestQueueProcessing:
     """Test ingest queue item processing."""
 
     @pytest.mark.asyncio
-    async def test_ingest_item_creation(self, test_db: AsyncSession):
+    async def test_ingest_item_creation(self, db_session: AsyncSession):
         """Test ingest queue item is created correctly."""
         # Create an ingest item
         item = IngestQueueItem(
@@ -237,8 +214,8 @@ class TestIngestQueueProcessing:
             retry_count=0,
         )
 
-        test_db.add(item)
-        await test_db.commit()
+        db_session.add(item)
+        await db_session.commit()
 
         # Verify item was created
         assert item.id is not None
@@ -247,7 +224,7 @@ class TestIngestQueueProcessing:
         assert item.status == IngestStatus.pending
 
     @pytest.mark.asyncio
-    async def test_email_ingest_item_with_sender_meta(self, test_db: AsyncSession):
+    async def test_email_ingest_item_with_sender_meta(self, db_session: AsyncSession):
         """Test ingest item from email includes sender metadata."""
         item = IngestQueueItem(
             source=IngestSource.email,
@@ -264,15 +241,15 @@ class TestIngestQueueProcessing:
             retry_count=0,
         )
 
-        test_db.add(item)
-        await test_db.commit()
+        db_session.add(item)
+        await db_session.commit()
 
         assert item.source == IngestSource.email
         assert item.sender_meta["email"] == "jane@example.com"
         assert item.sender_meta["filename"] == "resume.pdf"
 
     @pytest.mark.asyncio
-    async def test_ingest_item_retry_tracking(self, test_db: AsyncSession):
+    async def test_ingest_item_retry_tracking(self, db_session: AsyncSession):
         """Test retry count is tracked correctly."""
         item = IngestQueueItem(
             source=IngestSource.folder,
@@ -283,19 +260,19 @@ class TestIngestQueueProcessing:
             retry_count=0,
         )
 
-        test_db.add(item)
-        await test_db.commit()
+        db_session.add(item)
+        await db_session.commit()
 
         # Simulate retry
         item.retry_count += 1
         item.status = IngestStatus.processing
-        await test_db.commit()
+        await db_session.commit()
 
         assert item.retry_count == 1
 
         # Simulate another retry
         item.retry_count += 1
-        await test_db.commit()
+        await db_session.commit()
 
         assert item.retry_count == 2
 
@@ -364,7 +341,7 @@ class TestEmailIngestorLifecycle:
                 ingestor.is_running = False
 
             # Start polling and stop after one iteration
-            polling_task = asyncio.create_task(ingestor._polling_loop())
+            polling_task = asyncio.create_task(ingestor.start_polling())
             stop_task = asyncio.create_task(stop_after_one_iteration())
 
             try:

@@ -6,14 +6,15 @@ Allows admins to:
 2. Have chat-based training conversations
 3. Track auto-learning progress
 """
-import json
 import logging
-from datetime import datetime
+from app.core.clock import utcnow
 from typing import Optional
 from uuid import uuid4, UUID
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.deps import DBSession, CurrentAdmin
 from app.models.training_data import (
@@ -22,6 +23,7 @@ from app.models.training_data import (
     TrainingChatMessage,
     TrainingLearningSession,
 )
+from app.models.training import TrainingFeedback
 from app.schemas.training_data import (
     TrainingDataUploadSchema,
     TrainingDataUploadDetailSchema,
@@ -105,10 +107,10 @@ async def upload_training_data(
     await db.refresh(upload)
 
     logger.info(
-        f"Training data upload started",
+        "Training data upload started",
         extra={
             "upload_id": str(upload.id),
-            "filename": file.filename,
+            "file_name": file.filename,
             "format": file_format,
             "user_id": str(admin.id),
             "file_size": len(file_content),
@@ -121,13 +123,28 @@ async def upload_training_data(
         import asyncio
         from app.workers.training_jobs import TrainingJobProcessor
 
+        async def background_process():
+            """Background task to process upload in a new session."""
+            from sqlalchemy.ext.asyncio import create_async_engine
+            from sqlalchemy.orm import sessionmaker
+            from app.config import settings
+
+            processor = TrainingJobProcessor()
+
+            # Create a new async session for the background task
+            async_engine = create_async_engine(settings.database_url, echo=False)
+            async_session = sessionmaker(
+                async_engine, class_=AsyncSession, expire_on_commit=False
+            )
+
+            async with async_session() as session:
+                await processor.process_upload(upload.id, file_content, session)
+
         # Start background processing task
-        asyncio.create_task(
-            TrainingJobProcessor().process_upload(upload.id, file_content, db)
-        )
+        asyncio.create_task(background_process())
 
         logger.info(
-            f"Upload job queued",
+            "Upload job queued",
             extra={"upload_id": str(upload.id)},
         )
     except Exception as e:
@@ -166,7 +183,7 @@ async def list_uploads(
 
 
 @router.get(
-    "/upload/{upload_id}",
+    "/uploads/{upload_id}",
     response_model=TrainingDataUploadDetailSchema,
     summary="Get upload details",
     description="Get detailed information about a training data upload including all processed items.",
@@ -177,8 +194,11 @@ async def get_upload_detail(
     admin: CurrentAdmin,
 ) -> TrainingDataUploadDetailSchema:
     """Get detailed upload information."""
-    query = select(TrainingDataUpload).where(
-        (TrainingDataUpload.id == upload_id) & (TrainingDataUpload.user_id == admin.id)
+    upload_uuid = UUID(upload_id) if isinstance(upload_id, str) else upload_id
+    query = select(TrainingDataUpload).options(
+        selectinload(TrainingDataUpload.items)
+    ).where(
+        (TrainingDataUpload.id == upload_uuid) & (TrainingDataUpload.user_id == admin.id)
     )
 
     result = await db.execute(query)
@@ -187,7 +207,7 @@ async def get_upload_detail(
     if not upload:
         raise HTTPException(status_code=404, detail="Upload not found")
 
-    return TrainingDataUploadDetailSchema.from_orm(upload)
+    return TrainingDataUploadDetailSchema.model_validate(upload)
 
 
 @router.get(
@@ -238,7 +258,7 @@ async def get_upload_status(
         processing_time = (insights_batch.created_at - upload.created_at).total_seconds()
 
     return UploadResultSchema(
-        upload_id=str(upload.id),
+        upload_id=upload.id,
         items_processed=upload.items_processed,
         items_failed=upload.items_failed,
         insights_extracted=upload.insights_extracted,
@@ -276,15 +296,16 @@ async def send_training_message(
         raise HTTPException(status_code=400, detail="Message cannot be empty")
 
     # Get or create session
+    session_uuid = UUID(request.session_id) if isinstance(request.session_id, str) else request.session_id
     session_query = select(TrainingLearningSession).where(
-        TrainingLearningSession.id == request.session_id
+        TrainingLearningSession.id == session_uuid
     )
     session_result = await db.execute(session_query)
     session = session_result.scalar_one_or_none()
 
     if not session:
         session = TrainingLearningSession(
-            id=request.session_id,
+            id=session_uuid,
             user_id=admin.id,
             status="active",
         )
@@ -294,7 +315,7 @@ async def send_training_message(
     # Get conversation history
     history_query = (
         select(TrainingChatMessage)
-        .where(TrainingChatMessage.session_id == request.session_id)
+        .where(TrainingChatMessage.session_id == session_uuid)
         .order_by(TrainingChatMessage.created_at.asc())
     )
     history_result = await db.execute(history_query)
@@ -315,8 +336,12 @@ async def send_training_message(
     # Process message through Claude chat engine
     from app.engines.training_chat_engine import TrainingChatEngine
 
-    chat_engine = TrainingChatEngine()
-    result = await chat_engine.process_message(request.message, conversation_history)
+    chat_engine = TrainingChatEngine(db=db)
+    result = await chat_engine.process_message(
+        request.message,
+        conversation_history,
+        user_id=admin.id
+    )
 
     ai_response = result.get("ai_response", "")
     training_signal = result.get("extracted_training_signal")
@@ -324,7 +349,7 @@ async def send_training_message(
 
     # Create chat message record
     message = TrainingChatMessage(
-        id=str(uuid4()),
+        id=uuid4(),
         user_id=admin.id,
         session_id=request.session_id,
         user_message=request.message,
@@ -335,7 +360,7 @@ async def send_training_message(
 
     db.add(message)
     session.message_count = (session.message_count or 0) + 1
-    session.last_message_at = datetime.utcnow()
+    session.last_message_at = utcnow()
 
     # Track insights and mappings if training signal extracted
     if training_signal:
@@ -361,7 +386,7 @@ async def send_training_message(
     )
 
     logger.info(
-        f"Training chat message processed",
+        "Training chat message processed",
         extra={
             "session_id": request.session_id,
             "message_length": len(request.message),
@@ -372,7 +397,7 @@ async def send_training_message(
     )
 
     return TrainingChatResponseSchema(
-        message_id=message.id,
+        message_id=str(message.id),
         ai_response=ai_response,
         feedback_type=feedback_type,
         extracted_training_signal=training_signal,
@@ -393,9 +418,10 @@ async def get_chat_history(
     admin: CurrentAdmin,
 ) -> TrainingChatHistorySchema:
     """Get chat conversation history."""
+    session_uuid = UUID(session_id) if isinstance(session_id, str) else session_id
     # Verify session belongs to user
     session_query = select(TrainingLearningSession).where(
-        (TrainingLearningSession.id == session_id)
+        (TrainingLearningSession.id == session_uuid)
         & (TrainingLearningSession.user_id == admin.id)
     )
     session_result = await db.execute(session_query)
@@ -406,13 +432,13 @@ async def get_chat_history(
 
     # Get messages
     messages_query = select(TrainingChatMessage).where(
-        TrainingChatMessage.session_id == session_id
+        TrainingChatMessage.session_id == session_uuid
     )
     messages_result = await db.execute(messages_query)
     messages = messages_result.scalars().all()
 
     return TrainingChatHistorySchema(
-        session_id=session_id,
+        session_id=session_uuid,
         messages=[TrainingChatMessageSchema.from_orm(m) for m in messages],
         total_insights=session.insights_extracted or 0,
         total_updates=session.mappings_updated or 0,
@@ -433,7 +459,7 @@ async def create_session(
 ) -> TrainingLearningSessionSchema:
     """Create new training session."""
     session = TrainingLearningSession(
-        id=str(uuid4()),
+        id=uuid4(),
         user_id=admin.id,
         title=request.title or "Untitled Session",
         status="active",
@@ -478,7 +504,7 @@ async def get_learning_status(
 
     # Count pending items
     pending_query = select(TrainingDataItem).where(
-        TrainingDataItem.applied_to_training == False
+        TrainingDataItem.applied_to_training.is_(False)
     )
     pending_result = await db.execute(pending_query)
     pending_items = len(pending_result.scalars().all())
@@ -501,7 +527,7 @@ async def get_learning_status(
     latest_batch = latest_batch_result.scalar_one_or_none()
 
     # Get improvement metrics
-    last_learning_at = latest_batch.created_at if latest_batch else datetime.utcnow()
+    last_learning_at = latest_batch.created_at if latest_batch else utcnow()
     match_accuracy_improvement = (
         (latest_batch.match_accuracy_after - latest_batch.match_accuracy_before)
         if latest_batch
@@ -535,3 +561,53 @@ async def get_learning_status(
             learning_velocity=total_feedback / 7 if total_feedback > 0 else 0.0,  # items per day estimate
         ),
     )
+
+
+# ─ Training Feedback ────────────────────────────────────────────────────────
+
+
+@router.get(
+    "/feedback",
+    response_model=list[dict],
+    summary="Get training feedback items",
+    description="Get training feedback items with optional filtering by feedback type.",
+)
+async def get_training_feedback(
+    db: DBSession,
+    admin: CurrentAdmin,
+    feedback_type: Optional[str] = None,
+    limit: int = 50,
+    skip: int = 0,
+) -> list[dict]:
+    """
+    Get training feedback items.
+
+    Supports filtering by feedback_type (hire, reject, applied, interested, not_interested, maybe).
+    """
+    query = select(TrainingFeedback).order_by(TrainingFeedback.created_at.desc())
+
+    # Filter by feedback type if provided
+    if feedback_type:
+        query = query.where(TrainingFeedback.feedback_type == feedback_type)
+
+    query = query.offset(skip).limit(limit)
+
+    result = await db.execute(query)
+    items = result.scalars().all()
+
+    # Map to response format
+    feedback_items = []
+    for item in items:
+        feedback_items.append({
+            "id": str(item.id),
+            "user_id": str(item.user_id),
+            "feedback_type": item.feedback_type,
+            "rating": item.rating,
+            "comments": item.comments,
+            "time_to_action_seconds": item.time_to_action_seconds,
+            "outcome": item.outcome,
+            "created_at": item.created_at.isoformat(),
+            "updated_at": item.updated_at.isoformat(),
+        })
+
+    return feedback_items

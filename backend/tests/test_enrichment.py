@@ -22,8 +22,12 @@ def test_empty_supplementary_yields_no_evidence():
     assert enrichment.enrich_supplementary({"extracted_text": "resume body"}) == []
 
 
-def test_disabled_records_unverified_without_fetching():
-    # enrichment_enabled defaults False -> no network, everything 'unverified'
+def test_disabled_records_unverified_without_fetching(monkeypatch):
+    # Force the kill-switch off regardless of local .env -> no network,
+    # everything 'unverified'
+    from app.config import settings
+
+    monkeypatch.setattr(settings, "enrichment_enabled", False)
     supp = {
         "portfolio_urls": ["https://github.com/alice/repo"],
         "publication_dois": ["10.5281/zenodo.999"],
@@ -39,7 +43,9 @@ def test_disabled_records_unverified_without_fetching():
     assert all("summary" in i for i in items)
 
 
-def test_patent_note_is_unverified_with_register_guidance():
-    note = enrichment._note_patent("10202601003R")
+def test_patent_without_token_is_unverified_with_publication_guidance():
+    # No Lens token -> a filed patent is recorded but NOT claimed as confirmed.
+    note = enrichment.verify_patent(object(), "10202601003R", lens_token="")
     assert note["status"] == "unverified"
     assert "IPOS" in note["summary"]
+    assert "publish" in note["summary"].lower()

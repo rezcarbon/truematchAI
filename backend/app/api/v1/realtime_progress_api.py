@@ -7,17 +7,16 @@ WebSocket endpoints for:
 - Learning recalibration monitoring
 - Assessment history retrieval
 """
-import json
 import logging
 from typing import Any, Dict
 
-from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
 from app.workers.realtime_progress import get_progress_tracker
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/api/v1/realtime", tags=["realtime"])
+router = APIRouter(prefix="/realtime", tags=["realtime"])
 
 
 @router.websocket("/ws/assessment/{assessment_id}")

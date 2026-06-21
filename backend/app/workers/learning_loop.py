@@ -5,15 +5,12 @@ Integrates Training System feedback into assessment engine.
 Automatically updates capability weights and recalibrates scoring.
 Enables continuous system improvement from recruiter feedback.
 """
-import asyncio
-import json
 import logging
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass
 from datetime import datetime, timedelta
+from app.core.clock import utcnow
 from typing import Any, Dict, List, Optional
-from uuid import uuid4
 
-from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -32,7 +29,7 @@ class CapabilityWeightUpdate:
 
     def __post_init__(self):
         if self.applied_at is None:
-            self.applied_at = datetime.utcnow().isoformat()
+            self.applied_at = utcnow().isoformat()
 
 
 @dataclass
@@ -47,7 +44,7 @@ class CredentialMapping:
 
     def __post_init__(self):
         if self.created_at is None:
-            self.created_at = datetime.utcnow().isoformat()
+            self.created_at = utcnow().isoformat()
 
 
 class LearningLoopIntegrator:
@@ -252,10 +249,10 @@ class LearningLoopIntegrator:
 
     async def schedule_recalibration(self, interval_hours: int = 24):
         """Schedule automatic recalibration of assessment weights."""
-        self.recalibration_schedule = datetime.utcnow() + timedelta(hours=interval_hours)
+        self.recalibration_schedule = utcnow() + timedelta(hours=interval_hours)
 
         logger.info(
-            f"Recalibration scheduled",
+            "Recalibration scheduled",
             extra={"next_run": self.recalibration_schedule.isoformat()},
         )
 
@@ -263,7 +260,7 @@ class LearningLoopIntegrator:
         """Check if recalibration is due."""
         if not self.recalibration_schedule:
             return False
-        return datetime.utcnow() >= self.recalibration_schedule
+        return utcnow() >= self.recalibration_schedule
 
     async def perform_recalibration(
         self,

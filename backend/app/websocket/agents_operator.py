@@ -8,8 +8,8 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import Dict, Set
-from datetime import datetime
+from typing import Set
+from app.core.clock import utcnow
 
 from fastapi import WebSocket
 
@@ -83,7 +83,7 @@ class AgentOperatorManager:
         """
         message = {
             "type": event_type,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utcnow().isoformat(),
             "data": data,
         }
         payload = json.dumps(message)

@@ -10,9 +10,9 @@ Enforces four non-bypassable governance rules:
 These gates CANNOT be bypassed. Violations force manual review.
 """
 import logging
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
-from app.clients.claude_client import ClaudeClient
+from app.engines.client import ClaudeClient
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +69,7 @@ Return a JSON object with:
 
 Only return JSON, no other text."""
 
-            response = await self.claude.send_message(prompt, max_tokens=500)
+            response = self.claude.analyze(prompt, max_tokens=500)
 
             # Parse response
             import json
@@ -350,7 +350,6 @@ class BiasDetectionGate:
         # Calculate approval rates
         metrics = {}
         for group, scores in groups.items():
-            avg_score = sum(scores) / len(scores) if scores else 0
             approval_rate = sum(1 for s in scores if s >= 0.65) / len(scores) if scores else 0
             metrics[group] = approval_rate
 

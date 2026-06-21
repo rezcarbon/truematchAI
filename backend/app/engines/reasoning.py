@@ -11,7 +11,7 @@ import json
 import logging
 from typing import Any
 
-from app.engines.client import call_claude_json, is_live
+from app.engines.client import select_model, call_claude_json, is_live
 from app.engines.prompts import get_prompt
 
 logger = logging.getLogger("truematch.reasoning")
@@ -30,6 +30,7 @@ def assess_capability(
     raw_narrative: str | None,
     evidence: list[dict] | None = None,
     substitutions: dict | None = None,
+    learned_context: str = "",
 ) -> dict[str, Any]:
     prompt = get_prompt("capability_assess")
     user = prompt.render_user(
@@ -43,6 +44,11 @@ def assess_capability(
         user += "\n\nVERIFIED EXTERNAL EVIDENCE (status-tagged):\n" + json.dumps(evidence)
     if substitutions and substitutions.get("substitutions"):
         user += "\n\nCREDENTIAL SUBSTITUTIONS:\n" + json.dumps(substitutions["substitutions"])
+    # Learned context from past hiring decisions for this role (the learning
+    # loop) — empty until the system has accumulated decisions, so this is a
+    # no-op for fresh positions.
+    if learned_context:
+        user += "\n\n" + learned_context
     if not is_live():
         return _mock_capability()
     data = call_claude_json(system=prompt.system, user_content=user, max_tokens=3000)
@@ -61,7 +67,8 @@ def analyze_trajectory(parsed_resume: dict) -> dict[str, Any]:
     user = prompt.render_user(parsed_resume=json.dumps(parsed_resume))
     if not is_live():
         return _mock_trajectory()
-    data = call_claude_json(system=prompt.system, user_content=user, max_tokens=2500)
+    data = call_claude_json(system=prompt.system, user_content=user, max_tokens=2500,
+                            model=select_model("secondary"))
     data.setdefault("trajectory", {})
     data.setdefault("narrative", "")
     return data
@@ -72,7 +79,8 @@ def interrogate_jd(jd_text: str) -> dict[str, Any]:
     user = prompt.render_user(jd_text=jd_text or "")
     if not is_live():
         return _mock_jd_review()
-    data = call_claude_json(system=prompt.system, user_content=user, max_tokens=1500)
+    data = call_claude_json(system=prompt.system, user_content=user, max_tokens=1500,
+                            model=select_model("secondary"))
     data["quality_score"] = _clamp_score(data.get("quality_score"))
     data.setdefault("issues", [])
     return data

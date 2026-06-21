@@ -149,7 +149,7 @@ class TestAuthenticationErrors:
 class TestConflictErrors:
     """Test conflict-related error responses (409)."""
 
-    def test_duplicate_email_registration(self):
+    async def test_duplicate_email_registration(self, client):
         """Test that registering with existing email returns 409."""
         # First signup
         client.post(
@@ -185,7 +185,7 @@ class TestConflictErrors:
 class TestAuthorizationErrors:
     """Test authorization-related error responses (403)."""
 
-    def test_recruiter_only_endpoint(self):
+    async def test_recruiter_only_endpoint(self, client):
         """Test that candidate cannot access recruiter endpoints."""
         # Register as candidate
         signup_response = client.post(
@@ -220,7 +220,7 @@ class TestAuthorizationErrors:
 class TestNotFoundErrors:
     """Test not found error responses (404)."""
 
-    def test_nonexistent_assessment(self):
+    async def test_nonexistent_assessment(self, client):
         """Test that accessing nonexistent assessment returns 404."""
         # Register user to get token
         signup_response = client.post(
@@ -333,7 +333,7 @@ class TestErrorMessageConsistency:
             assert "message" in error
             assert "type" in error
 
-    def test_resource_not_found_includes_instance(self):
+    async def test_resource_not_found_includes_instance(self, client):
         """Test that 404 errors include the resource instance URI."""
         # Register user
         signup_response = client.post(

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
+from app.core.clock import utcnow
 from enum import Enum
 from typing import TYPE_CHECKING
 
@@ -11,6 +12,7 @@ from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+from app.models._types import EncryptedText
 
 if TYPE_CHECKING:
     from app.models.application import Application
@@ -46,9 +48,12 @@ class Interview(Base):
     candidate_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
     meeting_link: Mapped[str | None] = mapped_column(String(500), nullable=True)
     meeting_platform: Mapped[str | None] = mapped_column(String(50), nullable=True)  # zoom, google_meet, teams
+    # 2-way calendar sync: the external event this interview is mirrored to.
+    calendar_provider: Mapped[str | None] = mapped_column(String(50), nullable=True)  # google, microsoft
+    calendar_event_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
     status: Mapped[InterviewStatus] = mapped_column(String(50), nullable=False, default=InterviewStatus.scheduled)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
 
     # Relationships
     application: Mapped[Application] = relationship("Application", back_populates="interviews", foreign_keys=[application_id])
@@ -70,7 +75,7 @@ class InterviewSlot(Base):
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
     available: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
 
     __table_args__ = (
         Index("ix_interview_slots_interviewer_id", "interviewer_id"),
@@ -89,9 +94,14 @@ class Scorecard(Base):
     competency_scores: Mapped[dict] = mapped_column(JSONB, nullable=False)  # {competency_name: score}
     feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
     overall_recommendation: Mapped[str | None] = mapped_column(String(50), nullable=True)  # strong_yes, yes, no, strong_no
+    # AI interview-content analysis. source="ai" rows are machine-generated from
+    # a transcript; the transcript is encrypted at rest (interview PII).
+    source: Mapped[str] = mapped_column(String(20), nullable=False, default="human")  # human | ai
+    transcript: Mapped[str | None] = mapped_column(EncryptedText, nullable=True)
+    ai_analysis: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
     submitted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow, onupdate=utcnow)
 
     # Relationships
     interview: Mapped[Interview] = relationship("Interview", back_populates="scorecards")

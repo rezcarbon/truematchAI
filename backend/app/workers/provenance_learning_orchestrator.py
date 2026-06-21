@@ -7,10 +7,9 @@ Creates complete audit trail while automatically learning from feedback.
 import logging
 from typing import Any, Dict, List, Optional
 
-from app.workers.audit_trail import AuditEvent, ImmutableAuditTrail, get_audit_trail
+from app.workers.audit_trail import ImmutableAuditTrail, get_audit_trail
 from app.workers.learning_loop import LearningLoopIntegrator, get_learning_loop
 from app.workers.provenance_tracker import (
-    AssessmentProvenanceRecord,
     ProvenanceTracker,
     get_provenance_tracker,
 )
@@ -109,7 +108,7 @@ class ProvenanceLearningOrchestrator:
         result = await self.learning.process_training_feedback(feedback_type, feedback_data)
 
         logger.info(
-            f"Training feedback processed and learned",
+            "Training feedback processed and learned",
             extra={
                 "feedback_type": feedback_type,
                 "source": source,
@@ -205,7 +204,7 @@ class ProvenanceLearningOrchestrator:
         )
 
         logger.info(
-            f"Learning recalibration completed",
+            "Learning recalibration completed",
             extra={
                 "improvement": result.get("improvement", 0),
                 "rolled_back": result.get("weights_rolled_back", False),
@@ -229,7 +228,7 @@ class ProvenanceLearningOrchestrator:
         )
 
         logger.info(
-            f"Batch re-scoring with learning completed",
+            "Batch re-scoring with learning completed",
             extra={
                 "total_rescored": result.get("total_rescored"),
                 "decisions_changed": result.get("decisions_changed"),

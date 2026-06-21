@@ -5,10 +5,10 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime, Enum as SAEnum
+from sqlalchemy import DateTime
 from sqlalchemy import ForeignKey, Index, String, Text, Float, Integer, Boolean
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 from app.models._mixins import TimestampMixin, uuid_pk
@@ -101,7 +101,7 @@ class CapabilityMapping(Base, TimestampMixin):
     capability: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
 
     # Confidence in this mapping (0-1)
-    confidence_score: Mapped[float] = mapped_column(Float, default=0.5)
+    confidence_score: Mapped[float] = mapped_column(Float, default=0.5, index=True)
 
     # Learning metrics
     frequency: Mapped[int] = mapped_column(Integer, default=1)  # How often seen
@@ -116,11 +116,7 @@ class CapabilityMapping(Base, TimestampMixin):
     is_user_added: Mapped[bool] = mapped_column(Boolean, default=False)
     learned_from_feedback: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    __table_args__ = (
-        Index("ix_capability_mapping_keyword", "cv_keyword"),
-        Index("ix_capability_mapping_capability", "capability"),
-        Index("ix_capability_mapping_confidence", "confidence_score"),
-    )
+    __table_args__ = ()
 
 
 class CredentialMapping(Base, TimestampMixin):
@@ -139,7 +135,7 @@ class CredentialMapping(Base, TimestampMixin):
     requirement: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
 
     # Match quality
-    match_score: Mapped[float] = mapped_column(Float, default=0.5)  # 0-1
+    match_score: Mapped[float] = mapped_column(Float, default=0.5, index=True)  # 0-1
     is_exact_match: Mapped[bool] = mapped_column(Boolean, default=False)
     is_acceptable_alternative: Mapped[bool] = mapped_column(Boolean, default=False)
 
@@ -154,11 +150,7 @@ class CredentialMapping(Base, TimestampMixin):
     industry: Mapped[str | None] = mapped_column(String(100), nullable=True)
     region: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
-    __table_args__ = (
-        Index("ix_credential_mapping_credential", "credential"),
-        Index("ix_credential_mapping_requirement", "requirement"),
-        Index("ix_credential_mapping_score", "match_score"),
-    )
+    __table_args__ = ()
 
 
 class SuccessPattern(Base, TimestampMixin):
@@ -299,7 +291,7 @@ class VirtualBrainState(Base, TimestampMixin):
 
     # Model version
     version: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
-    is_active: Mapped[bool] = mapped_column(Boolean, default=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
 
     # Model stats
     total_feedback_samples: Mapped[int] = mapped_column(Integer, default=0)
@@ -320,7 +312,4 @@ class VirtualBrainState(Base, TimestampMixin):
     # Notes
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    __table_args__ = (
-        Index("ix_virtual_brain_state_version", "version"),
-        Index("ix_virtual_brain_state_active", "is_active"),
-    )
+    __table_args__ = ()

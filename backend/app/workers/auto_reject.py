@@ -20,8 +20,7 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
-from typing import Optional
+from app.core.clock import utcnow
 
 from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -208,7 +207,7 @@ class AutoRejectWorker:
             .values(
                 status=IngestStatus.REJECTED,
                 review_notes=f"Auto-rejected (score: {assessment_score:.2f})",
-                updated_at=datetime.utcnow(),
+                updated_at=utcnow(),
             )
         )
         await self.db.execute(stmt)
@@ -230,7 +229,7 @@ class AutoRejectWorker:
                 'auto_rejected': True,
                 'assessment_score': float(assessment_score),
             },
-            timestamp=datetime.utcnow(),
+            timestamp=utcnow(),
         )
         self.db.add(audit_entry)
         await self.db.commit()

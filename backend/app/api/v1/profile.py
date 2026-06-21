@@ -4,6 +4,7 @@ from __future__ import annotations
 import secrets
 
 from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import select
 
 from app.deps import CurrentUser, DBSession
@@ -23,6 +24,37 @@ from app.schemas.profile import (
 )
 
 router = APIRouter()
+
+
+class PushTokenRegistration(BaseModel):
+    token: str
+    platform: str = "ios"
+
+
+class PushRegisterResponse(BaseModel):
+    registered: bool
+    platform: str
+
+
+@router.post("/push/register", response_model=PushRegisterResponse)
+async def register_push_token(
+    payload: PushTokenRegistration, user: CurrentUser, db: DBSession
+) -> PushRegisterResponse:
+    """Register a device's APNs/FCM token so the user can receive push
+    notifications (called by the iOS/Android clients on launch)."""
+    from app.services.push_service import register_device
+
+    await register_device(db, user.id, payload.token, payload.platform)
+    return PushRegisterResponse(registered=True, platform=payload.platform)
+
+
+@router.delete("/push/register", status_code=status.HTTP_204_NO_CONTENT)
+async def unregister_push_token(
+    token: str, user: CurrentUser, db: DBSession
+) -> None:
+    from app.services.push_service import unregister_device
+
+    await unregister_device(db, token)
 
 
 async def _get_or_create_profile(user_id, db) -> CapabilityProfile:

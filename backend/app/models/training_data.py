@@ -4,8 +4,9 @@ Training Data Models - For autonomous AI-native training system.
 Tracks uploads, chat interactions, and auto-learning results.
 """
 from datetime import datetime
+from app.core.clock import utcnow
 from typing import Optional
-from uuid import uuid4, UUID
+from uuid import UUID
 
 from sqlalchemy import JSON, String, Text, DateTime, Integer, Float, Boolean, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
@@ -36,7 +37,7 @@ class TrainingDataUpload(Base):
 
     # Metadata
     processing_stats: Mapped[dict] = mapped_column(JSON, default=dict)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     completed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Relationships
@@ -57,6 +58,9 @@ class TrainingDataItem(Base):
     candidate_name: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     candidate_email: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
     candidate_profile: Mapped[dict] = mapped_column(JSON, default=dict)  # Full candidate data
+    experience_years: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)  # Years of experience
+    skills: Mapped[list] = mapped_column(JSON, default=list)  # Array of skill strings
+    education: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)  # Education level/field
 
     # Decision and feedback
     decision: Mapped[str] = mapped_column(
@@ -72,7 +76,7 @@ class TrainingDataItem(Base):
 
     # Metadata
     source_row: Mapped[int] = mapped_column(Integer, nullable=False)  # Row number in upload
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     applied_to_training: Mapped[bool] = mapped_column(Boolean, default=False)
     applied_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
@@ -103,7 +107,7 @@ class TrainingChatMessage(Base):
     applied_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
     # Metadata
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
 
 
 class TrainingInsightBatch(Base):
@@ -134,7 +138,7 @@ class TrainingInsightBatch(Base):
     match_accuracy_after: Mapped[float] = mapped_column(Float, nullable=False)
 
     # Metadata
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     applied_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
 
@@ -157,6 +161,6 @@ class TrainingLearningSession(Base):
 
     # Session status
     status: Mapped[str] = mapped_column(String(20), default="active")  # active, archived
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, nullable=False)
     last_message_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
     archived_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

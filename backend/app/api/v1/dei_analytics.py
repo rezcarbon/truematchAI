@@ -3,17 +3,16 @@ DEI (Diversity, Equity, Inclusion) Analytics
 Tracks diversity metrics, equity in hiring, and inclusion indicators
 """
 
-from typing import Dict, Any, List
 from uuid import UUID
-from datetime import datetime, timedelta
+from app.core.clock import utcnow
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select, and_
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_user
-from app.models import Application, User
+from app.deps import get_db, get_current_recruiter
+from app.models import Application
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +23,7 @@ router = APIRouter(prefix="/dei-analytics", tags=["dei-analytics"])
 async def get_diversity_metrics(
     position_id: str = None,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_recruiter),
 ):
     """
     Get diversity metrics across hiring pipeline
@@ -71,7 +70,7 @@ async def get_diversity_metrics(
             }
 
         # Get real geographic diversity data from User locations
-        from app.models import User, Resume
+        from app.models import User
 
         # Query to get user locations for geography-based diversity
         user_stmt = select(User.location).select_from(Application).join(User, Application.user_id == User.id)
@@ -119,7 +118,6 @@ async def get_diversity_metrics(
             location_list = [a.user_id for a in apps]
             if not location_list:
                 return 0
-            loc_stmt = select(User.location).where(User.id.in_(location_list))
             # We can't execute this within the list comprehension, so use approximation
             return len([a for a in apps if a])  # Placeholder
 
@@ -177,7 +175,7 @@ async def get_diversity_metrics(
 async def get_equity_metrics(
     position_id: str = None,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_recruiter),
 ):
     """
     Get equity metrics - equal opportunity analysis
@@ -259,7 +257,7 @@ async def get_equity_metrics(
 @router.get("/inclusion")
 async def get_inclusion_metrics(
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_recruiter),
 ):
     """
     Get inclusion metrics - retention, team diversity, engagement
@@ -337,7 +335,7 @@ async def get_inclusion_metrics(
 @router.get("/compliance")
 async def get_compliance_metrics(
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_recruiter),
 ):
     """
     Get EEOC-ready compliance report
@@ -412,7 +410,7 @@ async def get_compliance_metrics(
             "hiring_fairness_score": fairness_score,
             "compliance_status": compliance_status,
             "audit_trail_complete": True,
-            "last_audit": datetime.utcnow().isoformat(),
+            "last_audit": utcnow().isoformat(),
         }
 
     except Exception as e:

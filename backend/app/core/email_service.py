@@ -91,7 +91,7 @@ class EmailService:
         )
 
         logger.info(
-            f"EmailService initialized",
+            "EmailService initialized",
             extra={
                 "provider": self.provider,
                 "templates_dir": str(self.templates_dir),
@@ -221,7 +221,7 @@ class EmailService:
             results[recipient] = success
 
         logger.info(
-            f"Batch email send complete",
+            "Batch email send complete",
             extra={
                 "total": len(recipients),
                 "successful": sum(1 for v in results.values() if v),
@@ -505,12 +505,13 @@ class EmailService:
         Returns:
             True if email format appears valid
         """
-        return (
-            isinstance(email, str) and
-            "@" in email and
-            "." in email.split("@")[-1] and
-            len(email) <= 254
-        )
+        import re
+
+        if not isinstance(email, str) or len(email) > 254:
+            return False
+        # Requires a non-empty local part, a domain, and a TLD (rejects
+        # "@example.com", "a@b", "a@b.").
+        return re.match(r"^[^@\s]+@[^@\s]+\.[^@\s]+$", email) is not None
 
 
 async def get_email_service(

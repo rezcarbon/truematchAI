@@ -2,11 +2,9 @@
 import asyncio
 import logging
 import smtplib
-from datetime import datetime
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from typing import Optional
-from uuid import UUID
 
 from app.config import settings
 
@@ -133,7 +131,7 @@ TrueMatch Team
             # Check if email service is configured
             if not EmailService._is_configured():
                 logger.warning(
-                    f"Email service not configured - skipping email send",
+                    "Email service not configured - skipping email send",
                     extra={"recipient": recipient_email, "type": notification_type},
                 )
                 return False
@@ -337,7 +335,7 @@ TrueMatch Team
             smtp.quit()
 
             logger.info(
-                f"Email sent successfully",
+                "Email sent successfully",
                 extra={
                     "recipient": recipient,
                     "subject": subject,
@@ -346,9 +344,9 @@ TrueMatch Team
             )
             return True
 
-        except smtplib.SMTPAuthenticationError as e:
+        except smtplib.SMTPAuthenticationError:
             logger.error(
-                f"SMTP authentication failed - check credentials",
+                "SMTP authentication failed - check credentials",
                 extra={"recipient": recipient},
             )
             return False
@@ -518,7 +516,7 @@ TrueMatch Team
                 )
             elif error_code == "ConfigurationSetDoesNotExist":
                 logger.error(
-                    f"SES configuration set mismatch",
+                    "SES configuration set mismatch",
                     extra={"recipient": recipient},
                 )
             elif error_code == "Throttling":

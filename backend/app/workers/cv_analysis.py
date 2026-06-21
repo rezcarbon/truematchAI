@@ -11,10 +11,15 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
+from app.core.governance import get_governance_config
+from app.engines import governance_engine
 from app.models.cv_analysis import CVAnalysisRequest, CVAnalysisStatus
+from app.models.governance_review import GovernanceReview, ReviewType, ReviewStatus
+from app.models.resume import Resume
 from app.engines.cv_analysis_engine import analyze_candidate_cv
 from app.engines.client import ClaudeClient
 from app.workers.celery_app import celery_app
+from app.workers.realtime_progress import get_progress_tracker
 
 logger = logging.getLogger("truematch.cv_analysis_tasks")
 
@@ -97,7 +102,7 @@ async def _run_analysis_async(
         await async_engine.dispose()
 
 
-@celery_app.task(name="app.workers.cv_analysis.process_cv_analysis_task", bind=True, max_retries=2)
+@celery_app.task(name="app.workers.cv_analysis.process_cv_analysis_task", bind=True, max_retries=3)
 def process_cv_analysis_task(self, request_id: str) -> dict:
     """Process a CV analysis request end-to-end.
 
@@ -120,8 +125,25 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
         # Fetch the request
         analysis_req = sync_db.get(CVAnalysisRequest, req_id)
         if analysis_req is None:
-            logger.error("CV analysis request %s not found", request_id)
-            return {"status": "not_found", "request_id": request_id}
+            # Not found - likely replication lag. Retry after brief delay.
+            retry_count = self.request.retries
+            if retry_count < self.max_retries:
+                logger.warning(
+                    "CV analysis request not found in database (retry %d/%d), likely replication lag",
+                    retry_count + 1,
+                    self.max_retries,
+                    extra={"request_id": request_id},
+                )
+                # Exponential backoff: 1s, 2s, 4s for retries
+                raise self.retry(countdown=2 ** retry_count, exc=Exception(f"Request {request_id} not found in DB"))
+            else:
+                # Max retries exhausted
+                logger.error(
+                    "CV analysis request not found after %d retries - giving up",
+                    self.max_retries,
+                    extra={"request_id": request_id},
+                )
+                return {"status": "failed", "request_id": request_id, "error": "Request not found in database after retries"}
 
         try:
             # Update status to analyzing
@@ -156,10 +178,154 @@ def process_cv_analysis_task(self, request_id: str) -> dict:
                     logger.error(f"Error in analysis thread: {e}", exc_info=True)
                     raise
 
+            # Emit progress event: analysis starting
+            tracker = get_progress_tracker()
+            asyncio.run_coroutine_threadsafe(
+                tracker.emit_event(__import__('app.workers.realtime_progress', fromlist=['ProgressEvent']).ProgressEvent(
+                    event_id=str(uuid.uuid4()),
+                    event_type=__import__('app.workers.realtime_progress', fromlist=['ProgressEventType']).ProgressEventType.ASSESSMENT_PROCESSING,
+                    assessment_id=request_id,
+                    progress_percent=25,
+                    status="Running CV analysis engine",
+                )),
+                __import__('asyncio').get_event_loop()
+            ) if False else None  # Placeholder for async emit
+
             # Execute in thread pool to isolate async context completely
             with ThreadPoolExecutor(max_workers=1) as executor:
                 future = executor.submit(_run_analysis_in_thread)
                 result = future.result(timeout=600)  # 10 minute timeout
+
+            logger.info(
+                "Analysis engine completed",
+                extra={"request_id": request_id},
+            )
+
+            # Apply governance gates to the analysis result
+            logger.info(
+                "Applying governance checks",
+                extra={"request_id": request_id},
+            )
+
+            try:
+                governance_cfg = get_governance_config()
+            except Exception:
+                governance_cfg = None
+                logger.warning("Governance config unavailable; governance gates will be skipped.")
+
+            # Build assessment view for governance checks
+            assessment_view = {
+                "missing_capabilities": result.missing_capabilities or [],
+                "weakness_areas": result.weakness_areas or [],
+                "strength_summary": result.strength_summary or "",
+            }
+
+            # Execute governance gates
+            governance_passed = True
+            if governance_cfg and governance_cfg.is_operational():
+                # Gate 1: Coherence
+                coherence_result = governance_engine.check_coherence(assessment_view, governance_cfg)
+                result.governance_coherence = coherence_result
+                if not coherence_result.get("passed", True):
+                    governance_passed = False
+                    logger.warning(
+                        "Governance gate failed: coherence",
+                        extra={
+                            "request_id": request_id,
+                            "observations": coherence_result.get("observations", ""),
+                        },
+                    )
+
+                # Gate 2: Consistency
+                consistency_result = governance_engine.check_consistency(assessment_view, governance_cfg)
+                result.governance_consistency = consistency_result
+                if not consistency_result.get("passed", True):
+                    governance_passed = False
+                    logger.warning(
+                        "Governance gate failed: consistency",
+                        extra={
+                            "request_id": request_id,
+                            "observations": consistency_result.get("observations", ""),
+                        },
+                    )
+
+                # Gate 3: Fidelity
+                resume = sync_db.get(Resume, analysis_req.resume_id)
+                if resume:
+                    fidelity_result = governance_engine.check_fidelity(
+                        resume.parsed_data or {},
+                        assessment_view,
+                        governance_cfg
+                    )
+                    result.governance_fidelity = fidelity_result
+                    if not fidelity_result.get("passed", True):
+                        governance_passed = False
+                        logger.warning(
+                            "Governance gate failed: fidelity",
+                            extra={
+                                "request_id": request_id,
+                                "observations": fidelity_result.get("observations", ""),
+                            },
+                        )
+
+            # Gate 4: Bias check (always runs)
+            bias_result = governance_engine.check_bias(
+                sync_db.get(Resume, analysis_req.resume_id).parsed_data or {} if sync_db.get(Resume, analysis_req.resume_id) else {},
+                assessment_view
+            )
+            result.governance_bias_flags = bias_result
+            if bias_result.get("flags"):
+                logger.warning(
+                    "Governance gate flagged bias concerns",
+                    extra={
+                        "request_id": request_id,
+                        "flags": bias_result.get("flags", []),
+                    },
+                )
+
+            result.governance_passed = governance_passed
+
+            # If governance failed, create a review record for human review
+            if not governance_passed:
+                failed_gates = []
+                gate_details = {}
+
+                if result.governance_coherence and not result.governance_coherence.get("passed", True):
+                    failed_gates.append("coherence")
+                    gate_details["coherence"] = result.governance_coherence
+
+                if result.governance_consistency and not result.governance_consistency.get("passed", True):
+                    failed_gates.append("consistency")
+                    gate_details["consistency"] = result.governance_consistency
+
+                if result.governance_fidelity and not result.governance_fidelity.get("passed", True):
+                    failed_gates.append("fidelity")
+                    gate_details["fidelity"] = result.governance_fidelity
+
+                if result.governance_bias_flags and result.governance_bias_flags.get("flags"):
+                    failed_gates.append("bias_check")
+                    gate_details["bias_check"] = result.governance_bias_flags
+
+                if failed_gates:
+                    review = GovernanceReview(
+                        id=uuid.uuid4(),
+                        review_type=ReviewType.cv_analysis,
+                        resource_id=result.id,
+                        user_id=analysis_req.user_id,
+                        failed_gates=failed_gates,
+                        gate_details=gate_details,
+                        failure_reason=f"CV analysis failed governance gates: {', '.join(failed_gates)}",
+                        status=ReviewStatus.pending,
+                    )
+                    sync_db.add(review)
+                    logger.warning(
+                        "Governance review created for failed CV analysis",
+                        extra={
+                            "review_id": str(review.id),
+                            "result_id": str(result.id),
+                            "failed_gates": failed_gates,
+                        },
+                    )
 
             # Persist the result in the sync database
             sync_db.add(result)

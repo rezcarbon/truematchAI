@@ -17,6 +17,7 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime
+from app.core.clock import utcnow
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, status
@@ -316,7 +317,7 @@ async def evaluate_auto_decision(
         reasoning=reasoning,
         approved=approved if approved else None,
         rejected=rejected if rejected else None,
-        timestamp=datetime.utcnow(),
+        timestamp=utcnow(),
     )
 
 
@@ -443,5 +444,5 @@ async def apply_auto_decisions_batch(
         rejected=results['rejected'],
         requires_review=results['requires_review'],
         errors=results['errors'],
-        timestamp=datetime.utcnow(),
+        timestamp=utcnow(),
     )

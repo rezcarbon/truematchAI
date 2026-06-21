@@ -4,11 +4,12 @@ Handles: pipeline updates, interview notifications, scorecard notifications, pre
 """
 
 from typing import Dict, Set
-import json
-from datetime import datetime
-from uuid import UUID
+import logging
+from app.core.clock import utcnow
 
 from fastapi import WebSocket
+
+logger = logging.getLogger("truematch.websocket")
 
 
 class ConnectionManager:
@@ -42,7 +43,7 @@ class ConnectionManager:
             {
                 "type": "presence_update",
                 "active_users": list(self.user_presence.get(position_id, set())),
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utcnow().isoformat(),
             },
             exclude_websocket=None,
         )
@@ -62,7 +63,7 @@ class ConnectionManager:
                     {
                         "type": "presence_update",
                         "active_users": list(self.user_presence.get(position_id, set())),
-                        "timestamp": datetime.utcnow().isoformat(),
+                        "timestamp": utcnow().isoformat(),
                     },
                 )
 
@@ -80,7 +81,7 @@ class ConnectionManager:
                 "type": "pipeline_update",
                 "application_id": application_id,
                 "new_stage": new_stage,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utcnow().isoformat(),
             },
         )
 
@@ -92,7 +93,7 @@ class ConnectionManager:
                 "type": "interview_scheduled",
                 "application_id": application_id,
                 "scheduled_at": scheduled_at,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utcnow().isoformat(),
             },
         )
 
@@ -102,14 +103,14 @@ class ConnectionManager:
             "type": "interview_reminder",
             "interview_id": interview_id,
             "minutes_until": minutes_until,
-            "timestamp": datetime.utcnow().isoformat(),
+            "timestamp": utcnow().isoformat(),
         }
 
         if position_id in self.active_connections:
             for websocket in self.active_connections[position_id]:
                 try:
                     await websocket.send_json(message)
-                except:
+                except Exception:
                     pass
 
     async def broadcast_scorecard_submitted(self, position_id: str, interview_id: str, score: float):
@@ -120,7 +121,7 @@ class ConnectionManager:
                 "type": "scorecard_submitted",
                 "interview_id": interview_id,
                 "score": score,
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": utcnow().isoformat(),
             },
         )
 

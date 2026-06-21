@@ -3,16 +3,14 @@ Recruiter metrics and performance analytics
 Tracks hiring performance, conversion rates, and efficiency metrics
 """
 
-from typing import List, Dict, Any
 from uuid import UUID
-from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import func, select, and_
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 import logging
 
-from app.deps import get_db, get_current_user
+from app.deps import get_db, get_current_recruiter
 from app.models import Application, User, Interview
 
 logger = logging.getLogger(__name__)
@@ -24,7 +22,7 @@ router = APIRouter(prefix="/recruiter-metrics", tags=["recruiter-metrics"])
 async def get_recruiter_metrics(
     recruiter_id: str,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_recruiter),
 ):
     """
     Get metrics for a specific recruiter
@@ -142,7 +140,7 @@ async def get_recruiter_metrics(
 async def get_all_recruiter_metrics(
     position_id: str = None,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_recruiter),
 ):
     """
     Get metrics for all recruiters

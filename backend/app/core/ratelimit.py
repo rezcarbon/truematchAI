@@ -65,9 +65,11 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         self._limit = settings.rate_limit_per_minute
 
     async def dispatch(self, request: Request, call_next):
+        # Exempt OPTIONS (CORS preflight), health checks, and certain prefixes
         if (
             not settings.rate_limit_enabled
             or self._limit <= 0
+            or request.method == "OPTIONS"  # Always allow CORS preflight
             or request.url.path.startswith(_EXEMPT_PREFIXES)
         ):
             return await call_next(request)

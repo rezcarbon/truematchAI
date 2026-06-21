@@ -5,16 +5,15 @@ Handles: stage updates, tag assignment, interview scheduling, rejections
 
 from typing import List
 from uuid import UUID
-from datetime import datetime
+from app.core.clock import utcnow
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_user
+from app.deps import get_db, get_current_recruiter
 from app.models import Application
-from app.schemas.ats import ApplicationResponse
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +39,7 @@ class BulkActionResponse:
 async def bulk_update_stage(
     request: dict,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_recruiter),
 ):
     """
     Bulk update candidate stage
@@ -71,7 +70,7 @@ async def bulk_update_stage(
         # Convert string IDs to UUID
         try:
             app_ids = [UUID(id) for id in candidate_ids]
-        except ValueError as e:
+        except ValueError:
             raise HTTPException(status_code=400, detail="Invalid candidate ID format")
 
         # Update applications
@@ -80,7 +79,7 @@ async def bulk_update_stage(
             .where(Application.id.in_(app_ids))
             .values(
                 stage=new_stage,
-                stage_entered_at=datetime.utcnow()
+                stage_entered_at=utcnow()
             )
         )
 
@@ -128,7 +127,7 @@ async def bulk_update_stage(
 async def bulk_update_tags(
     request: dict,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_recruiter),
 ):
     """
     Bulk add/remove tags from candidates
@@ -163,7 +162,6 @@ async def bulk_update_tags(
         # Process each application
         for app_id in app_ids:
             try:
-                from app.models import application
                 from sqlalchemy import select
 
                 # Get application
@@ -181,7 +179,7 @@ async def bulk_update_tags(
 
                 # Add tags
                 for tag in tags_to_add:
-                    app.tags[tag] = datetime.utcnow().isoformat()
+                    app.tags[tag] = utcnow().isoformat()
 
                 # Remove tags
                 for tag in tags_to_remove:
@@ -216,7 +214,7 @@ async def bulk_update_tags(
 async def bulk_schedule_interviews(
     request: dict,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_recruiter),
 ):
     """
     Bulk schedule interviews for candidates
@@ -310,7 +308,7 @@ async def bulk_schedule_interviews(
 async def bulk_reject_candidates(
     request: dict,
     db: AsyncSession = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user = Depends(get_current_recruiter),
 ):
     """
     Bulk reject candidates
@@ -338,7 +336,7 @@ async def bulk_reject_candidates(
             .where(Application.id.in_(app_ids))
             .values(
                 stage="rejected",
-                stage_entered_at=datetime.utcnow()
+                stage_entered_at=utcnow()
             )
         )
 

@@ -37,22 +37,77 @@ class Settings(BaseSettings):
 
     # Anthropic
     anthropic_api_key: str = "sk-ant-placeholder"
-    anthropic_model: str = "claude-sonnet-4-20250514"
-    llm_timeout_seconds: float = 60.0
+    anthropic_model: str = "claude-sonnet-4-6"
+    # Cheaper/faster model used for SECONDARY reasoning (trajectory, JD
+    # interrogation) when economy mode or the soft budget kicks in.
+    anthropic_fast_model: str = "claude-haiku-4-5-20251001"
+    # Opus on a large structured (tool-use) call can legitimately take ~63s;
+    # 60s caused spurious timeouts → retries → failover. 120s gives headroom.
+    llm_timeout_seconds: float = 120.0
     # Force deterministic mock fixtures even if a key is present (used by tests).
     llm_force_mock: bool = False
+    # Budget-aware model routing: 0 disables. When the day's global LLM spend
+    # exceeds soft_ratio * budget, secondary reasoning downshifts to the fast
+    # model; the strong model is reserved for capability verdicts and chat.
+    llm_daily_budget_usd: float = 0.0
+    llm_budget_soft_ratio: float = 0.7
+    # Always route secondary reasoning to the fast model, regardless of budget.
+    llm_economy_mode: bool = False
+
+    # --- Backup LLM provider (MiniMax, OpenAI-compatible) ---------------------
+    # Used as automatic failover when the primary (Anthropic) call fails after
+    # retries — e.g. credit exhaustion, an outage, or the circuit opening. The
+    # structured-output guarantee is preserved via OpenAI-style forced tool use.
+    # Gated: with no key, failover is a no-op and Anthropic failures surface as
+    # before. NOTE (PDPA): MiniMax is a PRC-based provider; enabling failover
+    # routes candidate PII to it — confirm a region/DPA posture before go-live.
+    minimax_api_key: str = ""
+    minimax_base_url: str = "https://api.minimax.io/v1"
+    minimax_model: str = "MiniMax-M2.5"
+    # Vision-capable model for the image-transcription failover (photo intake).
+    minimax_vision_model: str = "MiniMax-VL-01"
+    # Master switch for failover (independent of key presence).
+    llm_fallback_enabled: bool = True
+
+    @property
+    def minimax_configured(self) -> bool:
+        return self.llm_fallback_enabled and bool(self.minimax_api_key.strip())
+
+    # High-assurance assessments: run the capability judgment 3x in parallel and
+    # report median + spread (uncertainty as a signal). Triples capability cost.
+    assessment_high_assurance: bool = False
+    # Reuse a prior completed assessment's results when (resume text + JD text +
+    # prompt registry version) hash matches — effective determinism for repeats.
+    assessment_reuse_identical: bool = True
+
+    # Selective evidence verification: even when inline enrichment is disabled,
+    # verify external links AFTER an assessment when the reasoning actually
+    # relied on them (targeted, async, candidate-supplied public links only).
+    enrichment_selective: bool = False
 
     # External-evidence enrichment (Pillar 5). When disabled, supplementary links
     # are recorded as UNVERIFIED rather than fetched — keeps the pipeline offline
     # and test-safe. Enable in environments with outbound network access.
     enrichment_enabled: bool = False
     enrichment_timeout_seconds: float = 12.0
+    # Optional Lens.org patent API token. When set, filed patent numbers are
+    # cross-checked against the public patent record and promoted to `verified`
+    # once the application publishes (≈18 months post-filing). Without a token,
+    # patents stay recorded-but-unverified with an honest "verifiable on
+    # publication" reason — never silently treated as confirmed.
+    lens_api_token: str = ""
 
     # Semantic matcher (Pillar 1). Static embeddings (deterministic) catch
     # conceptual matches the lexical floor misses; falls back to lexical when the
     # embedding model is unavailable (offline). Both are reproducible.
     semantic_use_embeddings: bool = True
-    semantic_embedding_model: str = "minishlab/potion-base-8M"
+    # Multilingual static embeddings (101 languages) — same model2vec loader as the
+    # English model, so it is a drop-in. Enables non-English résumés/JDs to score
+    # semantically (and cross-lingually: a Japanese CV vs an English JD share one
+    # vector space). Falls back to the deterministic lexical signal when the model
+    # is unavailable; under the English-pivot intake path that fallback is also
+    # correct because the scored text has already been translated to English.
+    semantic_embedding_model: str = "minishlab/potion-multilingual-128M"
     semantic_embedding_threshold: float = 0.40
     # Semantic score at/above which a surfaced candidate is a "strong match"
     # (concept-matching already endorses) vs a "hidden gem" (only deep capability
@@ -202,6 +257,9 @@ class Settings(BaseSettings):
     AUTO_REJECT_THRESHOLD: float = 0.40
     DECISION_REVIEW_THRESHOLD: float = 0.65
 
+    # Autonomous Agent Loop Configuration
+    autonomous_mode_enabled: bool = True
+
     # Email Service Configuration (Production-Ready)
     EMAIL_PROVIDER: str = Field(
         default="smtp",
@@ -265,7 +323,12 @@ class Settings(BaseSettings):
     # a comma-separated string (e.g. CORS_ORIGINS=http://a.com,http://b.com).
     cors_origins: Annotated[list[str], NoDecode] = [
         "http://localhost:3000",
+        "http://localhost:3001",
+        "http://localhost:3002",
         "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:3001",
+        "http://127.0.0.1:3002",
     ]
 
     # Observability / ops
@@ -275,6 +338,121 @@ class Settings(BaseSettings):
     metrics_enabled: bool = True  # expose Prometheus /metrics
     rate_limit_enabled: bool = True
     rate_limit_per_minute: int = 120  # per client IP; 0 disables
+
+    # Push notifications (FCM HTTP v1 / APNs). When unconfigured the dispatcher
+    # is a no-op that logs intent — device registration still works, so the
+    # client side is exercisable without provider credentials.
+    push_enabled: bool = True
+    fcm_project_id: str = ""           # Firebase project id (Android + iOS via FCM)
+    fcm_credentials_json: str = ""     # path to service-account JSON, or inline JSON
+
+    @property
+    def push_configured(self) -> bool:
+        """True when a real push provider credential is available."""
+        return bool(self.fcm_project_id and self.fcm_credentials_json)
+
+    # Audio resume intake (speech-to-text). Gated like push/email/S3: when no
+    # provider credential is present the endpoint returns 503 rather than
+    # pretending. Provider "openai" uses the Whisper transcription HTTP API.
+    transcription_provider: str = ""  # "" (disabled) | "openai"
+    transcription_api_key: str = ""
+    transcription_model: str = "whisper-1"
+    transcription_api_base: str = "https://api.openai.com/v1"
+    transcription_max_bytes: int = 25_000_000  # provider hard limit is ~25 MB
+
+    @property
+    def transcription_configured(self) -> bool:
+        """True when a real speech-to-text provider credential is available."""
+        return bool(self.transcription_provider and self.transcription_api_key)
+
+    # Auto-rescore: when a JD edit produces drift at/above this severity the
+    # platform re-runs assessments for that position's active candidates.
+    # Hash idempotency means unchanged inputs replay for free.
+    auto_rescore_on_drift: bool = True
+    auto_rescore_max_candidates: int = 200  # safety cap per drift event
+
+    # Self-learned role taxonomy: deterministic cosine clustering of position
+    # JDs into role families (model2vec embeddings). Rebuilt on a schedule.
+    role_taxonomy_enabled: bool = True
+    role_taxonomy_similarity: float = 0.62  # cosine threshold to join a cluster
+
+    # Transition Intelligence: from an evidenced capability verdict, predict the
+    # adjacent / higher-complexity roles a candidate could move into, the
+    # upskilling gap, and an honest timeline. Candidate-facing, gated; reasons
+    # over existing capability signals only (no physiological/biometric data,
+    # no patented method encoded in product code).
+    transition_intelligence_enabled: bool = True
+    # Phase 3 longitudinal tracking: scheduled re-assessment of opted-in analyses
+    # so a candidate's readiness/capability trajectory accumulates, plus outcome
+    # recording for cohort "did they actually transition?" metrics.
+    transition_tracking_enabled: bool = True
+    transition_reassess_interval_days: int = 90
+
+    # Training recommendations (Phase 2): map a candidate's upskilling gap to
+    # concrete courses via pluggable providers. The curated catalog is built-in
+    # and offline-safe; external partners are individually gated and are no-ops
+    # until configured. To add a partner: implement the TrainingProvider
+    # protocol, register it in app/services/training/__init__.py, add a flag here.
+    training_recommendations_enabled: bool = True
+    training_curated_enabled: bool = True
+    skillsfuture_enabled: bool = True
+    ntuc_learninghub_enabled: bool = False
+    ntuc_learninghub_api_base: str = ""
+    ntuc_learninghub_api_key: str = ""
+
+    # Durable agent plans: a plan stuck "running" with no update for longer
+    # than this is considered stalled and re-enqueued by the beat task.
+    plan_stall_seconds: int = 600
+
+    # Interview-content analysis: default duration when auto-scheduling.
+    interview_default_minutes: int = 60
+
+    # 2-way calendar sync. Gated like the other external integrations: when no
+    # provider is configured the auto-scheduler still books locally (against
+    # InterviewSlot availability), it just doesn't mirror to an external calendar.
+    calendar_provider: str = ""  # "" | "google" | "microsoft"
+    calendar_api_token: str = ""        # OAuth access token / service token
+    calendar_api_base: str = ""         # override (e.g. Graph / Google base URL)
+    calendar_organizer_email: str = ""  # calendar the events are written to
+
+    @property
+    def calendar_configured(self) -> bool:
+        return bool(self.calendar_provider and self.calendar_api_token)
+
+    # External ATS connectors. Each is gated on its own API key. Import maps the
+    # provider's jobs -> Position and candidates -> Resume+Application.
+    greenhouse_api_key: str = ""        # Harvest API key (Basic auth, key as username)
+    greenhouse_api_base: str = "https://harvest.greenhouse.io/v1"
+    lever_api_key: str = ""             # Lever API key (Basic auth)
+    lever_api_base: str = "https://api.lever.co/v1"
+
+    # Billing & payments (Stripe). Gated like every other external integration:
+    # with no secret key, checkout returns 503 and enforcement is bypassed, so
+    # the platform runs free/unmetered (current behavior) until configured.
+    # We use Stripe-hosted Checkout only — card data never touches our servers.
+    stripe_secret_key: str = ""
+    stripe_publishable_key: str = ""
+    stripe_webhook_secret: str = ""     # whsec_... — verifies webhook signatures
+    billing_currency: str = "usd"
+    billing_success_url: str = "http://localhost:3000/billing/success?session_id={CHECKOUT_SESSION_ID}"
+    billing_cancel_url: str = "http://localhost:3000/pricing?canceled=1"
+    # Master switch for entitlement ENFORCEMENT at assessment-create. Default
+    # off so the platform (and the test suite) behaves exactly as before until
+    # billing is deliberately turned on. Checkout/webhook work regardless of
+    # this flag — it only governs whether access is metered.
+    billing_enforce: bool = False
+
+    @property
+    def stripe_configured(self) -> bool:
+        """True when a real Stripe secret key is available."""
+        return bool(self.stripe_secret_key)
+
+    # Referrals: each completed assessment yields a shareable result + referral
+    # code. A successful referral grants free credits to BOTH the referrer and
+    # the new referee. A referee can only be referred once (anti-abuse).
+    referral_enabled: bool = True
+    referral_reward_credits: int = 1   # credits to referrer AND referee per referral
+    share_base_url: str = "http://localhost:3000/share"  # public anonymised result page
 
     @property
     def is_production(self) -> bool:

@@ -6,11 +6,11 @@ Production-ready implementation with database persistence
 
 from typing import List, Optional
 from uuid import UUID
-from datetime import datetime, time
+from app.core.clock import utcnow
 import logging
 
-from fastapi import APIRouter, Depends, HTTPException, status, Query
-from sqlalchemy import select, and_, delete, desc
+from fastapi import APIRouter, Depends, HTTPException, Query
+from sqlalchemy import select, and_, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.deps import get_db, get_current_user
@@ -106,8 +106,9 @@ async def get_notifications(
         if read is not None:
             count_query = count_query.where(Notification.read == read)
 
-        count_result = await db.execute(select(Notification).count())
-        total = count_result.scalar() or 0
+        total = (
+            await db.execute(select(func.count()).select_from(count_query.subquery()))
+        ).scalar() or 0
 
         # Order by created_at descending and apply pagination
         query = query.order_by(desc(Notification.created_at)).limit(limit).offset(offset)
@@ -171,7 +172,7 @@ async def mark_notification_read(
 
         # Update notification
         notification.read = True
-        notification.read_at = datetime.utcnow()
+        notification.read_at = utcnow()
         db.add(notification)
         await db.commit()
         await db.refresh(notification)
@@ -211,7 +212,7 @@ async def mark_all_notifications_read(
             select(Notification).where(
                 and_(
                     Notification.user_id == current_user.id,
-                    Notification.read == False,
+                    Notification.read.is_(False),
                     Notification.deleted_at.is_(None),
                 )
             )
@@ -219,7 +220,7 @@ async def mark_all_notifications_read(
         notifications = result.scalars().all()
 
         # Update all to read
-        now = datetime.utcnow()
+        now = utcnow()
         for notification in notifications:
             notification.read = True
             notification.read_at = now
@@ -356,7 +357,7 @@ async def update_notification_preferences(
                 prefs.quiet_hours_start = preferences.quiet_hours.get("start")
                 prefs.quiet_hours_end = preferences.quiet_hours.get("end")
 
-            prefs.updated_at = datetime.utcnow()
+            prefs.updated_at = utcnow()
             db.add(prefs)
 
         await db.commit()
@@ -419,7 +420,7 @@ async def delete_notification(
             raise HTTPException(status_code=404, detail="Notification not found")
 
         # Soft delete notification
-        notification.deleted_at = datetime.utcnow()
+        notification.deleted_at = utcnow()
         db.add(notification)
         await db.commit()
 
@@ -466,7 +467,7 @@ async def clear_all_notifications(
         notifications = result.scalars().all()
 
         # Soft delete all
-        now = datetime.utcnow()
+        now = utcnow()
         for notification in notifications:
             notification.deleted_at = now
 

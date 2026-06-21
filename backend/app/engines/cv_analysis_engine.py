@@ -4,21 +4,17 @@ from __future__ import annotations
 import json
 import logging
 import uuid
-from typing import Optional
 
 from sqlalchemy import select
-from sqlalchemy.orm import selectinload
 
 from app.database import AsyncSession
-from app.models.assessment import Assessment
 from app.models.cv_analysis import CVAnalysisRequest, CVAnalysisResult
 from app.models.position import Position
 from app.models.resume import Resume
 from app.models.user import User
 from app.engines.client import ClaudeClient
-from app.engines.intake import parse_resume, analyze_jd
+from app.engines.intake import parse_resume
 from app.engines.semantic_match import semantic_score
-from app.engines.reasoning import assess_capability
 
 logger = logging.getLogger("truematch.cv_analysis")
 
@@ -159,7 +155,7 @@ Provide JSON response with:
 Be specific to what's actually in the resume, not generic."""
 
         try:
-            enriched = await self.claude_client.analyze(prompt, temperature=0.2)
+            enriched = self.claude_client.analyze(prompt, temperature=0.2)
 
             # Extract JSON
             if "```json" in enriched:
@@ -213,7 +209,7 @@ Respond with JSON only:
 
         try:
             # Call Claude API with concise prompt
-            result_text = await self.claude_client.analyze(prompt, temperature=0.2)
+            result_text = self.claude_client.analyze(prompt, temperature=0.2)
 
             # Extract JSON from response
             if "```json" in result_text:
@@ -237,7 +233,7 @@ Respond with JSON only:
             for field, field_type in required_fields.items():
                 if field not in result:
                     logger.warning(f"Missing field {field} in role expectations")
-                    result[field] = [] if field_type == list else 0
+                    result[field] = [] if field_type is list else 0
 
             return result
 
@@ -266,11 +262,9 @@ Respond with JSON only:
 
         candidate_skills = set(candidate_capabilities.get("skills", []))
         required_skills = set(target_expectations.get("required_skills", []))
-        nice_to_have = set(target_expectations.get("nice_to_have_skills", []))
 
         # Calculate gaps
         missing_from_required = required_skills - candidate_skills
-        missing_from_nice = nice_to_have - candidate_skills
 
         prompt = f"""Analyze skill gaps for this candidate to reach target role.
 
@@ -281,7 +275,7 @@ JSON with missing_critical (capability, importance, how_to_improve), weakness_ar
 {{"missing_critical": [{{"capability": "X", "importance": "high", "description": "Gap detail", "how_to_improve": "Learning path"}}], "weakness_areas": [], "strengths": "...", "readiness_assessment": 70}}"""
 
         try:
-            result_text = await self.claude_client.analyze(prompt, temperature=0.2)
+            result_text = self.claude_client.analyze(prompt, temperature=0.2)
 
             # Extract JSON
             if "```json" in result_text:
@@ -320,7 +314,7 @@ JSON with missing_critical (capability, importance, how_to_improve), weakness_ar
                 {
                     "capability": skill,
                     "importance": "high",
-                    "description": f"Missing required skill for this role",
+                    "description": "Missing required skill for this role",
                     "how_to_improve": f"Develop {skill} expertise through courses and project work",
                 }
                 for skill in missing_from_required
@@ -368,7 +362,7 @@ DESC: {(position.description or '')[:300]}
 JSON: match_score (0-100), why_fit (2-3 reasons), why_not_fit (1-2 gaps), aligned_capabilities (list), missing_for_role (list):
 {{"match_score": 75, "why_fit": "...", "why_not_fit": "...", "aligned_capabilities": [], "missing_for_role": [], "growth_potential": ""}}"""
 
-                result_text = await self.claude_client.analyze(analysis_prompt, temperature=0.2)
+                result_text = self.claude_client.analyze(analysis_prompt, temperature=0.2)
 
                 # Extract JSON
                 if "```json" in result_text:
@@ -378,21 +372,22 @@ JSON: match_score (0-100), why_fit (2-3 reasons), why_not_fit (1-2 gaps), aligne
 
                 analysis = json.loads(json_str)
 
-                # Semantic score for additional signal
-                semantic_score = 70
+                # Real deterministic semantic signal (don't shadow the imported
+                # `semantic_score` function with a local of the same name).
+                semantic_value = 70
                 try:
                     if position.description:
-                        result = semantic_score(
+                        sem = semantic_score(
                             candidate_capabilities.get("raw_narrative", ""),
-                            position.description
+                            position.description,
                         )
-                        semantic_score = result.get("combined_score", 70)
+                        semantic_value = int(sem.get("score", 70))
                 except Exception as e:
                     logger.debug(f"Semantic scoring failed for position {position.id}: {e}")
 
-                # Blend LLM analysis with semantic score
+                # Blend LLM analysis with the semantic score.
                 match_score = analysis.get("match_score", 65)
-                final_score = int(match_score * 0.6 + semantic_score * 0.4)
+                final_score = int(match_score * 0.6 + semantic_value * 0.4)
 
                 match_data = {
                     "position_id": position.id,
@@ -439,7 +434,7 @@ List 5-6 JSON suggestions (category, suggestion, priority, example):
 {{"suggestions": [{{"category": "skills", "suggestion": "...", "priority": "high", "example": "..."}}]}}"""
 
         try:
-            result_text = await self.claude_client.analyze(prompt, temperature=0.3)
+            result_text = self.claude_client.analyze(prompt, temperature=0.3)
 
             # Extract JSON
             if "```json" in result_text:
@@ -491,7 +486,7 @@ PROFILE: {capabilities.get('years_experience', 0)}yrs experience, Tech={capabili
 Analyze progression (3-4 sentences): growth pattern, stability, advancement, readiness."""
 
         try:
-            result = await self.claude_client.analyze(prompt, temperature=0.2)
+            result = self.claude_client.analyze(prompt, temperature=0.2)
             return result.strip()
         except Exception as exc:
             logger.error(f"Failed to analyze trajectory: {exc}")
@@ -518,7 +513,7 @@ PROFILE: {capabilities.get('years_experience', 0)}yrs, Tech={capabilities.get('t
 Assess (4-5 sentences): market standing, strengths, gaps, competitive positioning."""
 
         try:
-            result = await self.claude_client.analyze(prompt, temperature=0.2)
+            result = self.claude_client.analyze(prompt, temperature=0.2)
             return result.strip()
         except Exception as exc:
             logger.error(f"Failed to assess market positioning: {exc}")
@@ -556,7 +551,7 @@ List 5 opportunities (skill to develop, why it matters, timeline):
 1. [skill]: [1-2 sentence explanation with timeline]"""
 
         try:
-            result_text = await self.claude_client.analyze(prompt, temperature=0.2)
+            result_text = self.claude_client.analyze(prompt, temperature=0.2)
 
             # Parse response as list of opportunities
             opportunities = []

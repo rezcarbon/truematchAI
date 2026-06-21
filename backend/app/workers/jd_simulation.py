@@ -1,10 +1,12 @@
 """Celery tasks for JD simulation pipeline."""
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
 
 from sqlalchemy import create_engine
+from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
@@ -38,16 +40,48 @@ def _session_factory() -> sessionmaker[Session]:
 
 
 def _audit(db: Session, request_id: uuid.UUID, event_type: str, data: dict) -> AuditTrail:
-    """Create an audit trail entry."""
+    """Create an audit trail entry.
+
+    AuditTrail has no JD-simulation FK column, so the request id is recorded
+    inside `event_data` rather than as an (invalid) keyword argument.
+    """
     entry = AuditTrail(
-        jd_simulation_request_id=request_id,
         event_type=event_type,
-        event_data=data,
+        event_data={**(data or {}), "jd_simulation_request_id": str(request_id)},
         actor_type="system",
     )
     db.add(entry)
     db.flush()
     return entry
+
+
+async def _run_simulation_async(request_id: str) -> dict:
+    """Run the (async) JD simulation engine with a fresh async session.
+
+    The engine uses `await self.db.*`, so it needs a real AsyncSession — the
+    worker's sync session can't drive it. A fresh async engine per run avoids
+    event-loop contamination from the parent process (same pattern as the CV
+    analysis worker).
+    """
+    async_engine = create_async_engine(settings.database_url, pool_pre_ping=True, future=True)
+    factory = async_sessionmaker(bind=async_engine, expire_on_commit=False)
+    try:
+        async with factory() as adb:
+            req = await adb.get(JDSimulationRequest, uuid.UUID(request_id))
+            claude_client = ClaudeClient(api_key=settings.anthropic_api_key)
+            result = await simulate_job_description(adb, claude_client, req)
+            adb.add(result)
+            await adb.flush()
+            summary = {
+                "result_id": str(result.id),
+                "quality_score": result.quality_score,
+                "difficulty_score": result.requirement_difficulty_score,
+            }
+            req.status = JDSimulationStatus.completed
+            await adb.commit()
+            return summary
+    finally:
+        await async_engine.dispose()
 
 
 @celery_app.task(name="app.workers.jd_simulation.process_jd_simulation_task", bind=True, max_retries=2)
@@ -91,49 +125,24 @@ def process_jd_simulation_task(self, request_id: str) -> dict:
                 },
             )
 
-            # Initialize Claude client
-            claude_client = ClaudeClient(api_key=settings.anthropic_api_key)
+            # Run the async engine with a fresh async session (it persists the
+            # result + marks the request completed within that session).
+            summary = asyncio.run(_run_simulation_async(request_id))
 
-            # Run the simulation engine (using sync wrapper)
-            # Note: The engine itself is async, so we need to run it in an event loop
-            import asyncio
-            result = asyncio.run(
-                simulate_job_description(db, claude_client, simulation_req)
-            )
-
-            # Persist the result
-            db.add(result)
-            db.flush()
-
-            # Update request status
-            simulation_req.status = JDSimulationStatus.completed
-            _audit(
-                db,
-                req_id,
-                "simulation.completed",
-                {
-                    "result_id": str(result.id),
-                    "quality_score": result.quality_score,
-                    "difficulty_score": result.requirement_difficulty_score,
-                },
-            )
+            # Record the completion audit on the sync session.
+            _audit(db, req_id, "simulation.completed", summary)
             db.commit()
 
             logger.info(
                 "JD simulation completed",
-                extra={
-                    "request_id": request_id,
-                    "result_id": str(result.id),
-                    "quality_score": result.quality_score,
-                    "difficulty_score": result.requirement_difficulty_score,
-                },
+                extra={"request_id": request_id, **summary},
             )
 
             return {
                 "status": "completed",
                 "request_id": request_id,
-                "result_id": str(result.id),
-                "quality_score": result.quality_score,
+                "result_id": summary["result_id"],
+                "quality_score": summary["quality_score"],
             }
 
         except Exception as exc:

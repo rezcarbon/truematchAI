@@ -7,14 +7,11 @@ Automatically extracts text and queues assessments for processing.
 import asyncio
 import hashlib
 import logging
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
 from uuid import UUID
 
 import aiofiles
-from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 from watchdog.events import FileSystemEventHandler
 from watchdog.observers import Observer
 
@@ -26,7 +23,6 @@ from app.models.ingest_queue import (
     IngestStatus,
     IngestType,
 )
-from app.workers.celery_app import celery_app
 
 logger = logging.getLogger(__name__)
 

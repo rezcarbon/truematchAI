@@ -171,3 +171,34 @@ async def analytics(admin: CurrentAdmin, db: DBSession) -> AnalyticsResponse:
         counter_rec_rate=(counter / total) if total else None,
         decision_override_rate=(overrides / decisions_total) if decisions_total else None,
     )
+
+
+@router.get("/users")
+async def list_users(
+    admin: CurrentAdmin,
+    db: DBSession,
+    limit: int = Query(200, ge=1, le=1000),
+) -> dict:
+    """List platform users (admin only). Backs the web Users page and the iOS
+    admin Users view — previously the web called a non-existent /users path and
+    silently rendered mock data."""
+    from app.models.user import User
+
+    rows = list(
+        (await db.scalars(select(User).order_by(User.created_at.desc()).limit(limit))).all()
+    )
+    total = await db.scalar(select(func.count()).select_from(User)) or 0
+    return {
+        "items": [
+            {
+                "id": str(u.id),
+                "email": u.email,
+                "role": getattr(u.role, "value", str(u.role)),
+                "display_name": u.display_name,
+                "company_id": str(u.company_id) if u.company_id else None,
+                "created_at": u.created_at.isoformat() if u.created_at else None,
+            }
+            for u in rows
+        ],
+        "total": total,
+    }

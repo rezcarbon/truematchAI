@@ -113,8 +113,8 @@ class JDSimulationEngine:
         """
         logger.debug("Parsing JD")
 
-        # Use existing intake engine
-        parsed = await analyze_jd(jd_text)
+        # Use existing intake engine (analyze_jd is synchronous)
+        parsed = analyze_jd(jd_text)
 
         return {
             "title": parsed.get("title"),
@@ -153,7 +153,7 @@ Return JSON:
 }}"""
 
         try:
-            result_text = await self.claude_client.analyze(prompt, temperature=0.3)
+            result_text = self.claude_client.analyze(prompt, temperature=0.3)
 
             # Extract JSON
             if "```json" in result_text:
@@ -217,7 +217,7 @@ Return JSON:
 }}"""
 
         try:
-            result_text = await self.claude_client.analyze(prompt, temperature=0.3)
+            result_text = self.claude_client.analyze(prompt, temperature=0.3)
 
             # Extract JSON
             if "```json" in result_text:
@@ -256,7 +256,7 @@ Return JSON:
         logger.debug("Testing archetype fit")
 
         # Get system archetypes grouped by role level
-        stmt = select(CandidateArchetype).where(CandidateArchetype.is_system == True)
+        stmt = select(CandidateArchetype).where(CandidateArchetype.is_system.is_(True))
         archetypes = (await self.db.scalars(stmt)).all()
 
         # Group by role level and get the best example of each
@@ -315,7 +315,7 @@ Return JSON:
 }}"""
 
         try:
-            result_text = await self.claude_client.analyze(prompt, temperature=0.3)
+            result_text = self.claude_client.analyze(prompt, temperature=0.3)
 
             # Extract JSON
             if "```json" in result_text:
@@ -378,7 +378,7 @@ Return JSON:
 }}"""
 
         try:
-            result_text = await self.claude_client.analyze(prompt, temperature=0.3)
+            result_text = self.claude_client.analyze(prompt, temperature=0.3)
 
             # Extract JSON
             if "```json" in result_text:
@@ -448,7 +448,7 @@ Return JSON:
 }}"""
 
         try:
-            result_text = await self.claude_client.analyze(prompt, temperature=0.4)
+            result_text = self.claude_client.analyze(prompt, temperature=0.4)
 
             # Extract JSON
             if "```json" in result_text:
@@ -509,7 +509,7 @@ Assess:
 Provide 2-3 sentences on market positioning."""
 
         try:
-            result = await self.claude_client.analyze(prompt, temperature=0.3)
+            result = self.claude_client.analyze(prompt, temperature=0.3)
             return {"positioning": result.strip()}
         except Exception as exc:
             logger.error(f"Failed to assess market standards: {exc}")

@@ -1,9 +1,10 @@
 """Notification service for creating and managing notifications."""
 import logging
 from datetime import datetime
+from app.core.clock import utcnow
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models import Notification, NotificationPreference
@@ -47,7 +48,7 @@ class NotificationService:
             if idempotency_key:
                 # Look for identical notification created recently (within 5 minutes)
                 from datetime import timedelta
-                recent_cutoff = datetime.utcnow() - timedelta(minutes=5)
+                recent_cutoff = utcnow() - timedelta(minutes=5)
 
                 existing = await db.scalar(
                     select(Notification).where(
@@ -109,6 +110,17 @@ class NotificationService:
                     },
                 )
 
+            # Fan out to the user's registered push devices (no-op when no push
+            # provider is configured). Best-effort: never fail the notification.
+            try:
+                from app.services.push_service import send_push_to_user
+
+                await send_push_to_user(
+                    db, user_id, title, message, {"action_url": action_url or ""}
+                )
+            except Exception as push_exc:  # noqa: BLE001
+                logger.warning("Push fan-out failed: %s", push_exc)
+
             return notification
 
         except Exception as e:
@@ -125,7 +137,7 @@ class NotificationService:
             stmt = (
                 update(Notification)
                 .where(Notification.id == notification_id)
-                .values(read=True, read_at=datetime.utcnow())
+                .values(read=True, read_at=utcnow())
             )
             result = await db.execute(stmt)
             await db.commit()
@@ -141,7 +153,7 @@ class NotificationService:
             stmt = (
                 update(Notification)
                 .where(Notification.id == notification_id)
-                .values(email_sent=True, email_sent_at=datetime.utcnow())
+                .values(email_sent=True, email_sent_at=utcnow())
             )
             result = await db.execute(stmt)
             await db.commit()
@@ -196,7 +208,7 @@ class NotificationService:
 
             # Check quiet hours
             if prefs.quiet_hours_enabled and prefs.quiet_hours_start and prefs.quiet_hours_end:
-                now = datetime.utcnow().time()
+                now = utcnow().time()
                 start = datetime.strptime(prefs.quiet_hours_start, "%H:%M").time()
                 end = datetime.strptime(prefs.quiet_hours_end, "%H:%M").time()
 

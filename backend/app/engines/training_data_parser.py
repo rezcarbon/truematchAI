@@ -10,8 +10,8 @@ Handles:
 import csv
 import json
 import logging
-from io import StringIO, BytesIO
-from typing import Optional, Any
+from io import StringIO
+from typing import Any
 
 logger = logging.getLogger(__name__)
 
@@ -70,9 +70,9 @@ class TrainingDataParser:
                     errors.append(f"Row {i}: {str(e)}")
 
             logger.info(
-                f"Parsed training data file",
+                "Parsed training data file",
                 extra={
-                    "filename": filename,
+                    "uploaded_filename": filename,
                     "format": file_format,
                     "total_rows": len(items),
                     "valid_rows": len(validated_items),
@@ -84,8 +84,8 @@ class TrainingDataParser:
 
         except Exception as e:
             logger.error(
-                f"Error parsing training data file",
-                extra={"filename": filename, "error": str(e)},
+                "Error parsing training data file",
+                extra={"uploaded_filename": filename, "error": str(e)},
             )
             raise TrainingDataValidationError(f"Failed to parse file: {str(e)}")
 

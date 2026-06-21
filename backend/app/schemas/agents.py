@@ -5,6 +5,7 @@ Extends the queue item models with decision support fields and agent health metr
 from __future__ import annotations
 
 from datetime import datetime
+from app.core.clock import utcnow
 from uuid import UUID
 from typing import Optional
 
@@ -92,7 +93,7 @@ class AgentsStatusResponse(BaseModel):
     jd: AgentStatusResponse
     email: AgentStatusResponse
     timestamp: datetime = Field(
-        default_factory=datetime.utcnow,
+        default_factory=utcnow,
         description="Timestamp of this status snapshot"
     )
 
@@ -135,12 +136,12 @@ class QueueItemAction(BaseModel):
     action_notes: Optional[str] = None
     assessment_id: Optional[UUID] = None
     target_position_id: Optional[UUID] = None
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=utcnow)
 
 
 class WebSocketEventMessage(BaseModel):
     """Generic WebSocket event message."""
 
     type: str = Field(description="Event type for routing")
-    timestamp: datetime = Field(default_factory=datetime.utcnow)
+    timestamp: datetime = Field(default_factory=utcnow)
     data: dict = Field(default_factory=dict, description="Event-specific payload")
