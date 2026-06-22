@@ -93,3 +93,71 @@ def test_pivot_restores_the_keyword_signal():
              "orchestration and distributed systems.")
     pivoted = intake.traditional_ats(en_jd, en_cv)["score"]
     assert pivoted > 0
+
+
+def test_normalize_tolerates_translation_key_aliases():
+    """Regression: the live model returns the translation under `translated_text`
+    (not `english_text`). _normalize must accept the common aliases, or the
+    English pivot silently no-ops (this exact mismatch once shipped)."""
+    out = T._normalize({"source_language": "zh", "translated_text": "Hello world"}, "原文")
+    assert out["method"] == "llm"
+    assert out["source_language"] == "zh"
+    assert out["english_text"] == "Hello world"
+    # language aliases too
+    out2 = T._normalize({"detected_language": "ja", "translation": "Hi"}, "x")
+    assert out2["source_language"] == "ja" and out2["english_text"] == "Hi"
+    # genuinely empty -> still degrades safely
+    out3 = T._normalize({"notes": "n/a"}, "keep me")
+    assert out3["method"] == "passthrough-failed" and out3["english_text"] == "keep me"
+
+
+def test_normalize_longest_string_fallback_for_unknown_shapes():
+    """Defense-in-depth: even if the model uses a field name we don't alias
+    (or nests the translation), the pivot must survive — the translation is the
+    longest string in the payload."""
+    weird = {"detected": "fr", "payload": {"body": "This is the full English translation of the document."}}
+    out = T._normalize(weird, "texte original")
+    assert out["method"] == "llm"
+    assert "full English translation" in out["english_text"]
+    # a sentence mistakenly placed where a language code goes is rejected
+    out2 = T._normalize({"language": "the document is in German", "english_text": "Hello there friend"}, "x")
+    assert out2["source_language"] == "und"
+
+
+def test_latin_script_non_english_detected_despite_english_tokens():
+    """Regression: a Malay/Indonesian résumé that retains English tokens (URLs,
+    'AI', company names, award titles) once slipped through likely_non_english
+    as 'English' and skipped the pivot, collapsing the keyword signal. Positive
+    non-English-Latin stopword detection must now catch it."""
+    ms = ("Pemimpin produk kanan dengan sepuluh tahun pengalaman membina dan "
+          "menskala platform AI dalam perkhidmatan kewangan di rantau ini. "
+          "Pakar dalam penerapan AI dan pengurusan pihak berkepentingan. "
+          "linkedin.com/in/example | AI | Top Banca Award")
+    id_ = ("Pemimpin produk senior dengan sepuluh tahun pengalaman membangun dan "
+           "menskalakan platform AI dalam layanan keuangan di kawasan ini, dengan "
+           "kemitraan strategis dan adopsi AI. linkedin.com/in/example | AI")
+    assert T.likely_non_english(ms) is True
+    assert T.likely_non_english(id_) is True
+    # genuine English with some technical/loan tokens must NOT over-trigger
+    en = ("Senior product leader with ten years building and scaling AI platforms "
+          "across financial services in the region, with a focus on stakeholder "
+          "management and de-risking AI adoption. linkedin.com/in/example")
+    assert T.likely_non_english(en) is False
+
+
+def test_malay_indonesian_discriminator():
+    """ms vs id are mutually intelligible; the LLM detector often labels Indonesian
+    as 'ms'. A deterministic minimal-pair check must correct it from the text."""
+    ms = ("Pemimpin AI dalam perkhidmatan kewangan; pengalaman dalam pengurusan "
+          "dan kemahiran teknikal di syarikat besar. Universiti Malaya. Maklumat lanjut.")
+    idn = ("Pemimpin AI dalam layanan keuangan; pengalaman dalam manajemen dan "
+           "keterampilan teknis di perusahaan besar. Universitas Indonesia. Informasi lanjut.")
+    # detector says 'ms' for both — refinement must split them
+    assert T.refine_malay_indonesian(ms, "ms") == "ms"
+    assert T.refine_malay_indonesian(idn, "ms") == "id"
+    # -iti vs -itas suffix split alone is decisive
+    assert T.refine_malay_indonesian("aktiviti kualiti universiti", "ms") == "ms"
+    assert T.refine_malay_indonesian("aktivitas kualitas universitas", "ms") == "id"
+    # non-Malay-family codes pass through untouched
+    assert T.refine_malay_indonesian("whatever", "ja") == "ja"
+    assert T.refine_malay_indonesian("no markers here at all", "ms") == "ms"
