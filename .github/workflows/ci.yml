@@ -33,6 +33,13 @@ jobs:
       # CI runs with encryption + governance configured so the full paths exercise.
       LLM_FORCE_MOCK: "true"
       DATABASE_URL: postgresql+asyncpg://truematch:password@127.0.0.1:5432/truematch
+      # The pytest fixtures create per-test databases via these TEST_DB_* vars
+      # (conftest does not read DATABASE_URL); point them at the postgres service
+      # so they don't fall back to the runner's local user (auth failure).
+      TEST_DB_HOST: "127.0.0.1"
+      TEST_DB_PORT: "5432"
+      TEST_DB_USER: truematch
+      TEST_DB_PASSWORD: password
       REDIS_URL: redis://127.0.0.1:6379/0
       ENCRYPTION_KEY: "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE="
       GOVERNANCE_COHERENCE_THRESHOLD: "0.7"
