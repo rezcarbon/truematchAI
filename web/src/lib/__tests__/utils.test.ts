@@ -296,14 +296,15 @@ describe('Utility Functions', () => {
 
       const throttledFn = throttle((arg: string) => mockFn(arg), 100)
 
-      throttledFn('first')
-      throttledFn('second')
+      throttledFn('first') // t=0: leading edge fires
+      throttledFn('second') // t=0: within window, suppressed
       jest.advanceTimersByTime(50)
-      throttledFn('third')
+      throttledFn('third') // t=50: only 50ms since last call, suppressed
       jest.advanceTimersByTime(60)
-      throttledFn('fourth')
+      throttledFn('fourth') // t=110: >=100ms since last call, fires
 
-      expect(mockFn).toHaveBeenCalledTimes(3)
+      // Leading-edge throttle over a 100ms window: only 'first' and 'fourth' fire.
+      expect(mockFn).toHaveBeenCalledTimes(2)
 
       jest.useRealTimers()
     })

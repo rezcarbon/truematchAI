@@ -261,6 +261,9 @@ export function QueueTable({
   const table = useReactTable({
     data: filteredItems,
     columns,
+    // Key rows by item id so `selectedId` (an item id, see footer below) maps to
+    // the correct row; without this TanStack falls back to the row index.
+    getRowId: (row) => row.id,
     state: {
       sorting,
       columnFilters,
