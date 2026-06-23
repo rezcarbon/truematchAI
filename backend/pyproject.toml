@@ -37,8 +37,10 @@ dependencies = [
     # Email ingestion for autonomous CV/JD submissions via inbox monitoring.
     "aioimaplib>=1.1",
     "aiosmtplib>=5.0",
-    # Async file IO used by the file-ingestion worker (was imported but undeclared).
+    # Async file IO + filesystem watching used by the file-ingestion worker
+    # (both were imported but undeclared).
     "aiofiles>=23.0",
+    "watchdog>=4.0",
 ]
 
 [project.optional-dependencies]
