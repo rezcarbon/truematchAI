@@ -12,7 +12,9 @@ const config = {
   coverageProvider: 'v8',
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/src'],
-  testMatch: ['**/__tests__/**/*.ts?(x)', '**/?(*.)+(spec|test).ts?(x)'],
+  // Match only *.test / *.spec files so non-test helpers living under __tests__
+  // (e.g. test-utils.tsx) are not collected as empty suites.
+  testMatch: ['**/?(*.)+(spec|test).ts?(x)'],
   moduleNameMapper: {
     '^@/(.*)$': '<rootDir>/src/$1',
   },

@@ -1,5 +1,15 @@
 import '@testing-library/jest-dom'
 
+// jest-environment-jsdom does not expose Node's `setImmediate`, which some tests
+// use to flush pending promises/timers. Polyfill it so those flushes don't throw
+// a ReferenceError (which otherwise surfaces as a hook error in async tests).
+if (typeof (globalThis as { setImmediate?: unknown }).setImmediate === 'undefined') {
+  ;(globalThis as { setImmediate?: unknown }).setImmediate = (
+    fn: (...a: unknown[]) => void,
+    ...args: unknown[]
+  ) => setTimeout(fn, 0, ...args)
+}
+
 // Mock next/router
 jest.mock('next/router', () => ({
   useRouter() {
