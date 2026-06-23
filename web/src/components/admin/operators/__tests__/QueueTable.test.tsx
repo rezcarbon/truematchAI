@@ -40,6 +40,7 @@ describe('QueueTable Component', () => {
         items={mockQueueItems}
         onSelectRow={mockCallback}
         isLoading={false}
+        filterAwaitingReview={false}
       />
     )
 
@@ -208,6 +209,7 @@ describe('QueueTable Component', () => {
         items={mockQueueItems}
         onSelectRow={mockCallback}
         isLoading={false}
+        filterAwaitingReview={false}
       />
     )
 
@@ -223,11 +225,13 @@ describe('QueueTable Component', () => {
         items={mockQueueItems}
         onSelectRow={mockCallback}
         isLoading={false}
+        filterAwaitingReview={false}
       />
     )
 
-    // Check for status badge labels
-    expect(screen.getByText('Awaiting Review')).toBeInTheDocument()
+    // Check for status badge labels (filter off so the approved row is shown).
+    // Two mock items are awaiting_review, so use getAllByText for that label.
+    expect(screen.getAllByText('Awaiting Review').length).toBeGreaterThan(0)
     expect(screen.getByText('Approved')).toBeInTheDocument()
   })
 
@@ -267,6 +271,7 @@ describe('QueueTable Component', () => {
         items={[]}
         onSelectRow={mockCallback}
         isLoading={false}
+        filterAwaitingReview={false}
       />
     )
 

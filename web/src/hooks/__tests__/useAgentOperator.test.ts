@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { renderHook, waitFor, act } from '@testing-library/react'
 import { useAgentOperator } from '../useAgentOperator'
 
 // Mock next-auth/react
@@ -230,7 +230,9 @@ describe('useAgentOperator Hook', () => {
       expect(result.current.events.length).toBeGreaterThan(0)
     })
 
-    result.current.clearEvents()
+    act(() => {
+      result.current.clearEvents()
+    })
 
     expect(result.current.events).toEqual([])
   })
@@ -311,9 +313,9 @@ describe('useAgentOperator Hook', () => {
     })
 
     const errorEvent = new Event('error')
-    if (mockWebSocket.onerror) {
-      mockWebSocket.onerror(errorEvent)
-    }
+    await act(async () => {
+      mockWebSocket.onerror?.(errorEvent)
+    })
 
     await waitFor(() => {
       expect(result.current.error).not.toBeNull()
@@ -327,11 +329,11 @@ describe('useAgentOperator Hook', () => {
       expect(result.current.isConnected).toBe(true)
     })
 
-    if (mockWebSocket.onmessage) {
-      mockWebSocket.onmessage({
+    await act(async () => {
+      mockWebSocket.onmessage?.({
         data: 'invalid json',
       })
-    }
+    })
 
     await waitFor(() => {
       expect(result.current.error).not.toBeNull()
@@ -377,8 +379,8 @@ describe('useAgentOperator Hook', () => {
     result.current.onQueueItemAction('item-1', 'approved', 'Good fit')
 
     expect(consoleSpy).toHaveBeenCalledWith(
-      expect.stringContaining('item-1'),
-      expect.stringContaining('approved')
+      expect.stringContaining('item-1 -> approved'),
+      'Good fit'
     )
 
     consoleSpy.mockRestore()
@@ -406,9 +408,9 @@ describe('useAgentOperator Hook', () => {
     })
 
     mockWebSocket.readyState = 3 // CLOSED
-    if (mockWebSocket.onclose) {
-      mockWebSocket.onclose()
-    }
+    await act(async () => {
+      mockWebSocket.onclose?.()
+    })
 
     await waitFor(() => {
       expect(result.current.isConnected).toBe(false)

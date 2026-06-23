@@ -255,6 +255,10 @@ describe('Authentication - Signup Page', () => {
     const user = userEvent.setup()
     render(<SignupPageComponent />)
 
+    // name + email are required fields; without them HTML5 constraint validation
+    // blocks the submit and onSubmit (which sets the mismatch error) never runs.
+    await user.type(screen.getByLabelText(/name/i), 'Test User')
+    await user.type(screen.getByLabelText(/^email/i), 'test@example.com')
     await user.type(screen.getByLabelText(/^password/i), 'password123')
     await user.type(screen.getByLabelText(/confirm password/i), 'different')
     await user.click(screen.getByRole('button', { name: /sign up/i }))
