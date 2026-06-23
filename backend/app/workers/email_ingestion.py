@@ -17,7 +17,7 @@ from pathlib import Path
 from typing import Optional
 from uuid import UUID
 
-import aioimap
+import aioimaplib
 import aiosmtplib
 
 from app.config import settings
@@ -89,9 +89,10 @@ class EmailIngestor:
         self.processed_message_ids: set[str] = set()
         self.last_check: datetime | None = None
 
-    async def _connect_imap(self) -> aioimap.IMAP4:
+    async def _connect_imap(self) -> aioimaplib.IMAP4_SSL:
         """Connect to IMAP server."""
-        imap = await aioimap.IMAP4_SSL(self.imap_host, self.imap_port)
+        imap = aioimaplib.IMAP4_SSL(host=self.imap_host, port=self.imap_port)
+        await imap.wait_hello_from_server()
         await imap.login(self.email_address, self.email_password)
         return imap
 
