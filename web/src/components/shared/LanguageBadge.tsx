@@ -60,7 +60,7 @@ export function LanguageBadge({
   if (!name) return null;
   return (
     <span
-      title={`Original ${name} text was machine-translated to an English pivot for scoring. The original is retained.`}
+      title={`Original ${name} text was machine-translated to an English pivot for scoring. Keyword scoring is language-invariant; the semantic and capability signals are language-responsive — they reflect how legibly the evidence reads in translation. The original is retained.`}
       className={cn(
         "inline-flex items-center gap-1 rounded-full font-medium",
         "bg-violet-50 border border-violet-200 text-violet-700",

@@ -1,11 +1,14 @@
-import type { Config } from 'jest'
-import nextJest from 'next/jest'
+// CommonJS config so Jest can load it without `ts-node` (which is not a direct
+// dependency and is not reliably installed under `npm ci`). Behaviour is
+// identical to the previous jest.config.ts.
+const nextJest = require('next/jest')
 
 const createJestConfig = nextJest({
   dir: './',
 })
 
-const config: Config = {
+/** @type {import('jest').Config} */
+const config = {
   coverageProvider: 'v8',
   testEnvironment: 'jsdom',
   roots: ['<rootDir>/src'],
@@ -35,4 +38,4 @@ const config: Config = {
   moduleDirectories: ['node_modules', '<rootDir>/'],
 }
 
-export default createJestConfig(config)
+module.exports = createJestConfig(config)

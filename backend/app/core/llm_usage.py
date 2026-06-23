@@ -12,12 +12,35 @@ conservative default, so a model rename doesn't silently zero the cost.
 """
 from __future__ import annotations
 
+import json
 import logging
+import os
+import time
 from contextvars import ContextVar
 from dataclasses import dataclass
 from typing import Any
 
 logger = logging.getLogger("truematch.llm_usage")
+
+# Optional durable cost ledger: when TRUEMATCH_COST_LEDGER points to a path, each
+# call appends one JSON line {ts, model, input_tokens, output_tokens,
+# cache_read_tokens, cost_usd}. Process-agnostic (worker, API, scripts all share
+# one file), so cost is observable even when the log formatter drops `extra`.
+_COST_LEDGER = os.environ.get("TRUEMATCH_COST_LEDGER")
+
+
+def _append_ledger(model: str, in_tok: int, out_tok: int, cache_read: int, cost: float) -> None:
+    if not _COST_LEDGER:
+        return
+    try:
+        with open(_COST_LEDGER, "a") as fh:
+            fh.write(json.dumps({
+                "ts": round(time.time(), 3), "model": model,
+                "input_tokens": in_tok, "output_tokens": out_tok,
+                "cache_read_tokens": cache_read, "cost_usd": round(cost, 6),
+            }) + "\n")
+    except OSError:
+        pass  # never let cost bookkeeping break a real call
 
 # Per-million-token prices (USD): (input, output, cache_write, cache_read).
 _PRICING: dict[str, tuple[float, float, float, float]] = {
@@ -199,4 +222,5 @@ def record_usage(model: str, usage: Any) -> float:
             "cost_usd": round(cost, 6),
         },
     )
+    _append_ledger(model, in_tok, out_tok, cache_read, cost)
     return cost

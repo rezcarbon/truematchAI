@@ -37,6 +37,8 @@ dependencies = [
     # Email ingestion for autonomous CV/JD submissions via inbox monitoring.
     "aioimap>=0.2.7",
     "aiosmtplib>=5.0",
+    # Async file IO used by the file-ingestion worker (was imported but undeclared).
+    "aiofiles>=23.0",
 ]
 
 [project.optional-dependencies]
@@ -66,3 +68,4 @@ target-version = "py312"
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
+pythonpath = ["."]
