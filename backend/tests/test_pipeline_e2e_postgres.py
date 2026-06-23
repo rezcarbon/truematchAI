@@ -58,7 +58,8 @@ def test_full_pipeline_against_real_postgres(pg_url, monkeypatch):
     monkeypatch.setattr(tasks, "_SyncSessionLocal", SessionLocal)
     monkeypatch.setattr(tasks, "_sync_engine", engine)
 
-    # Ungoverned run (placeholder governance) -> completes with mock scores.
+    # Governed run with mock scores: the large capability-vs-keyword delta trips
+    # the counter-recommendation, so the assessment is flagged for human review.
     from app.core.governance import (
         COHERENCE_THRESHOLD,
         CONSISTENCY_BOUND,
@@ -101,11 +102,17 @@ def test_full_pipeline_against_real_postgres(pg_url, monkeypatch):
         aid = assessment.id
 
     result = tasks.run_assessment.apply(args=[str(aid)]).get()
-    assert result["status"] == "completed"
+    # The mock capability (81) far exceeds the keyword score for this résumé/JD,
+    # so the delta clears COUNTER_REC_DELTA (25): the decision engine raises a
+    # counter-recommendation, which is an advisory outcome and routes to human
+    # review (Article-14) rather than an autonomous 'completed'. The pipeline
+    # still runs to completion and persists all scores; only the *decision*
+    # requires a human.
+    assert result["status"] == "flagged_for_review"
 
     with SessionLocal() as db:
         stored = db.get(Assessment, aid)
-        assert stored.status is AssessmentStatus.completed
+        assert stored.status is AssessmentStatus.flagged_for_review
         assert stored.capability_score == 81
         # traditional + semantic are deterministic keyword/embedding scores
         assert 0 <= stored.traditional_score <= 100
