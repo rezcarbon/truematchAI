@@ -153,6 +153,15 @@ def run_assessment(self, assessment_id: str) -> dict:
                     verify_cited_evidence.delay(assessment_id)
                 except Exception:  # noqa: BLE001 — broker hiccup must not fail the run
                     logger.warning("Could not enqueue selective verification for %s", assessment_id)
+            # Auto-report: render candidate + recruiter PDFs for concierge hand-off
+            # (off by default; rendering is isolated and never affects the result).
+            if settings.auto_report_enabled:
+                try:
+                    from app.workers.render_reports import render_assessment_reports
+
+                    render_assessment_reports.delay(assessment_id)
+                except Exception:  # noqa: BLE001 — broker hiccup must not fail the run
+                    logger.warning("Could not enqueue auto-report for %s", assessment_id)
             return {"status": assessment.status.value, "assessment_id": assessment_id, **result}
 
         except Exception as exc:  # noqa: BLE001
