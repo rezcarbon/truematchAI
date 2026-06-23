@@ -11,6 +11,11 @@ on:
     paths:
       - 'web/**'
 
+# The coverage-comment step posts a PR comment, which needs write access to PRs.
+permissions:
+  contents: read
+  pull-requests: write
+
 jobs:
   test:
     runs-on: ubuntu-latest
@@ -70,3 +75,6 @@ jobs:
           lcov-file: ./web/coverage/lcov.info
           github-token: ${{ secrets.GITHUB_TOKEN }}
         if: github.event_name == 'pull_request'
+        # Informational only — a comment failure (e.g. restricted token on forks)
+        # must never fail the test job.
+        continue-on-error: true
