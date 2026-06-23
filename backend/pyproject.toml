@@ -41,6 +41,8 @@ dependencies = [
     # (both were imported but undeclared).
     "aiofiles>=23.0",
     "watchdog>=4.0",
+    # PDF report rendering (candidate + recruiter reports).
+    "reportlab>=4.0",
 ]
 
 [project.optional-dependencies]
