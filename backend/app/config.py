@@ -205,6 +205,14 @@ class Settings(BaseSettings):
     ingest_imap_password: str = ""
     ingest_imap_folder: str = "INBOX"
     ingest_email_poll_seconds: float = 60.0
+    # Google Drive ingestion: poll a Drive folder where each candidate submission
+    # is a subfolder containing one CV and one JD. Disabled unless a folder id +
+    # access token are configured. The access token is an OAuth2 bearer (service
+    # account or user) with read access to the folder.
+    drive_ingest_enabled: bool = False
+    drive_ingest_folder_id: str = ""
+    drive_ingest_access_token: str = ""
+    drive_ingest_poll_seconds: float = 120.0
     # Max retries before marking an ingest item as failed.
     ingest_max_retries: int = 3
     # If True, CV agent requires human approval before running the pipeline.
