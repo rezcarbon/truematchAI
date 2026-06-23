@@ -213,6 +213,11 @@ class Settings(BaseSettings):
     drive_ingest_folder_id: str = ""
     drive_ingest_access_token: str = ""
     drive_ingest_poll_seconds: float = 120.0
+    # Auto-report: when on, a completed assessment renders candidate + recruiter
+    # PDFs to auto_report_output_dir (the concierge fulfilment hand-off). Off by
+    # default; rendering never blocks or fails the assessment.
+    auto_report_enabled: bool = False
+    auto_report_output_dir: str = "./reports_out"
     # Max retries before marking an ingest item as failed.
     ingest_max_retries: int = 3
     # If True, CV agent requires human approval before running the pipeline.

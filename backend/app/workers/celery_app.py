@@ -15,6 +15,7 @@ celery_app = Celery(
         "app.workers.agents.ingest_cv",
         "app.workers.agents.ingest_jd",
         "app.workers.agents.ingest_drive",
+        "app.workers.render_reports",
         "app.workers.cv_analysis",
         "app.workers.capability_translation",
         "app.workers.transition_intelligence",
