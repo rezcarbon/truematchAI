@@ -24,6 +24,7 @@ class IngestSource(str, enum.Enum):
     folder = "folder"
     api = "api"
     webhook = "webhook"
+    cloud_drive = "cloud_drive"  # files pulled from a cloud-storage folder (e.g. Google Drive)
 
 
 class IngestType(str, enum.Enum):

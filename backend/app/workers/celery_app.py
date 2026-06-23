@@ -14,6 +14,7 @@ celery_app = Celery(
         "app.workers.retention",
         "app.workers.agents.ingest_cv",
         "app.workers.agents.ingest_jd",
+        "app.workers.agents.ingest_drive",
         "app.workers.cv_analysis",
         "app.workers.capability_translation",
         "app.workers.transition_intelligence",
@@ -54,6 +55,10 @@ celery_app.conf.update(
         "poll-cv-email": {
             "task": "app.workers.agents.ingest_cv.poll_email",
             "schedule": settings.ingest_email_poll_seconds,
+        },
+        "poll-drive": {
+            "task": "app.workers.agents.ingest_drive.poll_drive",
+            "schedule": settings.drive_ingest_poll_seconds,
         },
         "retention-daily-sweep": {
             "task": "app.workers.retention.retention_daily_sweep",
