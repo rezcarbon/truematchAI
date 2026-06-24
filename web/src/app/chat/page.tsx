@@ -10,6 +10,12 @@ import { Loader2, Send, Plus, Trash2, Upload, CheckCircle, AlertCircle } from 'l
 import { ActionConfirmation } from '@/components/ActionConfirmation';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
 
+// All chat traffic goes through the BFF proxy (like the rest of the app): the
+// proxy injects the logged-in user's token server-side, so the access token
+// never reaches the browser and this works in production where the backend is
+// not browser-reachable. The proxy now streams SSE through intact.
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || '/api/proxy';
+
 interface Message {
   id: string;
   role: 'user' | 'assistant';
@@ -39,14 +45,17 @@ interface ChatSession {
 
 export default function ChatPage() {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
-  const [showSidebar, setShowSidebar] = useState(true);
+  // Open by default on desktop; collapsed on mobile (set after mount to avoid
+  // an SSR/client mismatch). On mobile the sidebar overlays the chat as a
+  // drawer rather than squeezing it into a sliver.
+  const [showSidebar, setShowSidebar] = useState(false);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -56,12 +65,14 @@ export default function ChatPage() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
 
-  // Redirect if not authenticated
+  // Redirect only once auth has resolved. `useSession` starts in a "loading"
+  // state where `session` is undefined; redirecting on `!session` then would
+  // bounce authenticated users to /login on every full page load.
   useEffect(() => {
-    if (!session) {
+    if (status === 'unauthenticated') {
       router.push('/login');
     }
-  }, [session, router]);
+  }, [status, router]);
 
   // Load chat sessions
   useEffect(() => {
@@ -80,12 +91,7 @@ export default function ChatPage() {
 
   const loadSessions = async () => {
     try {
-      const accessToken = (session?.user as { accessToken?: string })?.accessToken;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${apiUrl}/api/v1/chat/sessions`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` },
-      });
+      const response = await fetch(`${API_BASE}/chat/sessions`, { cache: 'no-store' });
 
       if (response.ok) {
         const data = await response.json();
@@ -102,12 +108,7 @@ export default function ChatPage() {
 
   const loadSession = async (sessionId: string) => {
     try {
-      const accessToken = (session?.user as { accessToken?: string })?.accessToken;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${apiUrl}/api/v1/chat/sessions/${sessionId}`, {
-        headers: { 'Authorization': `Bearer ${accessToken}` },
-      });
+      const response = await fetch(`${API_BASE}/chat/sessions/${sessionId}`, { cache: 'no-store' });
 
       if (response.ok) {
         const data = await response.json();
@@ -121,15 +122,9 @@ export default function ChatPage() {
 
   const createNewSession = async () => {
     try {
-      const accessToken = (session?.user as { accessToken?: string })?.accessToken;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
-      const response = await fetch(`${apiUrl}/api/v1/chat/sessions`, {
+      const response = await fetch(`${API_BASE}/chat/sessions`, {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           title: `Chat - ${new Date().toLocaleDateString()}`,
         }),
@@ -152,16 +147,14 @@ export default function ChatPage() {
 
     setUploadingFile(true);
     try {
-      const accessToken = (session?.user as { accessToken?: string })?.accessToken;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
       for (const file of Array.from(files)) {
         const formData = new FormData();
         formData.append('file', file);
 
-        const response = await fetch(`${apiUrl}/api/v1/chat/upload`, {
+        // No explicit Content-Type: the browser sets the multipart boundary,
+        // and the proxy forwards multipart bodies binary-safe.
+        const response = await fetch(`${API_BASE}/chat/upload`, {
           method: 'POST',
-          headers: { 'Authorization': `Bearer ${accessToken}` },
           body: formData,
         });
 
@@ -191,13 +184,6 @@ export default function ChatPage() {
     setError(null);
     setLoading(true);
 
-    const accessToken = (session?.user as { accessToken?: string })?.accessToken;
-    if (!accessToken) {
-      setError('Not authenticated');
-      setLoading(false);
-      return;
-    }
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
     const userMessage = input;
 
     // Add the user message and an empty assistant message we'll stream into.
@@ -217,11 +203,11 @@ export default function ChatPage() {
 
     try {
       const response = await fetch(
-        `${apiUrl}/api/v1/chat/${currentSessionId}/message/stream`,
+        `${API_BASE}/chat/${currentSessionId}/message/stream`,
         {
           method: 'POST',
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Accept: 'text/event-stream',
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ message: userMessage }),
@@ -308,13 +294,7 @@ export default function ChatPage() {
 
   const deleteSession = async (sessionId: string) => {
     try {
-      const accessToken = (session?.user as { accessToken?: string })?.accessToken;
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-
-      await fetch(`${apiUrl}/api/v1/chat/sessions/${sessionId}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${accessToken}` },
-      });
+      await fetch(`${API_BASE}/chat/sessions/${sessionId}`, { method: 'DELETE' });
 
       setSessions(sessions.filter((s) => s.id !== sessionId));
       if (currentSessionId === sessionId) {
@@ -332,19 +312,14 @@ export default function ChatPage() {
   };
 
   const handleActionConfirm = async (actionIds: string[]) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-    const accessToken = (session?.user as { accessToken?: string })?.accessToken;
     const results: { id: string; status: string }[] = [];
     for (const actionId of actionIds) {
       const action = pendingActions.find((a) => a.id === actionId);
       if (!action?.message_id) continue;
       try {
-        const res = await fetch(`${apiUrl}/api/v1/chat/actions/confirm`, {
+        const res = await fetch(`${API_BASE}/chat/actions/confirm`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message_id: action.message_id,
             action_id: actionId,
@@ -376,18 +351,13 @@ export default function ChatPage() {
   };
 
   const handleActionReject = async (actionIds: string[]) => {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-    const accessToken = (session?.user as { accessToken?: string })?.accessToken;
     for (const actionId of actionIds) {
       const action = pendingActions.find((a) => a.id === actionId);
       if (!action?.message_id) continue;
       try {
-        await fetch(`${apiUrl}/api/v1/chat/actions/confirm`, {
+        await fetch(`${API_BASE}/chat/actions/confirm`, {
           method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${accessToken}`,
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             message_id: action.message_id,
             action_id: actionId,
@@ -409,6 +379,11 @@ export default function ChatPage() {
     localStorage.setItem('onboarding-completed', 'true');
   };
 
+  // Open the sidebar by default on desktop only.
+  useEffect(() => {
+    setShowSidebar(window.innerWidth >= 1024);
+  }, []);
+
   // Auto-scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -422,7 +397,7 @@ export default function ChatPage() {
       <div
         className={`${
           showSidebar ? 'w-64' : 'w-0'
-        } transition-all duration-300 border-r border-border bg-secondary/20 overflow-hidden flex flex-col`}
+        } transition-all duration-300 border-r border-border bg-secondary/20 overflow-hidden flex flex-col absolute lg:relative inset-y-0 left-0 z-30 lg:z-auto`}
       >
         <div className="p-4 border-b border-border">
           <Button
@@ -444,7 +419,10 @@ export default function ChatPage() {
                   ? 'bg-primary text-primary-foreground'
                   : 'bg-background hover:bg-secondary'
               }`}
-              onClick={() => loadSession(sess.id)}
+              onClick={() => {
+                loadSession(sess.id);
+                if (window.innerWidth < 1024) setShowSidebar(false);
+              }}
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="flex-1 min-w-0">
@@ -476,6 +454,15 @@ export default function ChatPage() {
           </p>
         </div>
       </div>
+
+      {/* Backdrop: dismiss the drawer when tapping the chat on mobile. */}
+      {showSidebar && (
+        <div
+          className="lg:hidden fixed inset-0 z-20 bg-black/30"
+          onClick={() => setShowSidebar(false)}
+          aria-hidden="true"
+        />
+      )}
 
       {/* Main Chat */}
       <div className="flex-1 flex flex-col overflow-hidden">

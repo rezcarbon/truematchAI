@@ -18,7 +18,9 @@ async function forward(req: NextRequest, segments: string[]) {
   url.search = req.nextUrl.search;
 
   const headers: HeadersInit = {
-    Accept: "application/json",
+    // Forward the caller's Accept so SSE endpoints (chat streaming) can
+    // negotiate text/event-stream while everything else stays JSON.
+    Accept: req.headers.get("accept") ?? "application/json",
     "Content-Type": req.headers.get("content-type") ?? "application/json",
   };
 
@@ -43,6 +45,24 @@ async function forward(req: NextRequest, segments: string[]) {
 
   try {
     const res = await fetch(url.toString(), init);
+
+    // Stream Server-Sent Events straight through (chat token streaming).
+    // Buffering with res.text() would collapse the token-by-token UX into a
+    // single delayed blob, so pass the upstream ReadableStream through intact.
+    const upstreamType = res.headers.get("content-type") ?? "";
+    if (upstreamType.includes("text/event-stream") && res.body) {
+      return new NextResponse(res.body, {
+        status: res.status,
+        headers: {
+          "Content-Type": "text/event-stream; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+          // Disable proxy buffering (nginx and friends) so chunks flush live.
+          "X-Accel-Buffering": "no",
+        },
+      });
+    }
+
     const body = await res.text();
     return new NextResponse(body, {
       status: res.status,
