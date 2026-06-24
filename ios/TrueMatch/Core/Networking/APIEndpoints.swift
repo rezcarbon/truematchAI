@@ -383,4 +383,10 @@ extension APIEndpoint {
     static func sendChatMessage(_ request: ChatSendRequest) -> APIEndpoint {
         APIEndpoint(path: "chat/", method: .POST, body: request)
     }
+
+    /// Stream the agent's reply token-by-token over SSE. Matches the backend
+    /// route `/chat/{session_id}/message/stream`.
+    static func streamChatMessage(sessionId: String, _ request: StreamChatRequest) -> APIEndpoint {
+        APIEndpoint(path: "chat/\(sessionId)/message/stream", method: .POST, body: request)
+    }
 }

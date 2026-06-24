@@ -22,6 +22,32 @@ struct ChatSendRequest: Codable {
     let message: String
 }
 
+/// Body for the streaming endpoint. The session id travels in the path, so only
+/// the message is sent (mirrors the backend `StreamMessageRequest`).
+struct StreamChatRequest: Codable {
+    let message: String
+}
+
+// MARK: - SSE frame payloads (chat token streaming)
+
+/// `data:` payload of a `token` event.
+struct StreamTokenPayload: Codable {
+    let text: String
+}
+
+/// `data:` payload of an `error` event.
+struct StreamErrorPayload: Codable {
+    let error: String
+}
+
+/// `data:` payload of the terminal `done` event: the persisted message id, any
+/// structured tool actions, and follow-up suggestions.
+struct StreamDonePayload: Codable {
+    let messageId: String?
+    let actions: [ChatActionDTO]?
+    let suggestions: [String]?
+}
+
 // MARK: - Responses
 
 struct ChatSessionResponse: Codable, Identifiable {

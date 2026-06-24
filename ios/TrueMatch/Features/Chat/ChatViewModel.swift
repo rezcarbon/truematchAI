@@ -114,23 +114,116 @@ final class ChatViewModel: ObservableObject {
         inputText = ""
         suggestions = []
         messages.append(ChatBubble(role: .user, content: text))
+        // An empty assistant bubble we stream tokens into.
+        let assistantId = UUID().uuidString
+        messages.append(ChatBubble(id: assistantId, role: .assistant, content: ""))
         isSending = true
         defer { isSending = false }
 
+        do {
+            let bytes = try await api.eventStream(
+                endpoint: .streamChatMessage(sessionId: sessionId, StreamChatRequest(message: text))
+            )
+
+            let decoder = JSONDecoder()
+            decoder.keyDecodingStrategy = .convertFromSnakeCase
+
+            // SSE: lines accumulate into a frame until a blank line; each frame
+            // carries an `event:` type and one or more `data:` lines.
+            var eventType = "message"
+            var dataBuffer = ""
+
+            func dispatch() {
+                defer { eventType = "message"; dataBuffer = "" }
+                guard !dataBuffer.isEmpty, let data = dataBuffer.data(using: .utf8) else { return }
+                switch eventType {
+                case "token":
+                    if let p = try? decoder.decode(StreamTokenPayload.self, from: data) {
+                        appendToAssistant(p.text, id: assistantId)
+                    }
+                case "done":
+                    if let p = try? decoder.decode(StreamDonePayload.self, from: data) {
+                        finalizeAssistant(id: assistantId, actions: p.actions ?? [])
+                        suggestions = p.suggestions ?? []
+                    }
+                case "error":
+                    if let p = try? decoder.decode(StreamErrorPayload.self, from: data) {
+                        appendToAssistant("\n\n⚠️ \(p.error)", id: assistantId)
+                    }
+                default:
+                    break  // `connected` and any unknown events are ignored
+                }
+            }
+
+            for try await line in bytes.lines {
+                if line.isEmpty {
+                    dispatch()
+                } else if line.hasPrefix("event:") {
+                    eventType = String(line.dropFirst(6)).trimmingCharacters(in: .whitespaces)
+                } else if line.hasPrefix("data:") {
+                    var chunk = String(line.dropFirst(5))
+                    if chunk.first == " " { chunk.removeFirst() }  // strip one optional space
+                    dataBuffer += dataBuffer.isEmpty ? chunk : "\n" + chunk
+                }
+            }
+            dispatch()  // flush a trailing frame if the server closed without a blank line
+
+            // Drop the placeholder if the stream produced nothing.
+            if let idx = messages.firstIndex(where: { $0.id == assistantId }),
+               messages[idx].content.isEmpty {
+                messages.remove(at: idx)
+            }
+            await loadSessions()  // refresh ordering / counts
+        } catch {
+            // Streaming unavailable (older backend, proxy, or transport error):
+            // fall back to the one-shot endpoint so chat still works.
+            TrueMatchLogger.log(.error, "Chat: stream failed, falling back to one-shot: \(error)")
+            await fallbackSend(text: text, sessionId: sessionId, assistantId: assistantId)
+        }
+    }
+
+    /// One-shot send used when streaming isn't available; reuses the placeholder
+    /// assistant bubble created by `send()`.
+    private func fallbackSend(text: String, sessionId: String, assistantId: String) async {
         do {
             let resp = try await api.request(
                 endpoint: .sendChatMessage(ChatSendRequest(sessionId: sessionId, message: text)),
                 type: ChatSendResponse.self
             )
-            messages.append(ChatBubble(role: .assistant, content: resp.response, actions: resp.actions))
+            replaceAssistant(id: assistantId, content: resp.response, actions: resp.actions)
             suggestions = resp.suggestions
-            await loadSessions() // refresh ordering / counts
+            await loadSessions()
         } catch {
             TrueMatchLogger.log(.error, "Chat: send failed: \(error)")
-            messages.append(ChatBubble(
-                role: .assistant,
-                content: "Sorry — I couldn't reach the assistant. \(error.localizedDescription)"
-            ))
+            replaceAssistant(
+                id: assistantId,
+                content: "Sorry — I couldn't reach the assistant. \(error.localizedDescription)",
+                actions: []
+            )
+        }
+    }
+
+    // MARK: - Streaming bubble mutation
+    // ChatBubble is immutable, so we replace the element at its id to update it.
+
+    private func appendToAssistant(_ text: String, id: String) {
+        guard let idx = messages.firstIndex(where: { $0.id == id }) else { return }
+        let current = messages[idx]
+        messages[idx] = ChatBubble(id: id, role: .assistant,
+                                   content: current.content + text, actions: current.actions)
+    }
+
+    private func finalizeAssistant(id: String, actions: [ChatActionDTO]) {
+        guard let idx = messages.firstIndex(where: { $0.id == id }) else { return }
+        let current = messages[idx]
+        messages[idx] = ChatBubble(id: id, role: .assistant, content: current.content, actions: actions)
+    }
+
+    private func replaceAssistant(id: String, content: String, actions: [ChatActionDTO]) {
+        if let idx = messages.firstIndex(where: { $0.id == id }) {
+            messages[idx] = ChatBubble(id: id, role: .assistant, content: content, actions: actions)
+        } else {
+            messages.append(ChatBubble(role: .assistant, content: content, actions: actions))
         }
     }
 

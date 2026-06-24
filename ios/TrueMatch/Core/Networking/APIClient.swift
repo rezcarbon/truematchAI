@@ -94,6 +94,29 @@ actor APIClient {
         }
     }
 
+    // MARK: - Server-Sent Events (token streaming)
+
+    /// Opens an SSE stream for the endpoint and returns the raw byte stream for
+    /// the caller to parse into `event:`/`data:` frames. Sets `Accept:
+    /// text/event-stream` so the backend (and any proxy) negotiates streaming.
+    func eventStream(endpoint: APIEndpoint) async throws -> URLSession.AsyncBytes {
+        var request = try buildRequest(for: endpoint)
+        request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
+
+        let (bytes, response) = try await session.bytes(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        switch httpResponse.statusCode {
+        case 200...299:
+            return bytes
+        case 401:
+            throw APIError.unauthorized
+        default:
+            throw APIError.httpError(statusCode: httpResponse.statusCode, message: nil)
+        }
+    }
+
     // MARK: - Multipart File Upload
 
     /// Uploads raw file data via multipart/form-data and decodes the response.
