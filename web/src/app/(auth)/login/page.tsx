@@ -7,10 +7,11 @@ import { signIn, getSession } from "next-auth/react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
-function homeForRole(role?: string): string {
-  if (role === "admin") return "/admin/dashboard";
-  if (role === "recruiter") return "/recruiter/dashboard";
-  return "/candidate/dashboard";
+function homeForRole(_role?: string): string {
+  // Land on the AI Assistant (chat) by default — it's the role-aware front door.
+  // The backend routes the conversation by the user's JWT role, so one entry
+  // point serves candidate / recruiter / admin. Dashboards stay one nav click away.
+  return "/chat";
 }
 
 export default function LoginPage() {

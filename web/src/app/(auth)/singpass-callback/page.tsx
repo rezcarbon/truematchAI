@@ -50,7 +50,8 @@ function SingpassCallback() {
         if (!res.ok) throw new Error(`Exchange failed (${res.status})`);
         if (cancelled) return;
         setPhase("success");
-        router.replace("/candidate/dashboard");
+        // Land on the AI Assistant (chat) by default, consistent with password login.
+        router.replace("/chat");
       } catch (err) {
         if (cancelled) return;
         setPhase("error");

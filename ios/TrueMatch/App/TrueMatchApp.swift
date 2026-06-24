@@ -85,8 +85,9 @@ struct MainTabView: View {
 private struct CandidateTabs: View {
     var body: some View {
         TabView {
-            ResumeUploadView().tabItem { Label("Assess", systemImage: "doc.badge.plus") }
+            // Assistant (chat) is the default landing tab — the role-aware front door.
             ChatView().tabItem { Label("Assistant", systemImage: "sparkles") }
+            ResumeUploadView().tabItem { Label("Assess", systemImage: "doc.badge.plus") }
             CVAnalysisView().tabItem { Label("CV Insights", systemImage: "chart.line.uptrend.xyaxis") }
             PositionsListView().tabItem { Label("Jobs", systemImage: "briefcase") }
             MoreHubView(title: "More", items: [
@@ -104,8 +105,9 @@ private struct CandidateTabs: View {
 private struct RecruiterTabs: View {
     var body: some View {
         TabView {
-            ReviewsView().tabItem { Label("Reviews", systemImage: "doc.text.magnifyingglass") }
+            // Assistant (chat) is the default landing tab — the role-aware front door.
             ChatView().tabItem { Label("Assistant", systemImage: "sparkles") }
+            ReviewsView().tabItem { Label("Reviews", systemImage: "doc.text.magnifyingglass") }
             PositionsListView().tabItem { Label("Positions", systemImage: "briefcase") }
             RecruiterDashboardView().tabItem { Label("Dashboard", systemImage: "chart.bar") }
             MoreHubView(title: "More", items: [
@@ -122,8 +124,9 @@ private struct RecruiterTabs: View {
 private struct AdminTabs: View {
     var body: some View {
         TabView {
-            AdminDashboardView().tabItem { Label("Admin", systemImage: "gauge") }
+            // Assistant (chat) is the default landing tab — the role-aware front door.
             ChatView().tabItem { Label("Assistant", systemImage: "sparkles") }
+            AdminDashboardView().tabItem { Label("Admin", systemImage: "gauge") }
             GovernanceReviewsView().tabItem { Label("Governance", systemImage: "checkmark.shield") }
             ComplianceView().tabItem { Label("Compliance", systemImage: "doc.badge.gearshape") }
             MoreHubView(title: "More", items: [
