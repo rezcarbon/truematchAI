@@ -16,6 +16,18 @@ backend/build/
 backend/*.egg-info/
 backend/.DS_Store
 
+# Backend runtime state (Celery beat schedule DB + WAL sidecars) — regenerated
+# every run; must never be committed.
+backend/celerybeat-schedule
+backend/celerybeat-schedule-shm
+backend/celerybeat-schedule-wal
+# Ingestion inbox + auto-generated reports are runtime working dirs.
+backend/inbox/
+backend/reports_out/
+
+# Local Claude Code preview/launch config (developer-local).
+.claude/
+
 # Frontend
 web/node_modules/
 web/.next/
