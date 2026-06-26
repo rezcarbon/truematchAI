@@ -15,6 +15,32 @@ from app.models.user import User
 logger = logging.getLogger(__name__)
 
 
+# Protocol for rich, interactive metric cards in the chat UI. When the agent
+# presents status/metrics, it emits a fenced ```truematch-dashboard JSON block
+# that the client renders as interactive cards (instead of the reader parsing
+# numbers out of prose). Prose still carries the narrative around it.
+_DASHBOARD_PROTOCOL = """
+DASHBOARD CARDS (for status / metrics / "how are things"):
+When you present several headline numbers (system status, pipeline counts,
+metrics, scores), emit them as a fenced code block tagged `truematch-dashboard`
+containing JSON, placed BEFORE your prose summary. Then write the narrative as
+normal markdown. Use it only for genuine quantitative snapshots — not for plain
+answers.
+
+Schema:
+```truematch-dashboard
+{"title": "<short heading>", "cards": [
+  {"label": "<metric name>", "value": "<value>", "delta": "<+/-/Δ, optional>",
+   "intent": "up|down|good|warn|bad|neutral", "hint": "<context, optional>",
+   "prompt": "<optional: a follow-up message to send if the card is clicked>"}
+]}
+```
+Rules: valid JSON only; 2-6 cards; never invent numbers — use the values in your
+context; never put governance threshold values in cards (describe status in
+words). Omit the block entirely when there are no real metrics to show.
+"""
+
+
 @dataclass
 class Action:
     """An action the agent will execute."""
@@ -83,6 +109,7 @@ CONVERSATION STYLE:
 - Professional but conversational
 - Admit what you don't know
 - Ask clarifying questions when needed
+{_DASHBOARD_PROTOCOL}
 """
 
     def _parse_actions_from_response(self, response: str) -> list[dict]:

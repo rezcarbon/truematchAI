@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2, Send, Plus, Trash2, Upload, CheckCircle, AlertCircle } from 'lucide-react';
 import { ActionConfirmation } from '@/components/ActionConfirmation';
 import { OnboardingFlow } from '@/components/OnboardingFlow';
+import { ChatMessageContent } from '@/components/chat/ChatMessageContent';
 
 // All chat traffic goes through the BFF proxy (like the rest of the app): the
 // proxy injects the logged-in user's token server-side, so the access token
@@ -61,6 +62,7 @@ export default function ChatPage() {
   const [progress, setProgress] = useState(0);
   const [progressStage, setProgressStage] = useState<string>('');
   const [pendingActions, setPendingActions] = useState<Action[]>([]);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showActionConfirmation, setShowActionConfirmation] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
@@ -178,13 +180,15 @@ export default function ChatPage() {
     }
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim() || loading || !currentSessionId) return;
+  const handleSendMessage = async (textArg?: string) => {
+    const outgoing = (textArg ?? input).trim();
+    if (!outgoing || loading || !currentSessionId) return;
 
     setError(null);
     setLoading(true);
+    setSuggestions([]);
 
-    const userMessage = input;
+    const userMessage = outgoing;
 
     // Add the user message and an empty assistant message we'll stream into.
     const assistantId = Math.random().toString();
@@ -252,6 +256,7 @@ export default function ChatPage() {
         } else if (eventType === 'done') {
           const actions = (data.actions as Action[]) || [];
           const messageId = data.message_id as string;
+          setSuggestions((data.suggestions as string[]) || []);
           setMessages((prev) =>
             prev.map((m) =>
               m.id === assistantId ? { ...m, actions_taken: actions } : m
@@ -547,7 +552,14 @@ export default function ChatPage() {
                     : 'bg-secondary text-secondary-foreground'
                 }`}
               >
-                <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                {msg.role === 'assistant' ? (
+                  <ChatMessageContent
+                    content={msg.content}
+                    onPrompt={(t) => handleSendMessage(t)}
+                  />
+                ) : (
+                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                )}
 
                 {/* Actions Taken */}
                 {msg.actions_taken && msg.actions_taken.length > 0 && (
@@ -619,6 +631,22 @@ export default function ChatPage() {
             </label>
           </div>
 
+          {/* Clickable next-step suggestions returned by the agent. */}
+          {suggestions.length > 0 && !loading && (
+            <div className="flex flex-wrap gap-2 mb-2">
+              {suggestions.map((s, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  onClick={() => handleSendMessage(s)}
+                  className="px-3 py-1.5 text-xs rounded-full border border-input bg-background hover:bg-secondary hover:border-primary transition-colors"
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex gap-2">
             <input
               value={input}
@@ -634,7 +662,7 @@ export default function ChatPage() {
               className="flex-1 px-4 py-2 rounded-lg border border-input bg-background focus:outline-none focus:ring-2 focus:ring-primary disabled:opacity-50"
             />
             <Button
-              onClick={handleSendMessage}
+              onClick={() => handleSendMessage()}
               disabled={loading || !input.trim() || !currentSessionId}
               size="sm"
             >

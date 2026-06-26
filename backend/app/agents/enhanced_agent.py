@@ -12,6 +12,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.action_executor import ActionExecutor
 from app.agents.agent_tools import tools_for_role, tool_calls_to_actions
+from app.agents.base_agent import _DASHBOARD_PROTOCOL
 from app.agents.base_agent import BaseAgent, AgentResponse
 from app.agents.session_memory import SessionMemory
 from app.agents.session_memory_manager import SessionMemoryManager
@@ -346,6 +347,7 @@ CONVERSATION STYLE:
 - Remember what the user is working on
 - Acknowledge previous messages in this session
 - Admit what you don't know
+{_DASHBOARD_PROTOCOL}
 """
 
     @abstractmethod
