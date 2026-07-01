@@ -109,7 +109,6 @@ def test_celery_queue() -> bool:
         print("Testing Celery queue connectivity...", end=" ", flush=True)
 
         from app.workers.celery_app import celery_app
-        from app.config import settings
 
         # Attempt to inspect the Celery app
         stats = celery_app.control.inspect().stats()

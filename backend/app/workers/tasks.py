@@ -1144,56 +1144,78 @@ def send_notification_email(
         Dict with send status
     """
     try:
+        import asyncio
+
         from app.services.email_service import EmailService
 
-        # Send email
-        result = celery_app.sync(EmailService.send_notification_email)(
-            recipient_email=recipient_email,
-            notification_type=notification_type,
-            title=title,
-            message=message,
-            action_url=action_url,
-            context=context or {},
+        # Both service methods are async; run them to completion inside this
+        # synchronous Celery task via asyncio.run (the same idiom used by the
+        # other async-backed tasks in this module).
+        result = asyncio.run(
+            EmailService.send_notification_email(
+                recipient_email=recipient_email,
+                notification_type=notification_type,
+                title=title,
+                message=message,
+                action_url=action_url,
+                context=context or {},
+            )
         )
 
         if result:
-            # Update notification record with email sent status
-            db = _get_sync_session()
-            try:
-                from app.services.notification_service import NotificationService
+            # Mark the notification as email-sent. mark_as_email_sent expects an
+            # AsyncSession, so use an async session (NOT the sync one).
+            from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 
-                # Mark as email sent
-                celery_app.sync(NotificationService.mark_as_email_sent)(
-                    db=db,
-                    notification_id=uuid.UUID(notification_id),
-                )
+            from app.services.notification_service import NotificationService
 
-                logger.info(
-                    f"Notification email sent successfully: {notification_type}",
-                    extra={
-                        "notification_id": notification_id,
-                        "user_id": user_id,
-                        "recipient": recipient_email,
-                    },
-                )
+            async def _mark_sent() -> None:
+                engine = create_async_engine(settings.database_url, pool_pre_ping=True, future=True)
+                try:
+                    factory = async_sessionmaker(bind=engine, expire_on_commit=False)
+                    async with factory() as adb:
+                        await NotificationService.mark_as_email_sent(
+                            db=adb, notification_id=uuid.UUID(notification_id)
+                        )
+                        await adb.commit()
+                finally:
+                    await engine.dispose()
 
-                return {
-                    "success": True,
-                    "notification_id": notification_id,
-                    "recipient": recipient_email,
-                }
-            finally:
-                db.close()
-        else:
-            logger.warning(
-                f"Email service returned failure: {notification_type}",
+            asyncio.run(_mark_sent())
+
+            logger.info(
+                f"Notification email sent successfully: {notification_type}",
                 extra={
                     "notification_id": notification_id,
+                    "user_id": user_id,
                     "recipient": recipient_email,
                 },
             )
-            # Retry
+            return {
+                "success": True,
+                "notification_id": notification_id,
+                "recipient": recipient_email,
+            }
+        elif EmailService._is_configured():
+            # Email IS configured but the send genuinely failed → retry.
+            logger.warning(
+                f"Email send failed; will retry: {notification_type}",
+                extra={"notification_id": notification_id, "recipient": recipient_email},
+            )
             raise self.retry(exc=Exception("Email service failed"))
+        else:
+            # Email intentionally not configured (e.g. local/dev). Skip quietly
+            # instead of retrying — a best-effort notification email is optional.
+            logger.info(
+                "Email service not configured; skipping notification email",
+                extra={"notification_id": notification_id, "recipient": recipient_email},
+            )
+            return {
+                "success": False,
+                "skipped": True,
+                "reason": "email_not_configured",
+                "notification_id": notification_id,
+            }
 
     except Exception as exc:
         logger.error(
