@@ -97,7 +97,8 @@ build/
 
 # XCode
 *.xcworkspace/
-*.xcodeproj/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
 DerivedData/
 .swiftpm/
 *.playground
