@@ -7,6 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.session_memory import SessionMemory
 from app.models.chat_memory import ChatSessionMemory
+from app.core.clock import utcnow
 
 logger = logging.getLogger(__name__)
 
@@ -70,14 +71,18 @@ class SessionMemoryManager:
         db_record = result.scalar_one_or_none()
 
         try:
+            now = utcnow()
             if db_record:
                 # Update existing
                 db_record.memory_json = memory.to_json()
+                db_record.updated_at = now
             else:
                 # Create new
                 db_record = ChatSessionMemory(
                     session_id=session_id,
                     memory_json=memory.to_json(),
+                    created_at=now,
+                    updated_at=now,
                 )
                 db.add(db_record)
 

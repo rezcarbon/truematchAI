@@ -14,9 +14,10 @@ enum AppConfiguration {
         // this base must end at "/api" (NOT "/api/v1") — otherwise every REST
         // path resolves to a broken "/api/v1/v1/...". The WebSocket URLs below
         // are built separately and keep the full "/api/v1" prefix.
+        // For network testing on iPhone, change 192.168.1.15 to your laptop IP.
         static let baseURL: URL = {
             #if DEBUG
-            return URL(string: "http://127.0.0.1:8000/api")!
+            return URL(string: "http://192.168.1.15:8000/api")!
             #else
             return URL(string: "https://api.truematch.ai/api")!
             #endif
@@ -25,7 +26,7 @@ enum AppConfiguration {
         /// Base URL for WebSocket connections (ws:// in debug, wss:// in production).
         static let wsBase: URL? = {
             #if DEBUG
-            return URL(string: "ws://127.0.0.1:8000/api/v1")
+            return URL(string: "ws://192.168.1.15:8000/api/v1")
             #else
             return URL(string: "wss://api.truematch.ai/api/v1")
             #endif
@@ -33,7 +34,7 @@ enum AppConfiguration {
 
         static let webSocketURL: URL = {
             #if DEBUG
-            return URL(string: "ws://127.0.0.1:8000/api/v1")!
+            return URL(string: "ws://192.168.1.15:8000/api/v1")!
             #else
             return URL(string: "wss://api.truematch.ai/api/v1")!
             #endif

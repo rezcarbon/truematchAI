@@ -84,10 +84,12 @@ async def create_chat_session(
     db: DBSession,
 ) -> ChatSessionResponse:
     """Create a new chat session."""
+    now = utcnow()
     session = ChatSession(
         user_id=current_user.id,
-        title=request.get("title", f"Chat - {utcnow().strftime('%Y-%m-%d')}"),
-        created_at=utcnow(),
+        title=request.get("title", f"Chat - {now.strftime('%Y-%m-%d')}"),
+        created_at=now,
+        updated_at=now,
     )
     db.add(session)
     await db.commit()
@@ -217,11 +219,13 @@ async def chat(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Session not found")
 
     # Store user message
+    now = utcnow()
     user_msg = ChatMessage(
         session_id=session_uuid,
         role="user",
         content=request.message,
-        created_at=utcnow(),
+        created_at=now,
+        updated_at=now,
     )
     db.add(user_msg)
     await db.commit()
@@ -268,12 +272,14 @@ async def chat(
         )
 
     # Store assistant message
+    msg_now = utcnow()
     assistant_msg = ChatMessage(
         session_id=session_uuid,
         role="assistant",
         content=agent_response.text,
         actions_taken=agent_response.actions,
-        created_at=utcnow(),
+        created_at=msg_now,
+        updated_at=msg_now,
     )
     db.add(assistant_msg)
 
