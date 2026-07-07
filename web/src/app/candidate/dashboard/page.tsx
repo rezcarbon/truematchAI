@@ -5,10 +5,10 @@ import Link from "next/link";
 import { PageHeader } from "@/components/shared/AppShell";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { DualScoreCard } from "@/components/assessment/DualScoreCard";
+import { EnhancedDashboard } from "@/components/candidate/EnhancedDashboard";
 import { CVAnalysisWidget } from "@/components/candidate/CVAnalysisWidget";
 import { mockAssessment } from "@/lib/mock";
-import { ArrowRight, AlertCircle, X } from "lucide-react";
+import { AlertCircle, X } from "lucide-react";
 import { useProfileCompletion } from "@/hooks/useProfileCompletion";
 
 export default function CandidateDashboard() {
@@ -72,38 +72,33 @@ export default function CandidateDashboard() {
           </button>
         </div>
       )}
-      <div className="grid gap-6">
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Latest assessment — {a.positionTitle}</CardTitle>
-            <Link href={`/candidate/assessment/${a.id}`}>
-              <Button size="sm" variant="outline">View details <ArrowRight className="h-4 w-4" /></Button>
-            </Link>
-          </CardHeader>
-          <CardContent>
-            <DualScoreCard
-              traditionalScore={a.traditionalScore}
-              capabilityScore={a.capabilityScore.overall}
-              delta={a.delta}
-            />
-          </CardContent>
-        </Card>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {[
-            { label: "Assessments", value: "3" },
-            { label: "Avg. capability score", value: "84" },
-            { label: "Active applications", value: "2" },
-          ].map((s) => (
-            <Card key={s.label}>
-              <CardContent className="p-6">
-                <p className="text-sm text-muted-foreground">{s.label}</p>
-                <p className="mt-1 text-3xl font-bold">{s.value}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+      {/* Enhanced Dashboard */}
+      <EnhancedDashboard
+        assessment={a}
+        assessmentCount={3}
+        averageScore={84}
+        activeApplications={2}
+        recentActivity={[
+          {
+            id: '1',
+            type: 'assessment',
+            title: 'Assessment completed',
+            description: `You completed the assessment for ${a.positionTitle}`,
+            timestamp: a.createdAt,
+          },
+          {
+            id: '2',
+            type: 'message',
+            title: 'New message from recruiter',
+            description: 'Jocelyn Tan sent you a message about your application',
+            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+          },
+        ]}
+      />
 
+      {/* Optional: Additional Analysis Widget */}
+      <div className="mt-8">
         <CVAnalysisWidget
           recentAnalysisCount={0}
           avgScore={0}

@@ -7,11 +7,13 @@ from app.api.v1 import (
     admin_console,
     agent_plans,
     agents,
+    applications,
     assessments,
     ats,
     auth,
     billing,
     bulk_actions,
+    career_coach,
     chat,
     chat_actions,
     chat_streaming,
@@ -25,6 +27,7 @@ from app.api.v1 import (
     files,
     governance_reviews,
     jd_simulation,
+    job_search,
     metrics,
     notifications,
     notifications_api,
@@ -32,6 +35,7 @@ from app.api.v1 import (
     profile,
     realtime_progress_api,
     recruiter_metrics,
+    resume_versioning,
     training,
     training_data,
     uploads,
@@ -88,3 +92,8 @@ api_router.include_router(websocket_api.router)
 api_router.include_router(compliance.router)
 # Phase E: IDF Corpus Learning & Real-Time Progress
 api_router.include_router(realtime_progress_api.router)
+# Candidate features: Resume versioning, Job search, Applications, Career coaching
+api_router.include_router(resume_versioning.router)
+api_router.include_router(job_search.router)
+api_router.include_router(applications.router)
+api_router.include_router(career_coach.router)

@@ -236,171 +236,188 @@ export default function CVAnalysisResultsPage({
       />
 
       <div className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="gaps" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 mb-8">
-            <TabsTrigger value="gaps">Skill Gaps</TabsTrigger>
-            <TabsTrigger value="matches">Job Matches</TabsTrigger>
-            <TabsTrigger value="improvements">Improvements</TabsTrigger>
-            <TabsTrigger value="career">Career Insights</TabsTrigger>
-          </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Content */}
+          <div className="lg:col-span-2">
+            <Tabs defaultValue="gaps" className="w-full">
+              <TabsList className="grid w-full grid-cols-4 mb-8">
+                <TabsTrigger value="gaps">Skill Gaps</TabsTrigger>
+                <TabsTrigger value="matches">Job Matches</TabsTrigger>
+                <TabsTrigger value="improvements">Improvements</TabsTrigger>
+                <TabsTrigger value="career">Career Insights</TabsTrigger>
+              </TabsList>
 
-          {/* Skill Gaps */}
-          <TabsContent value="gaps" className="space-y-4">
-            <Card>
-              <CardContent className="pt-6 space-y-4">
-                {data.missingCapabilities && data.missingCapabilities.length > 0 ? (
-                  <>
-                    <h3 className="font-semibold">Missing Capabilities</h3>
-                    <div className="space-y-2">
-                      {data.missingCapabilities.map((cap, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-red-500" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{typeof cap === 'string' ? cap : cap.capability}</p>
-                            {typeof cap === 'object' && cap.description && (
-                              <p className="text-xs text-muted-foreground">{cap.description}</p>
-                            )}
-                          </div>
+              {/* Skill Gaps */}
+              <TabsContent value="gaps" className="space-y-4">
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    {data.missingCapabilities && data.missingCapabilities.length > 0 ? (
+                      <>
+                        <h3 className="font-semibold">Missing Capabilities</h3>
+                        <div className="space-y-2">
+                          {data.missingCapabilities.map((cap, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-red-500" />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{typeof cap === 'string' ? cap : cap.capability}</p>
+                                {typeof cap === 'object' && cap.description && (
+                                  <p className="text-xs text-muted-foreground">{cap.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </>
-                ) : null}
+                      </>
+                    ) : null}
 
-                {data.weaknessAreas && data.weaknessAreas.length > 0 ? (
-                  <>
-                    <h3 className="font-semibold mt-4">Weakness Areas</h3>
-                    <div className="space-y-2">
-                      {data.weaknessAreas.map((area, idx) => (
-                        <div key={idx} className="flex items-center gap-2">
-                          <div className="w-2 h-2 rounded-full bg-amber-500" />
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{typeof area === 'string' ? area : area.capability}</p>
-                            {typeof area === 'object' && area.description && (
-                              <p className="text-xs text-muted-foreground">{area.description}</p>
-                            )}
-                          </div>
+                    {data.weaknessAreas && data.weaknessAreas.length > 0 ? (
+                      <>
+                        <h3 className="font-semibold mt-4">Weakness Areas</h3>
+                        <div className="space-y-2">
+                          {data.weaknessAreas.map((area, idx) => (
+                            <div key={idx} className="flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-amber-500" />
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">{typeof area === 'string' ? area : area.capability}</p>
+                                {typeof area === 'object' && area.description && (
+                                  <p className="text-xs text-muted-foreground">{area.description}</p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </>
-                ) : null}
+                      </>
+                    ) : null}
 
-                {data.strengthSummary && (
-                  <>
-                    <h3 className="font-semibold mt-4">Your Strengths</h3>
-                    <p className="text-sm text-muted-foreground">{data.strengthSummary}</p>
-                  </>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    {data.strengthSummary && (
+                      <>
+                        <h3 className="font-semibold mt-4">Your Strengths</h3>
+                        <p className="text-sm text-muted-foreground">{data.strengthSummary}</p>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          {/* Job Matches */}
-          <TabsContent value="matches" className="space-y-4">
-            <Card>
-              <CardContent className="pt-6">
-                {data.topMatchingPositions && data.topMatchingPositions.length > 0 ? (
-                  <div className="space-y-3">
-                    {data.topMatchingPositions.map((position) => (
-                      <div
-                        key={position.positionId}
-                        className="flex items-center justify-between p-3 border rounded-lg"
-                      >
-                        <p className="font-medium text-sm">{position.jobTitle}</p>
-                        <Badge variant="outline">
-                          {Math.round(position.matchScore)}% Match
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No matching positions found
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          {/* Improvements */}
-          <TabsContent value="improvements" className="space-y-4">
-            <Card>
-              <CardContent className="pt-6">
-                {data.improvementSuggestions && data.improvementSuggestions.length > 0 ? (
-                  <div className="space-y-4">
-                    {data.improvementSuggestions.map((sugg, idx) => (
-                      <div key={idx} className="border rounded-lg p-3 space-y-2">
-                        <div className="flex items-center justify-between">
-                          <p className="font-medium text-sm capitalize">
-                            {sugg.category}
-                          </p>
-                          <Badge
-                            variant={
-                              sugg.priority === 'high'
-                                ? 'destructive'
-                                : sugg.priority === 'medium'
-                                ? 'secondary'
-                                : 'outline'
-                            }
+              {/* Job Matches */}
+              <TabsContent value="matches" className="space-y-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    {data.topMatchingPositions && data.topMatchingPositions.length > 0 ? (
+                      <div className="space-y-3">
+                        {data.topMatchingPositions.map((position) => (
+                          <div
+                            key={position.positionId}
+                            className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50 transition-colors"
                           >
-                            {sugg.priority}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          {sugg.suggestion}
-                        </p>
+                            <p className="font-medium text-sm">{position.jobTitle}</p>
+                            <Badge variant="outline">
+                              {Math.round(position.matchScore)}% Match
+                            </Badge>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground">
-                    No suggestions available
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No matching positions found
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
 
-          {/* Career Insights */}
-          <TabsContent value="career" className="space-y-4">
+              {/* Improvements */}
+              <TabsContent value="improvements" className="space-y-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    {data.improvementSuggestions && data.improvementSuggestions.length > 0 ? (
+                      <div className="space-y-4">
+                        {data.improvementSuggestions.map((sugg, idx) => (
+                          <div key={idx} className="border rounded-lg p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="font-medium text-sm capitalize">
+                                {sugg.category}
+                              </p>
+                              <Badge
+                                variant={
+                                  sugg.priority === 'high'
+                                    ? 'destructive'
+                                    : sugg.priority === 'medium'
+                                    ? 'secondary'
+                                    : 'outline'
+                                }
+                              >
+                                {sugg.priority}
+                              </Badge>
+                            </div>
+                            <p className="text-sm text-muted-foreground">
+                              {sugg.suggestion}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        No suggestions available
+                      </p>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+
+              {/* Career Insights */}
+              <TabsContent value="career" className="space-y-4">
+                <Card>
+                  <CardContent className="pt-6 space-y-4">
+                    {data.trajectoryAnalysis && (
+                      <>
+                        <h3 className="font-semibold">Career Trajectory</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {data.trajectoryAnalysis}
+                        </p>
+                      </>
+                    )}
+
+                    {data.marketPositioning && (
+                      <>
+                        <h3 className="font-semibold mt-4">Market Positioning</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {data.marketPositioning}
+                        </p>
+                      </>
+                    )}
+
+                    {data.growthOpportunities && data.growthOpportunities.length > 0 && (
+                      <>
+                        <h3 className="font-semibold mt-4">Growth Opportunities</h3>
+                        <ul className="space-y-2">
+                          {data.growthOpportunities.map((opp, idx) => (
+                            <li key={idx} className="flex items-start gap-2 text-sm">
+                              <span className="text-green-600 font-semibold">→</span>
+                              <span className="text-muted-foreground">{opp}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    )}
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </div>
+
+          {/* Sidebar - Chat */}
+          <div className="lg:col-span-1">
+            {/* Placeholder for follow-up chat when component is ready */}
             <Card>
-              <CardContent className="pt-6 space-y-4">
-                {data.trajectoryAnalysis && (
-                  <>
-                    <h3 className="font-semibold">Career Trajectory</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {data.trajectoryAnalysis}
-                    </p>
-                  </>
-                )}
-
-                {data.marketPositioning && (
-                  <>
-                    <h3 className="font-semibold mt-4">Market Positioning</h3>
-                    <p className="text-sm text-muted-foreground">
-                      {data.marketPositioning}
-                    </p>
-                  </>
-                )}
-
-                {data.growthOpportunities && data.growthOpportunities.length > 0 && (
-                  <>
-                    <h3 className="font-semibold mt-4">Growth Opportunities</h3>
-                    <ul className="space-y-2">
-                      {data.growthOpportunities.map((opp, idx) => (
-                        <li key={idx} className="flex items-start gap-2 text-sm">
-                          <span className="text-green-600 font-semibold">→</span>
-                          <span className="text-muted-foreground">{opp}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                )}
+              <CardContent className="pt-6">
+                <p className="text-sm text-muted-foreground text-center">
+                  Chat with Claude about your analysis to get personalized advice.
+                </p>
               </CardContent>
             </Card>
-          </TabsContent>
-        </Tabs>
+          </div>
+        </div>
       </div>
     </div>
   );

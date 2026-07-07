@@ -356,6 +356,44 @@ extension APIEndpoint {
         APIEndpoint(path: "agents/jd/\(positionId)/suggestions", method: .GET)
     }
 
+    // MARK: Recruiter Command Centre
+
+    /// Fetch command centre data: tasks, positions, queue, activity feed.
+    static var recruiterCommandCentre: APIEndpoint {
+        APIEndpoint(path: "recruiter/command-centre", method: .GET)
+    }
+
+    /// Fetch the recruiter's pipeline (Kanban board data).
+    static var recruiterPipeline: APIEndpoint {
+        APIEndpoint(path: "recruiter/pipeline", method: .GET)
+    }
+
+    /// Search candidates by name, skills, or status.
+    static func recruiterSearchCandidates(_ request: SearchCandidatesRequest) -> APIEndpoint {
+        APIEndpoint(path: "recruiter/search", method: .POST, body: request)
+    }
+
+    /// Complete a task (approval, interview, offer).
+    static func recruiterCompleteTask(taskId: String) -> APIEndpoint {
+        APIEndpoint(path: "recruiter/tasks/\(taskId)/complete", method: .POST)
+    }
+
+    /// Advance a candidate to the next pipeline stage.
+    static func recruiterAdvanceCandidate(candidateId: String) -> APIEndpoint {
+        APIEndpoint(path: "recruiter/candidates/\(candidateId)/advance", method: .POST)
+    }
+
+    /// Move a candidate to a specific pipeline stage.
+    static func recruiterMoveCandidate(candidateId: String, stage: String) -> APIEndpoint {
+        APIEndpoint(path: "recruiter/candidates/\(candidateId)/move", method: .POST,
+                    body: ["stage": stage])
+    }
+
+    /// Record an approve/reject/revisit decision for a candidate.
+    static func recruiterRecordDecision(candidateId: String, _ request: RecordDecisionRequest) -> APIEndpoint {
+        APIEndpoint(path: "recruiter/candidates/\(candidateId)/decision", method: .POST, body: request)
+    }
+
     // MARK: Chat (conversational AI)
 
     /// Create a new chat session.
@@ -388,5 +426,46 @@ extension APIEndpoint {
     /// route `/chat/{session_id}/message/stream`.
     static func streamChatMessage(sessionId: String, _ request: StreamChatRequest) -> APIEndpoint {
         APIEndpoint(path: "chat/\(sessionId)/message/stream", method: .POST, body: request)
+    }
+
+    // MARK: - Candidate Mode
+
+    /// Fetch the current candidate's assessment results.
+    static func candidateAssessment(candidateId: String) -> APIEndpoint {
+        APIEndpoint(path: "candidates/\(candidateId)/assessment", method: .GET)
+    }
+
+    /// Fetch personalized job recommendations for the candidate.
+    static func candidateJobRecommendations(request: GetJobRecommendationsRequest) -> APIEndpoint {
+        let queryItems = [
+            URLQueryItem(name: "limit", value: String(request.limit)),
+            URLQueryItem(name: "offset", value: String(request.offset))
+        ]
+        return APIEndpoint(path: "candidates/\(request.candidateId)/jobs/recommendations", queryItems: queryItems)
+    }
+
+    /// Save a job recommendation.
+    static func saveCandidateJob(request: SaveJobRequest) -> APIEndpoint {
+        APIEndpoint(path: "candidates/\(request.candidateId)/jobs/\(request.jobId)/save", method: .POST, body: request)
+    }
+
+    /// Reject a job recommendation.
+    static func rejectCandidateJob(request: RejectJobRequest) -> APIEndpoint {
+        APIEndpoint(path: "candidates/\(request.candidateId)/jobs/\(request.jobId)/reject", method: .POST, body: request)
+    }
+
+    /// Fetch the candidate's applications and their statuses.
+    static func candidateApplications(request: GetApplicationsRequest) -> APIEndpoint {
+        APIEndpoint(path: "candidates/\(request.candidateId)/applications", method: .GET)
+    }
+
+    /// Accept a job offer.
+    static func candidateAcceptOffer(applicationId: String) -> APIEndpoint {
+        APIEndpoint(path: "applications/\(applicationId)/offer/accept", method: .POST)
+    }
+
+    /// Decline a job offer.
+    static func candidateDeclineOffer(applicationId: String) -> APIEndpoint {
+        APIEndpoint(path: "applications/\(applicationId)/offer/decline", method: .POST)
     }
 }

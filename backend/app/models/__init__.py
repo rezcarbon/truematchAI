@@ -1,5 +1,6 @@
 """SQLAlchemy ORM models for TrueMatch."""
 from app.models.application import Application
+from app.models.application_timeline import ApplicationTimeline, EventType
 from app.models.assessment import Assessment
 from app.models.audit import AuditTrail
 from app.models.candidate_archetype import CandidateArchetype
@@ -18,6 +19,8 @@ from app.models.notification import Notification, NotificationPreference, Notifi
 from app.models.position import Position
 from app.models.profile import CapabilityProfile
 from app.models.resume import Resume
+from app.models.resume_version import ResumeVersion
+from app.models.saved_job import SavedJob, SavedJobsList
 from app.models.user import User, UserRole
 from app.models.training import (
     TrainingFeedback,
@@ -73,6 +76,8 @@ __all__ = [
     "TransitionStatus",
     "OutcomeStatus",
     "Application",
+    "ApplicationTimeline",
+    "EventType",
     "Assessment",
     "AuditTrail",
     "CandidateArchetype",
@@ -101,6 +106,9 @@ __all__ = [
     "Position",
     "CapabilityProfile",
     "Resume",
+    "ResumeVersion",
+    "SavedJob",
+    "SavedJobsList",
     "Scorecard",
     "User",
     "UserRole",

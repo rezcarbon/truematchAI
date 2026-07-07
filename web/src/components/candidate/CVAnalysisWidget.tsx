@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { ScoreGauge } from '@/components/shared/ScoreGauge';
 import { Sparkles, ArrowRight, TrendingUp } from 'lucide-react';
 
 interface CVAnalysisWidgetProps {
@@ -9,6 +10,7 @@ interface CVAnalysisWidgetProps {
   avgScore?: number;
   lastAnalysisTitle?: string;
   lastAnalysisScore?: number;
+  overallCapabilityScore?: number;
 }
 
 export function CVAnalysisWidget({
@@ -16,7 +18,15 @@ export function CVAnalysisWidget({
   avgScore = 0,
   lastAnalysisTitle,
   lastAnalysisScore,
+  overallCapabilityScore = 0,
 }: CVAnalysisWidgetProps) {
+  const getScoreInterpretation = (score: number) => {
+    if (score >= 80) return 'Excellent';
+    if (score >= 60) return 'Good';
+    if (score >= 40) return 'Fair';
+    return 'Poor';
+  };
+
   return (
     <Card className="overflow-hidden border-l-4 border-l-blue-600">
       <CardHeader className="pb-3">
@@ -28,6 +38,16 @@ export function CVAnalysisWidget({
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
+        {/* Overall Capability Score Gauge */}
+        {overallCapabilityScore > 0 && (
+          <div className="flex flex-col items-center gap-2 rounded-lg bg-gradient-to-br from-blue-50 to-indigo-50 p-4 border border-blue-200/40">
+            <ScoreGauge score={overallCapabilityScore} label="Overall" size={100} />
+            <p className="text-xs font-semibold text-muted-foreground">
+              {getScoreInterpretation(overallCapabilityScore)} Match
+            </p>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-2 gap-3">
           <div className="rounded-lg bg-blue-50/60 p-3">

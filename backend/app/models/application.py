@@ -6,11 +6,12 @@ from datetime import datetime
 from app.core.clock import utcnow
 from enum import Enum
 
-from sqlalchemy import DateTime, String, ForeignKey, Index
+from sqlalchemy import DateTime, String, ForeignKey, Index, Text
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
+from app.models._types import EncryptedText
 
 
 class PipelineStage(str, Enum):
@@ -42,6 +43,8 @@ class Application(Base):
     tags: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # custom tags
     # External ATS provenance, e.g. "greenhouse:application:9876" — idempotent import.
     external_ref: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    # Candidate cover note or message submitted with application (encrypted at rest)
+    cover_note: Mapped[str | None] = mapped_column(EncryptedText, nullable=True)
 
     # Timestamps
     applied_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, default=utcnow)
@@ -52,9 +55,11 @@ class Application(Base):
     interviews: Mapped[list] = relationship("Interview", back_populates="application", cascade="all, delete-orphan", foreign_keys="Interview.application_id")
 
     __table_args__ = (
+        Index("ix_applications_user_id", "user_id"),
         Index("ix_applications_position_id", "position_id"),
+        Index("ix_applications_resume_id", "resume_id"),
         Index("ix_applications_stage", "stage"),
         Index("ix_applications_source", "source"),
-        Index("ix_applications_user_id", "user_id"),
         Index("ix_applications_external_ref", "external_ref"),
+        Index("ix_applications_applied_at", "applied_at"),
     )

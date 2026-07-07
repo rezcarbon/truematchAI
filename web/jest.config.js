@@ -27,17 +27,35 @@ const config = {
     '!src/app/api/**',
     '!src/middleware.ts',
   ],
-  // Ratchet floor set just under current actual coverage (lines/statements ~5.9%,
-  // functions ~18%, branches ~35%). This locks in today's level and blocks
-  // regressions below it; raise these numbers as web test coverage grows toward
-  // the eventual 50% target. (The old aspirational 50% gate was never enforced —
-  // the suite couldn't run until the jest config was fixed.)
+  // Progressive coverage thresholds targeting 80%+ for all components
+  // Phase 1 (Current): Enforce minimum baseline
+  // Phase 2 (Month 1): Increase to 45/35/40/40
+  // Phase 3 (Month 2): Increase to 60/55/60/60
+  // Phase 4 (Final): Reach 75+/80+/80+/80+
   coverageThreshold: {
     global: {
       branches: 30,
       functions: 15,
       lines: 5,
       statements: 5,
+    },
+    './src/components/': {
+      branches: 50,
+      functions: 50,
+      lines: 50,
+      statements: 50,
+    },
+    './src/hooks/': {
+      branches: 60,
+      functions: 60,
+      lines: 60,
+      statements: 60,
+    },
+    './src/lib/': {
+      branches: 70,
+      functions: 70,
+      lines: 70,
+      statements: 70,
     },
   },
   testPathIgnorePatterns: ['/node_modules/', '/.next/'],
