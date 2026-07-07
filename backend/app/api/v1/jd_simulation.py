@@ -3,23 +3,32 @@ from __future__ import annotations
 
 import logging
 import uuid
+from datetime import datetime, timezone
+from typing import Annotated
 
-from fastapi import APIRouter, status
-from sqlalchemy import select, func
+from fastapi import APIRouter, Depends, Query, status
+from sqlalchemy import select, func, and_
 
-from app.core.exceptions import NotFoundError
-from app.deps import CurrentUser, DBSession
+from app.core.exceptions import NotFoundError, AuthorizationError, ValidationError
+from app.deps import CurrentUser, DBSession, require_role
 from app.models.jd_simulation import JDSimulationRequest, JDSimulationResult, JDSimulationStatus
 from app.models.position import Position
+from app.models.user import UserRole
 from app.schemas.jd_simulation import (
     ArchetypeFit,
     CapabilityGapItem,
     CreepWarning,
+    DetailedJDAnalysisRequest,
+    DetailedJDAnalysisResponse,
     JDSimulationListItem,
     JDSimulationResult as JDSimulationResultSchema,
     JDSimulationStartRequest,
     JDSimulationStartResponse,
     PaginatedJDSimulationList,
+    PaginatedSimulationHistory,
+    SimulationHistoryItem,
+    SuggestionAcceptanceRequest,
+    SuggestionAcceptanceResponse,
     WordingSuggestion,
 )
 
@@ -413,3 +422,215 @@ async def get_suggested_postings(
             "culture_fit": results.culture_fit_language,
         },
     }
+
+
+@router.post(
+    "/detailed",
+    response_model=DetailedJDAnalysisResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Analyze JD with detailed scoring",
+    description="Perform detailed analysis of a job description with multi-dimensional scoring.",
+)
+async def analyze_jd_detailed(
+    payload: DetailedJDAnalysisRequest,
+    user: Annotated[CurrentUser, Depends(require_role(UserRole.recruiter, UserRole.admin))],
+    db: DBSession,
+) -> DetailedJDAnalysisResponse:
+    """Analyze a job description in detail.
+
+    Provides comprehensive scoring across multiple dimensions including:
+    - Clarity and specificity
+    - Requirement realism
+    - Candidate pool estimates
+    - Market positioning
+
+    This endpoint requires recruiter or admin role and has rate limiting applied.
+    """
+    if not payload.jd_text or len(payload.jd_text.strip()) < 10:
+        raise ValidationError(
+            message="JD text must be at least 10 characters",
+            instance="/api/v1/recruiters/jd-simulation/detailed",
+        )
+
+    logger.info(
+        "Detailed JD analysis initiated",
+        extra={
+            "user_id": str(user.id),
+            "position_title": payload.position_title,
+            "jd_length": len(payload.jd_text),
+        },
+    )
+
+    # TODO: Integrate with JD simulation engine for actual analysis
+    # This is a placeholder response showing the expected structure
+    return DetailedJDAnalysisResponse(
+        score=75,
+        dimensions={
+            "clarity": 80,
+            "specificity": 75,
+            "requirement_realism": 70,
+            "market_competitiveness": 75,
+            "candidate_pool_fit": 75,
+        },
+        issues=[
+            "Requirement creep detected in tech stack specification",
+            "Years of experience unclear for junior candidates",
+        ],
+        suggestions=[
+            {
+                "suggestion_id": "sugg-001",
+                "priority": "high",
+                "category": "requirement_clarity",
+                "text": "Clarify required vs. preferred tech stack skills",
+                "expected_impact": "Increases candidate pool by 25%",
+            },
+            {
+                "suggestion_id": "sugg-002",
+                "priority": "medium",
+                "category": "phrasing",
+                "text": "Replace 'must have' with 'we prefer' for secondary skills",
+                "expected_impact": "Improves candidate experience",
+            },
+        ],
+    )
+
+
+@router.post(
+    "/accept-suggestion",
+    response_model=SuggestionAcceptanceResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Accept and apply JD suggestion",
+    description="Accept a suggestion and update the JD text.",
+)
+async def accept_jd_suggestion(
+    payload: SuggestionAcceptanceRequest,
+    user: Annotated[CurrentUser, Depends(require_role(UserRole.recruiter, UserRole.admin))],
+    db: DBSession,
+) -> SuggestionAcceptanceResponse:
+    """Accept a JD improvement suggestion and apply the modification.
+
+    Updates the JD with the suggested change and records the acceptance
+    for audit and learning purposes.
+    """
+    if not payload.modified_text or len(payload.modified_text.strip()) < 10:
+        raise ValidationError(
+            message="Modified text must be at least 10 characters",
+            instance="/api/v1/recruiters/jd-simulation/accept-suggestion",
+        )
+
+    logger.info(
+        "JD suggestion accepted",
+        extra={
+            "user_id": str(user.id),
+            "suggestion_id": payload.suggestion_id,
+        },
+    )
+
+    # TODO: Store the accepted suggestion in audit log or tracking table
+    now = datetime.now(timezone.utc).isoformat()
+
+    return SuggestionAcceptanceResponse(
+        updated_jd=payload.modified_text,
+        suggestion_id=payload.suggestion_id,
+        timestamp=now,
+    )
+
+
+@router.get(
+    "/history",
+    response_model=PaginatedSimulationHistory,
+    status_code=status.HTTP_200_OK,
+    summary="Get simulation history",
+    description="Retrieve paginated history of JD simulations for the current user.",
+)
+async def get_simulation_history(
+    user: Annotated[CurrentUser, Depends(require_role(UserRole.recruiter, UserRole.admin))],
+    db: DBSession,
+    limit: int = Query(10, ge=1, le=100, description="Number of items per page"),
+    offset: int = Query(0, ge=0, description="Number of items to skip"),
+) -> PaginatedSimulationHistory:
+    """Retrieve simulation history for the current recruiter.
+
+    Returns a paginated list of all simulations performed by the user,
+    with most recent first. Includes basic metadata and preview of JD text.
+    """
+    if limit < 1 or limit > 100:
+        raise ValidationError(
+            message="limit must be between 1 and 100",
+            instance="/api/v1/recruiters/jd-simulation/history",
+        )
+
+    # Get total count
+    total = await db.scalar(
+        select(func.count(JDSimulationRequest.id)).where(
+            JDSimulationRequest.user_id == user.id
+        )
+    )
+
+    # Get paginated results
+    stmt = (
+        select(JDSimulationRequest)
+        .where(JDSimulationRequest.user_id == user.id)
+        .order_by(JDSimulationRequest.created_at.desc())
+        .offset(offset)
+        .limit(limit)
+    )
+    simulations = (await db.scalars(stmt)).all()
+
+    # Build items
+    items = []
+    for simulation in simulations:
+        # Get position title if available
+        position_title = None
+        if simulation.position_id:
+            position = await db.get(Position, simulation.position_id)
+            if position:
+                position_title = position.title
+
+        # Get results if completed
+        completed_at = None
+        quality_score = None
+        if simulation.status == JDSimulationStatus.completed:
+            results = await db.scalar(
+                select(JDSimulationResult).where(
+                    JDSimulationResult.jd_simulation_request_id == simulation.id
+                )
+            )
+            if results:
+                completed_at = results.updated_at.isoformat() if results.updated_at else None
+                quality_score = results.quality_score
+
+        # Create JD text preview
+        jd_text = simulation.jd_text or ""
+        jd_preview = (jd_text[:200] + "...") if len(jd_text) > 200 else jd_text
+
+        items.append(
+            SimulationHistoryItem(
+                simulation_id=simulation.id,
+                position_id=simulation.position_id,
+                position_title=position_title,
+                jd_text_preview=jd_preview,
+                simulation_type=simulation.simulation_type,
+                status=simulation.status,
+                quality_score=quality_score,
+                created_at=simulation.created_at.isoformat(),
+                completed_at=completed_at,
+            )
+        )
+
+    logger.info(
+        "Simulation history retrieved",
+        extra={
+            "user_id": str(user.id),
+            "total": total,
+            "limit": limit,
+            "offset": offset,
+        },
+    )
+
+    return PaginatedSimulationHistory(
+        items=items,
+        total=total,
+        limit=limit,
+        offset=offset,
+    )

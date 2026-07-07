@@ -6,7 +6,7 @@ from typing import Any, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
-from sqlalchemy import func, select
+from sqlalchemy import func, select, String
 from pydantic import BaseModel, Field
 
 from app.models.chat import ChatSession, ChatMessage
@@ -22,6 +22,10 @@ class ChatMessageRequest(BaseModel):
     """User message in a chat."""
     session_id: str
     message: str
+    mode: str = Field(
+        "general",
+        description="Chat mode: 'career_coach', 'interview_prep', 'general'",
+    )
     history: list[dict] = Field(default_factory=list)
 
 
@@ -233,6 +237,33 @@ async def chat(
     # Get appropriate agent for this user
     agent = await get_agent_for_user(current_user.id, current_user.role, db)
 
+    # Build candidate context for career coach mode
+    candidate_context = None
+    if request.mode == "career_coach":
+        from app.schemas.job_search import CandidateContext
+        from app.models.saved_job import SavedJob
+        from app.models.assessment import Assessment
+
+        # Fetch candidate context
+        saved_jobs_count = await db.scalar(
+            select(func.count()).select_from(SavedJob)
+            .where(SavedJob.user_id == current_user.id)
+        ) or 0
+
+        assessments_count = await db.scalar(
+            select(func.count()).select_from(Assessment)
+            .where(Assessment.user_id == current_user.id)
+        ) or 0
+
+        candidate_context = CandidateContext(
+            user_id=current_user.id,
+            name=getattr(current_user, "full_name", None),
+            current_role=getattr(current_user, "current_title", None),
+            target_roles=getattr(current_user, "target_roles", None),
+            saved_jobs=saved_jobs_count,
+            recent_assessments=assessments_count,
+        )
+
     # Track the real LLM cost of generating this turn.
     from app.core.llm_usage import reset_usage, get_usage
     reset_usage()
@@ -245,6 +276,8 @@ async def chat(
             user=current_user,
             db=db,
             session_id=session_uuid,  # Pass session ID for memory persistence
+            mode=request.mode,  # Pass chat mode
+            candidate_context=candidate_context,  # Pass context for career coach mode
         )
     except Exception as e:
         raise HTTPException(

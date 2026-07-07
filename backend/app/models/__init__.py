@@ -1,6 +1,12 @@
 """SQLAlchemy ORM models for TrueMatch."""
 from app.models.application import Application
 from app.models.application_timeline import ApplicationTimeline, EventType
+from app.models.job_application import (
+    JobApplication,
+    ApplicationTimeline as JobApplicationTimeline,
+    ApplicationStatus,
+    ApplicationEventType as JobApplicationEventType,
+)
 from app.models.assessment import Assessment
 from app.models.audit import AuditTrail
 from app.models.candidate_archetype import CandidateArchetype
@@ -78,6 +84,10 @@ __all__ = [
     "Application",
     "ApplicationTimeline",
     "EventType",
+    "JobApplication",
+    "JobApplicationTimeline",
+    "ApplicationStatus",
+    "JobApplicationEventType",
     "Assessment",
     "AuditTrail",
     "CandidateArchetype",

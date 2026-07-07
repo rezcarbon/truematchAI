@@ -1,224 +1,257 @@
-"""Request and response schemas for job search."""
+"""Schemas for job search, applications, and career coaching."""
 from __future__ import annotations
 
-from uuid import UUID
+import uuid
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict
-from pydantic.alias_generators import to_camel
 from typing import Optional
-from enum import Enum
+
+from pydantic import BaseModel, Field, ConfigDict
 
 
-class JobSearchStatus(str, Enum):
-    """Status of a job search."""
-    ACTIVE = "active"
-    PAUSED = "paused"
-    ARCHIVED = "archived"
-    COMPLETED = "completed"
+# ============================================================================
+# Job Search & Filters
+# ============================================================================
 
 
-class SearchScope(str, Enum):
-    """Scope of job search."""
-    LOCAL = "local"
-    REMOTE = "remote"
-    HYBRID = "hybrid"
-    ANY = "any"
+class JobFilter(BaseModel):
+    """Filter criteria for job search."""
 
+    model_config = ConfigDict(from_attributes=True)
 
-class SeniorityLevel(str, Enum):
-    """Seniority levels for job search."""
-    JUNIOR = "junior"
-    MID = "mid"
-    SENIOR = "senior"
-    LEAD = "lead"
-    EXECUTIVE = "executive"
-
-
-class CreateJobSearchRequest(BaseModel):
-    """Request to create a new job search."""
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    search_name: str = Field(..., min_length=1, max_length=255, description="Name for this search")
-    keywords: list[str] = Field(..., description="Keywords to search for")
-    target_roles: Optional[list[str]] = Field(None, description="Specific role titles")
-    seniority_levels: Optional[list[SeniorityLevel]] = Field(None, description="Target seniority levels")
-    industries: Optional[list[str]] = Field(None, description="Target industries")
-    companies: Optional[list[str]] = Field(None, description="Companies to focus on")
-    locations: Optional[list[str]] = Field(None, description="Geographic locations")
-    scope: SearchScope = Field(SearchScope.ANY, description="Remote/local/hybrid preference")
-    salary_min: Optional[int] = Field(None, ge=0, description="Minimum salary in USD")
-    salary_max: Optional[int] = Field(None, ge=0, description="Maximum salary in USD")
-    skills_required: Optional[list[str]] = Field(None, description="Must-have skills")
-    skills_preferred: Optional[list[str]] = Field(None, description="Nice-to-have skills")
-    years_experience_min: Optional[int] = Field(None, ge=0, description="Minimum years of experience")
-    years_experience_max: Optional[int] = Field(None, description="Maximum years of experience")
-    exclude_keywords: Optional[list[str]] = Field(None, description="Keywords to exclude")
-    exclude_companies: Optional[list[str]] = Field(None, description="Companies to exclude")
-    is_active: bool = Field(True, description="Start search as active")
-
-
-class UpdateJobSearchRequest(BaseModel):
-    """Request to update a job search."""
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    search_name: Optional[str] = None
-    keywords: Optional[list[str]] = None
-    target_roles: Optional[list[str]] = None
-    seniority_levels: Optional[list[SeniorityLevel]] = None
-    industries: Optional[list[str]] = None
-    companies: Optional[list[str]] = None
-    locations: Optional[list[str]] = None
-    scope: Optional[SearchScope] = None
-    salary_min: Optional[int] = None
-    salary_max: Optional[int] = None
-    skills_required: Optional[list[str]] = None
-    skills_preferred: Optional[list[str]] = None
-    is_active: Optional[bool] = None
-
-
-class JobPosting(BaseModel):
-    """A single job posting."""
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    job_id: str = Field(..., description="External job ID from source")
-    title: str
-    company: str
-    location: str
-    scope: SearchScope
-    salary_min: Optional[int] = None
-    salary_max: Optional[int] = None
-    description: str
-    requirements: Optional[list[str]] = None
-    benefits: Optional[list[str]] = None
-    source: str  # "linkedin", "indeed", "glassdoor", "company_website", etc.
-    posted_date: datetime
-    apply_url: str
-    match_score: int = Field(..., ge=0, le=100, description="Match score with your profile")
-
-
-class SearchResultItem(BaseModel):
-    """Item in job search results."""
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    job_posting: JobPosting
-    match_reason: str
-    matching_skills: list[str]
-    missing_skills: list[str]
-    matched_resume_version_id: Optional[UUID] = None
+    role: Optional[str] = Field(None, description="Job role/title")
+    location: Optional[str] = Field(None, description="Job location")
+    salary_min: Optional[int] = Field(None, ge=0, description="Minimum salary")
+    salary_max: Optional[int] = Field(None, ge=0, description="Maximum salary")
+    match_score: Optional[str] = Field(
+        None,
+        description="Match score range, e.g. '80-100' or '60'",
+    )
+    company: Optional[str] = Field(None, description="Company name")
+    remote_only: Optional[bool] = Field(None, description="Only remote positions")
+    keywords: Optional[list[str]] = Field(
+        None,
+        description="Keywords to search in title/description",
+    )
 
 
 class JobSearchResponse(BaseModel):
-    """Response for a job search."""
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+    """Job with match score and metadata."""
 
-    search_id: UUID
-    search_name: str
-    status: JobSearchStatus
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    title: str
+    description: Optional[str]
+    company_id: Optional[uuid.UUID]
+    status: str
+    parsed_requirements: Optional[dict]
+    jd_quality_score: Optional[int]
+    match_score: Optional[int] = Field(None, ge=0, le=100)
+    match_reasoning: Optional[str] = None
+    capability_gap_areas: Optional[list[str]] = None
     created_at: datetime
     updated_at: datetime
-    total_results: int
-    saved_count: int
-    applied_count: int
-    is_active: bool
 
 
-class JobSearchDetailResponse(BaseModel):
-    """Detailed response for a job search."""
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    search_id: UUID
-    search_name: str
-    status: JobSearchStatus
-    created_at: datetime
-    updated_at: datetime
-    keywords: list[str]
-    target_roles: Optional[list[str]] = None
-    seniority_levels: Optional[list[SeniorityLevel]] = None
-    scope: SearchScope
-    salary_range: Optional[dict] = None
-    total_results: int
-    saved_count: int
-    applied_count: int
-    is_active: bool
-
-
-class SearchResultsResponse(BaseModel):
-    """Paginated search results."""
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    search_id: UUID
-    results: list[SearchResultItem]
-    total: int
-    page: int
-    page_size: int
-    pages: int
-    filters_applied: dict
-    sort_by: str  # "match_score", "posted_date", "salary"
-
-
-class SaveJobRequest(BaseModel):
-    """Request to save a job."""
-    job_id: str
-    notes: Optional[str] = None
-
-
-class SavedJobResponse(BaseModel):
-    """Response for a saved job."""
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    saved_job_id: UUID
-    job_posting: JobPosting
-    saved_at: datetime
-    notes: Optional[str] = None
-    tagged: bool
-
-
-class SearchStatsResponse(BaseModel):
-    """Statistics for a job search."""
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
-
-    search_id: UUID
-    total_results: int
-    results_by_source: dict  # {"linkedin": 45, "indeed": 30}
-    average_match_score: float
-    salary_range_stats: dict  # {"min": 80000, "max": 150000, "avg": 115000}
-    top_matching_roles: list[str]
-    top_companies: list[str]
-    created_at: datetime
-    last_updated: datetime
-
-
-class BulkSaveJobsRequest(BaseModel):
-    """Request to bulk save jobs."""
-    job_ids: list[str]
-    tag_as: Optional[str] = None
-
-
-class AlertSettingsRequest(BaseModel):
-    """Request to set up search alerts."""
-    search_id: UUID
-    frequency: str  # "immediate", "daily", "weekly"
-    notification_channel: str  # "email", "sms", "in_app"
-    min_match_score: int = Field(50, ge=0, le=100, description="Alert only for jobs with this match score or higher")
-
-
-class AlertSettingsResponse(BaseModel):
-    """Response for alert settings."""
-    alert_id: UUID
-    search_id: UUID
-    frequency: str
-    notification_channel: str
-    min_match_score: int
-    is_active: bool
-    created_at: datetime
-
-
-class SearchListResponse(BaseModel):
-    """List of job searches."""
-    model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
+class JobSearchResults(BaseModel):
+    """Paginated job search results."""
 
     items: list[JobSearchResponse]
     total: int
     page: int
     page_size: int
-    pages: int
+
+
+# ============================================================================
+# Saved Jobs
+# ============================================================================
+
+
+class SaveJobRequest(BaseModel):
+    """Request to save a job."""
+
+    position_id: uuid.UUID
+    list_name: str = Field("Default", description="Name of the list")
+    notes: Optional[str] = Field(None, description="Personal notes")
+
+
+class SaveJobResponse(BaseModel):
+    """Saved job response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    position_id: uuid.UUID
+    job_title: Optional[str]
+    company_name: Optional[str]
+    match_score: Optional[float]
+    status: str
+    list_name: str
+    notes: Optional[str]
+    viewed_at: Optional[datetime]
+    applied_at: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+
+
+class SavedJobsList(BaseModel):
+    """List of saved jobs with metadata."""
+
+    items: list[SaveJobResponse]
+    total: int
+    page: int
+    page_size: int
+
+
+class UpdateSavedJobRequest(BaseModel):
+    """Request to update a saved job."""
+
+    notes: Optional[str] = None
+    list_name: Optional[str] = None
+    status: Optional[str] = None
+
+
+# ============================================================================
+# Applications
+# ============================================================================
+
+
+class ApplicationRequest(BaseModel):
+    """Request to apply to a position."""
+
+    position_id: uuid.UUID
+    resume_id: uuid.UUID
+    cover_letter: Optional[str] = None
+    source: str = Field("direct", description="Source of application")
+
+
+class ApplicationResponse(BaseModel):
+    """Application response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    position_id: uuid.UUID
+    resume_id: uuid.UUID
+    user_id: uuid.UUID
+    stage: str
+    source: Optional[str]
+    applied_at: datetime
+    created_at: datetime
+    updated_at: datetime
+
+
+# ============================================================================
+# Assessment Feedback
+# ============================================================================
+
+
+class FeedbackItem(BaseModel):
+    """Individual piece of feedback."""
+
+    category: str = Field(..., description="e.g., 'technical', 'communication'")
+    rating: Optional[int] = Field(None, ge=1, le=5, description="Rating 1-5")
+    comment: Optional[str] = Field(None, description="Feedback text")
+    timestamp: Optional[datetime] = None
+
+
+class AssessmentFeedback(BaseModel):
+    """Feedback on an assessment shared by recruiter."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    assessment_id: uuid.UUID
+    recruiter_id: Optional[uuid.UUID]
+    shared_at: Optional[datetime]
+    feedback_items: list[FeedbackItem] = Field(default_factory=list)
+    overall_notes: Optional[str] = None
+    next_steps: Optional[str] = None
+
+
+# ============================================================================
+# Application Timeline
+# ============================================================================
+
+
+class TimelineEvent(BaseModel):
+    """A single timeline event."""
+
+    event_type: str = Field(..., description="Event type")
+    timestamp: datetime
+    title: str
+    description: Optional[str] = None
+    metadata: Optional[dict] = None
+
+
+class AssessmentTimeline(BaseModel):
+    """Timeline of events for an assessment/application."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    assessment_id: uuid.UUID
+    application_id: Optional[uuid.UUID]
+    events: list[TimelineEvent] = Field(default_factory=list)
+    status_summary: Optional[str] = None
+    latest_event: Optional[TimelineEvent] = None
+    created_at: datetime
+
+
+# ============================================================================
+# Interview Preparation
+# ============================================================================
+
+
+class InterviewPrepTopic(BaseModel):
+    """A topic for interview preparation."""
+
+    topic: str
+    key_points: list[str]
+    sample_questions: list[str]
+    tips: list[str]
+    resources: Optional[list[str]] = None
+
+
+class InterviewPrepResponse(BaseModel):
+    """Interview preparation tips and resources."""
+
+    assessment_id: uuid.UUID
+    position_title: str
+    interview_type: str = "general"  # "technical", "behavioral", "general"
+    topics: list[InterviewPrepTopic]
+    general_tips: list[str]
+    candidate_strengths: list[str]
+    growth_areas: list[str]
+    practice_scenarios: list[str]
+    generated_at: datetime
+
+
+# ============================================================================
+# Chat Mode
+# ============================================================================
+
+
+class ChatModeRequest(BaseModel):
+    """Chat request with mode selection."""
+
+    session_id: str
+    message: str
+    mode: str = Field(
+        "general",
+        description="Chat mode: 'career_coach', 'interview_prep', 'general'",
+    )
+    history: list[dict] = Field(default_factory=list)
+
+
+class CandidateContext(BaseModel):
+    """Candidate context for career coach mode."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    user_id: uuid.UUID
+    name: Optional[str]
+    current_role: Optional[str]
+    target_roles: Optional[list[str]]
+    saved_jobs: Optional[int]
+    recent_assessments: Optional[int]
+    strengths: Optional[list[str]]
+    growth_areas: Optional[list[str]]

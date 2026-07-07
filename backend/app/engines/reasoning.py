@@ -112,6 +112,46 @@ def counter_recommendation(
     return data
 
 
+def generate_interview_prep(
+    position_description: str,
+    resume_text: str,
+    capabilities: dict | None = None,
+    interview_type: str = "general",
+) -> dict[str, Any]:
+    """Generate interview preparation guidance based on role and candidate capabilities.
+
+    Args:
+        position_description: Job description
+        resume_text: Candidate's resume
+        capabilities: Assessed capability components
+        interview_type: Type of interview (general, technical, behavioral)
+
+    Returns:
+        Structured interview prep with topics, questions, and tips
+    """
+    try:
+        prompt = get_prompt("interview_prep")
+    except Exception:
+        # Fallback if prompt template doesn't exist
+        return _mock_interview_prep()
+
+    user = prompt.render_user(
+        position_description=position_description,
+        resume_text=resume_text,
+        interview_type=interview_type,
+        capabilities=json.dumps(capabilities or {}),
+    )
+
+    if not is_live():
+        return _mock_interview_prep()
+
+    data = call_claude_json(system=prompt.system, user_content=user, max_tokens=3000)
+    data.setdefault("topics", [])
+    data.setdefault("general_tips", [])
+    data.setdefault("practice_scenarios", [])
+    return data
+
+
 # --- Mock fixtures (clearly marked) -----------------------------------------
 
 def _mock_capability() -> dict[str, Any]:
@@ -155,5 +195,42 @@ def _mock_counter() -> dict[str, Any]:
         "reasoning": "MOCK: keyword baseline penalized non-matching titles despite strong evidence.",
         "evidence": [
             {"claim": "Led platform migration", "support": "Demonstrates systems-design capability."}
+        ],
+    }
+
+
+def _mock_interview_prep() -> dict[str, Any]:
+    return {
+        "_mock": True,
+        "topics": [
+            {
+                "title": "System Design",
+                "key_points": ["Scalability", "Database design", "API design"],
+                "sample_questions": [
+                    "Design a URL shortener",
+                    "How would you scale a chat application?",
+                ],
+                "tips": ["Draw diagrams", "Discuss tradeoffs"],
+            },
+            {
+                "title": "Behavioral",
+                "key_points": ["Teamwork", "Communication", "Problem-solving"],
+                "sample_questions": [
+                    "Tell me about a time you resolved a conflict",
+                    "Describe your most challenging project",
+                ],
+                "tips": ["Use STAR method", "Be specific with examples"],
+            },
+        ],
+        "general_tips": [
+            "Research the company thoroughly",
+            "Prepare specific examples from your experience",
+            "Ask thoughtful questions about the role",
+            "Discuss your career goals and growth areas",
+        ],
+        "practice_scenarios": [
+            "Walk through a technical problem from your resume",
+            "Explain a difficult decision you made",
+            "Describe how you handle pressure and deadlines",
         ],
     }

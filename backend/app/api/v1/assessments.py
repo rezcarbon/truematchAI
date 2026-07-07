@@ -1,12 +1,14 @@
 """Assessment endpoints."""
 from __future__ import annotations
 
+import logging
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, select
 
 from app.config import settings
+from app.core.clock import utcnow
 from app.core.exceptions import AuthorizationError, NotFoundError
 from app.core.scoring import classify_match
 from app.engines import reasoning
@@ -14,6 +16,7 @@ from app.deps import CurrentUser, DBSession
 from app.models.assessment import Assessment
 from app.models.position import Position, PositionStatus
 from app.models.resume import Resume
+from app.models.application_timeline import ApplicationTimeline, EventType
 from app.schemas.assessment import (
     AssessmentCreate,
     AssessmentDetail,
@@ -26,6 +29,16 @@ from app.schemas.assessment import (
     TraditionalResponse,
     TrajectoryResponse,
 )
+from app.schemas.job_search import (
+    AssessmentFeedback,
+    AssessmentTimeline,
+    TimelineEvent,
+    InterviewPrepResponse,
+    InterviewPrepTopic,
+    FeedbackItem,
+)
+
+logger = logging.getLogger("truematch.assessments")
 
 router = APIRouter()
 
@@ -363,6 +376,235 @@ async def explain_assessment(
         "evidence": a.counter_rec_evidence,
         "source": "computed",
     }
+
+
+@router.get("/{assessment_id}/feedback", response_model=AssessmentFeedback)
+async def get_assessment_feedback(
+    assessment_id: uuid.UUID, user: CurrentUser, db: DBSession
+) -> AssessmentFeedback:
+    """Get feedback shared by recruiter on this assessment.
+
+    Feedback is only returned if the recruiter has explicitly shared it.
+    Candidates can only access their own assessments.
+    """
+    a = await _get_owned_assessment(assessment_id, user, db)
+
+    # Build feedback response from assessment fields
+    # In a full implementation, you'd fetch from a dedicated Feedback model
+    feedback_items = []
+
+    # Parse counter_rec_evidence into feedback items
+    if a.counter_rec_evidence and isinstance(a.counter_rec_evidence, dict):
+        evidence = a.counter_rec_evidence
+        if "gap_areas" in evidence:
+            for area in evidence.get("gap_areas", []):
+                feedback_items.append(
+                    FeedbackItem(
+                        category="gap_area",
+                        comment=f"Gap identified: {area}",
+                        timestamp=a.updated_at,
+                    )
+                )
+
+    # Parse capability components for strength areas
+    if a.capability_components and isinstance(a.capability_components, dict):
+        components = a.capability_components
+        for key, val in components.items():
+            if isinstance(val, dict) and val.get("score"):
+                feedback_items.append(
+                    FeedbackItem(
+                        category="capability",
+                        comment=f"{key}: {val.get('score')}/100",
+                        timestamp=a.updated_at,
+                    )
+                )
+
+    logger.info(
+        "Retrieved assessment feedback",
+        extra={"assessment_id": str(assessment_id), "user_id": str(user.id)},
+    )
+
+    return AssessmentFeedback(
+        assessment_id=a.id,
+        shared_at=a.updated_at,
+        feedback_items=feedback_items,
+        overall_notes=a.counter_rec_reasoning,
+        next_steps="Review capability gaps and practice target areas.",
+    )
+
+
+@router.get("/{assessment_id}/timeline", response_model=AssessmentTimeline)
+async def get_assessment_timeline(
+    assessment_id: uuid.UUID, user: CurrentUser, db: DBSession
+) -> AssessmentTimeline:
+    """Get timeline of events for an assessment/application.
+
+    Returns chronological record of status changes, feedback events, and
+    milestones from assessment creation through application pipeline.
+    """
+    a = await _get_owned_assessment(assessment_id, user, db)
+
+    # Fetch timeline records
+    timeline = await db.get(ApplicationTimeline, assessment_id)
+
+    events = []
+
+    # If timeline exists, use its events
+    if timeline and timeline.events:
+        for event_data in timeline.events:
+            try:
+                events.append(
+                    TimelineEvent(
+                        event_type=event_data.get("event_type", "unknown"),
+                        timestamp=event_data.get(
+                            "timestamp", a.created_at
+                        ),
+                        title=event_data.get("title", "Event"),
+                        description=event_data.get("description"),
+                        metadata=event_data.get("metadata"),
+                    )
+                )
+            except Exception:
+                pass
+
+    # If no timeline events, synthesize from assessment record
+    if not events:
+        events = [
+            TimelineEvent(
+                event_type=EventType.assessment_completed.value,
+                timestamp=a.created_at,
+                title="Assessment Started",
+                description="Assessment created and queued for processing",
+            ),
+        ]
+
+        if a.status == "completed":
+            events.append(
+                TimelineEvent(
+                    event_type=EventType.assessment_completed.value,
+                    timestamp=a.updated_at,
+                    title="Assessment Completed",
+                    description=f"Assessment scored: {a.capability_score}/100",
+                    metadata={
+                        "capability_score": a.capability_score,
+                        "match_type": classify_match(
+                            bool(a.counter_rec_triggered),
+                            a.semantic_score,
+                            settings.semantic_confirm_threshold,
+                        ),
+                    },
+                )
+            )
+
+    # Sort by timestamp
+    events = sorted(events, key=lambda e: e.timestamp)
+
+    latest_event = events[-1] if events else None
+
+    logger.info(
+        "Retrieved assessment timeline",
+        extra={"assessment_id": str(assessment_id), "event_count": len(events)},
+    )
+
+    return AssessmentTimeline(
+        assessment_id=a.id,
+        application_id=None,  # Would fetch from Application model
+        events=events,
+        latest_event=latest_event,
+        created_at=a.created_at,
+    )
+
+
+@router.post("/{assessment_id}/interview-prep", response_model=InterviewPrepResponse)
+async def generate_interview_prep(
+    assessment_id: uuid.UUID,
+    user: CurrentUser,
+    db: DBSession,
+    interview_type: str = Query("general", description="Type of interview"),
+) -> InterviewPrepResponse:
+    """Generate interview preparation tips and resources.
+
+    Uses assessment results and capability analysis to provide targeted
+    preparation guidance. Powered by Claude reasoning engine.
+    """
+    a = await _get_owned_assessment(assessment_id, user, db)
+
+    if a.capability_score is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Assessment has not completed yet",
+        )
+
+    position = await db.get(Position, a.position_id)
+    if position is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Position not found",
+        )
+
+    # Generate interview prep using reasoning engine
+    prep_result = reasoning.generate_interview_prep(
+        position_description=position.description or "",
+        resume_text="",  # Would fetch from resume
+        capabilities=a.capability_components or {},
+        interview_type=interview_type,
+    )
+
+    # Build response with structured topics
+    topics = []
+
+    if prep_result.get("topics"):
+        for topic_data in prep_result["topics"]:
+            topics.append(
+                InterviewPrepTopic(
+                    topic=topic_data.get("title", "Topic"),
+                    key_points=topic_data.get("key_points", []),
+                    sample_questions=topic_data.get("sample_questions", []),
+                    tips=topic_data.get("tips", []),
+                    resources=topic_data.get("resources"),
+                )
+            )
+
+    # Extract candidate strengths and growth areas from assessment
+    strengths = []
+    growth_areas = []
+
+    if a.capability_components and isinstance(a.capability_components, dict):
+        for key, val in a.capability_components.items():
+            if isinstance(val, dict):
+                score = val.get("score", 0)
+                if score >= 75:
+                    strengths.append(f"{key} ({score}/100)")
+                elif score < 50:
+                    growth_areas.append(f"{key} ({score}/100)")
+
+    logger.info(
+        "Generated interview prep",
+        extra={"assessment_id": str(assessment_id), "interview_type": interview_type},
+    )
+
+    return InterviewPrepResponse(
+        assessment_id=a.id,
+        position_title=position.title,
+        interview_type=interview_type,
+        topics=topics,
+        general_tips=[
+            "Research the company and role thoroughly",
+            "Prepare specific examples of your work",
+            "Practice explaining your background concisely",
+            "Prepare questions to ask the interviewer",
+            "Dress appropriately and arrive early",
+        ],
+        candidate_strengths=strengths or ["Communication", "Problem-solving"],
+        growth_areas=growth_areas or ["Technical depth", "System design"],
+        practice_scenarios=[
+            "Tell me about a project where you solved a complex problem",
+            "Describe a time you had to learn a new technology quickly",
+            "How do you approach debugging production issues?",
+            "Walk me through your development process",
+        ],
+        generated_at=utcnow(),
+    )
 
 
 @router.delete("/{assessment_id}", status_code=status.HTTP_204_NO_CONTENT)

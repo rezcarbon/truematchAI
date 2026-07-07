@@ -122,3 +122,83 @@ class PaginatedJDSimulationList(BaseModel):
     page: int
     page_size: int
     pages: int
+
+
+class DetailedJDAnalysisRequest(BaseModel):
+    """Request for detailed JD analysis."""
+    jd_text: str = Field(..., min_length=10, description="Job description text to analyze")
+    position_title: Optional[str] = Field(None, description="Job title for context")
+    target_seniority: Optional[str] = Field(None, description="Target seniority level (junior/mid/senior/lead)")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "jd_text": "Senior Backend Engineer with 5+ years...",
+                "position_title": "Senior Backend Engineer",
+                "target_seniority": "senior"
+            }
+        }
+
+
+class DetailedJDAnalysisResponse(BaseModel):
+    """Response with detailed JD analysis results."""
+    score: int = Field(..., ge=0, le=100, description="Overall quality score")
+    dimensions: dict = Field(..., description="Detailed scoring by dimension")
+    issues: list[str] = Field(default_factory=list, description="Identified issues")
+    suggestions: list[dict] = Field(default_factory=list, description="Improvement suggestions with priority")
+
+
+class SuggestionAcceptanceRequest(BaseModel):
+    """Request to accept and apply a JD suggestion."""
+    suggestion_id: str = Field(..., description="ID of the suggestion to accept")
+    modified_text: str = Field(..., min_length=10, description="Modified JD text after applying suggestion")
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "suggestion_id": "sugg-001",
+                "modified_text": "Improved job description text..."
+            }
+        }
+
+
+class SuggestionAcceptanceResponse(BaseModel):
+    """Response after accepting a suggestion."""
+    updated_jd: str = Field(..., description="Updated JD text")
+    suggestion_id: str = Field(..., description="ID of the applied suggestion")
+    timestamp: str = Field(..., description="ISO 8601 timestamp")
+
+
+class SimulationHistoryItem(BaseModel):
+    """Item in simulation history list."""
+    simulation_id: UUID
+    position_id: Optional[UUID] = None
+    position_title: Optional[str] = None
+    jd_text_preview: str = Field(..., description="First 200 chars of JD")
+    simulation_type: SimulationType
+    status: JDSimulationStatus
+    quality_score: Optional[int] = None
+    created_at: str
+    completed_at: Optional[str] = None
+
+    class Config:
+        json_schema_extra = {
+            "example": {
+                "simulation_id": "550e8400-e29b-41d4-a716-446655440000",
+                "position_title": "Senior Engineer",
+                "jd_text_preview": "We are hiring for a Senior Engineer...",
+                "simulation_type": "requirement_fit",
+                "status": "completed",
+                "quality_score": 82,
+                "created_at": "2026-06-03T10:30:00Z",
+                "completed_at": "2026-06-03T10:45:00Z"
+            }
+        }
+
+
+class PaginatedSimulationHistory(BaseModel):
+    """Paginated simulation history."""
+    items: list[SimulationHistoryItem]
+    total: int
+    limit: int
+    offset: int
