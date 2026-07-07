@@ -97,7 +97,12 @@ final class JobRecommendationsViewModel: ObservableObject {
         }
     }
 
-    private func saveJob(_ jobId: String) async {
+    func saveJob(_ jobId: String) async {
+        guard !savedJobs.contains(jobId) else {
+            TrueMatchLogger.log(.info, "JobRecommendations: job \(jobId) already saved")
+            return
+        }
+
         savedJobs.insert(jobId)
 
         let request = SaveJobRequest(candidateId: candidateId, jobId: jobId, saved: true)
@@ -111,7 +116,12 @@ final class JobRecommendationsViewModel: ObservableObject {
         }
     }
 
-    private func rejectJob(_ jobId: String) async {
+    func rejectJob(_ jobId: String) async {
+        guard !rejectedJobs.contains(jobId) else {
+            TrueMatchLogger.log(.info, "JobRecommendations: job \(jobId) already rejected")
+            return
+        }
+
         rejectedJobs.insert(jobId)
 
         let request = RejectJobRequest(candidateId: candidateId, jobId: jobId)

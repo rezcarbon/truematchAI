@@ -64,8 +64,39 @@ export default function ChatPage() {
   const [pendingActions, setPendingActions] = useState<Action[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [showActionConfirmation, setShowActionConfirmation] = useState(false);
+  const [chatMode, setChatMode] = useState<'general' | 'career_coach' | 'interview_prep'>('general');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const eventSourceRef = useRef<EventSource | null>(null);
+
+  const modeDescriptions: { [key: string]: { title: string; description: string; examples: string[] } } = {
+    general: {
+      title: 'General Assistant',
+      description: 'Get help with any questions about hiring, careers, or the platform',
+      examples: [
+        'How do I upload my resume?',
+        'What skills should I develop?',
+        'Tell me about this job posting',
+      ],
+    },
+    career_coach: {
+      title: 'Career Coach',
+      description: 'Personalized guidance for your career growth and development',
+      examples: [
+        'Help me transition to a new role',
+        'Create a 6-month development plan',
+        'Review my career goals',
+      ],
+    },
+    interview_prep: {
+      title: 'Interview Prep',
+      description: 'Practice common interview questions and get detailed feedback',
+      examples: [
+        'Tell me about yourself',
+        'How would you handle this technical problem?',
+        'Why do you want to work here?',
+      ],
+    },
+  };
 
   // Redirect only once auth has resolved. `useSession` starts in a "loading"
   // state where `session` is undefined; redirecting on `!session` then would
@@ -214,7 +245,11 @@ export default function ChatPage() {
             Accept: 'text/event-stream',
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ message: userMessage }),
+          body: JSON.stringify({
+            message: userMessage,
+            mode: chatMode,
+            system_prompt: getChatModePrompt(chatMode, userRole),
+          }),
         }
       );
 
@@ -396,6 +431,28 @@ export default function ChatPage() {
 
   const userRole = (session?.user as { role?: string })?.role || 'candidate';
 
+  const getChatModePrompt = (mode: string, role: string): string => {
+    const basePrompts: { [key: string]: { [key: string]: string } } = {
+      general: {
+        candidate: 'You are a helpful assistant for job candidates. Help them with resume tips, career guidance, job search strategy, and platform usage.',
+        recruiter: 'You are a helpful assistant for recruiters. Help them with hiring strategy, candidate assessment, job posting optimization, and pipeline management.',
+        admin: 'You are a system administrator assistant. Help with platform configuration, governance, analytics, and user management.',
+      },
+      career_coach: {
+        candidate: 'You are an expert career coach. Provide personalized guidance on career development, skills improvement, interview preparation, and career transitions.',
+        recruiter: 'You are a hiring strategy consultant. Help recruiters build strong teams, develop hiring processes, and mentor emerging talent.',
+        admin: 'You are an organizational development consultant. Help with team structure, performance management, and organizational strategy.',
+      },
+      interview_prep: {
+        candidate: 'You are an interview coach. Help candidates practice interviews, provide feedback on responses, and suggest improvements for common questions.',
+        recruiter: 'You are a recruiting coach. Help recruiters improve their interviewing skills and assessment techniques.',
+        admin: 'You are a training coordinator. Help admins develop interview training and assessment processes.',
+      },
+    };
+
+    return basePrompts[mode]?.[role] || basePrompts['general']?.[role] || 'You are a helpful assistant.';
+  };
+
   return (
     <div className="flex h-screen bg-background">
       {/* Sidebar */}
@@ -472,7 +529,7 @@ export default function ChatPage() {
       {/* Main Chat */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <div className="border-b border-border bg-secondary/30 p-4 flex items-center justify-between">
+        <div className="border-b border-border bg-secondary/30 p-4 space-y-3">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setShowSidebar(!showSidebar)}
@@ -480,16 +537,31 @@ export default function ChatPage() {
             >
               ☰
             </button>
-            <div>
+            <div className="flex-1">
               <h1 className="text-lg font-semibold">
-                {userRole === 'recruiter' && '🎯 Recruiter Assistant'}
-                {userRole === 'candidate' && '💼 Career Coach'}
-                {userRole === 'admin' && '⚙️ System Admin'}
+                {modeDescriptions[chatMode].title}
               </h1>
               <p className="text-sm text-muted-foreground">
-                Ask anything about your hiring, career, or platform
+                {modeDescriptions[chatMode].description}
               </p>
             </div>
+          </div>
+
+          {/* Mode Selector */}
+          <div className="flex gap-2 flex-wrap">
+            {Object.entries(modeDescriptions).map(([mode, desc]) => (
+              <button
+                key={mode}
+                onClick={() => setChatMode(mode as typeof chatMode)}
+                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
+                  chatMode === mode
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background border border-border text-muted-foreground hover:bg-muted'
+                }`}
+              >
+                {desc.title}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -497,44 +569,19 @@ export default function ChatPage() {
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {messages.length === 0 && (
             <div className="flex items-center justify-center h-full">
-              <div className="text-center">
+              <div className="text-center max-w-md">
                 <p className="text-lg font-semibold mb-2">
-                  {userRole === 'recruiter' &&
-                    "Hi! 👋 I'm your Recruiter Assistant"}
-                  {userRole === 'candidate' &&
-                    "Hi! 👋 I'm your Career Coach"}
-                  {userRole === 'admin' && "Hi! 👋 I'm your System Admin"}
+                  {modeDescriptions[chatMode].title}
                 </p>
                 <p className="text-sm text-muted-foreground mb-4">
-                  {userRole === 'recruiter' &&
-                    "Tell me about the role you're hiring for, upload candidates, or ask about your pipeline."}
-                  {userRole === 'candidate' &&
-                    "Share your CV, tell me your career goals, or ask for job recommendations."}
-                  {userRole === 'admin' &&
-                    "Ask about system health, governance reviews, or platform configuration."}
+                  {modeDescriptions[chatMode].description}
                 </p>
                 <div className="space-y-2 text-sm">
-                  {userRole === 'recruiter' && (
-                    <>
-                      <p>💡 Try: "I need to hire 3 senior engineers"</p>
-                      <p>💡 Try: "Upload these 50 resumes and rank them"</p>
-                      <p>💡 Try: "Show me my pipeline status"</p>
-                    </>
-                  )}
-                  {userRole === 'candidate' && (
-                    <>
-                      <p>💡 Try: "Analyze my CV for a senior role"</p>
-                      <p>💡 Try: "What jobs match my profile?"</p>
-                      <p>💡 Try: "Help me improve my CV"</p>
-                    </>
-                  )}
-                  {userRole === 'admin' && (
-                    <>
-                      <p>💡 Try: "How's the system doing?"</p>
-                      <p>💡 Try: "Show me pending reviews"</p>
-                      <p>💡 Try: "What are my metrics?"</p>
-                    </>
-                  )}
+                  {modeDescriptions[chatMode].examples.map((example, idx) => (
+                    <p key={idx} className="text-muted-foreground">
+                      💡 Try: "{example}"
+                    </p>
+                  ))}
                 </div>
               </div>
             </div>

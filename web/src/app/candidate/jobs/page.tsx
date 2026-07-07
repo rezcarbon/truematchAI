@@ -23,13 +23,16 @@ export default function JobsPage() {
     sortBy: 'match',
     sortOrder: 'desc',
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 20;
 
   useEffect(() => {
     const fetchJobs = async () => {
       try {
         setLoading(true);
+        setError(null);
         // TODO: Replace with actual API call
-        // const response = await fetch('/api/jobs', {
+        // const response = await fetch('/api/v1/candidates/jobs', {
         //   headers: { 'Authorization': `Bearer ${accessToken}` }
         // });
         // const data = await response.json();
@@ -141,12 +144,34 @@ export default function JobsPage() {
 
   const handleApply = async (jobId: string) => {
     try {
+      setLoading(true);
       // TODO: Implement job application API call
-      console.log('Applying to job:', jobId);
+      const response = await fetch(`/api/proxy/v1/candidates/jobs/${jobId}/apply`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to apply to job');
+      }
+
+      setError(null);
+      // Optionally refresh jobs or show success message
     } catch (err) {
-      console.error('Failed to apply to job:', err);
+      setError(err instanceof Error ? err.message : 'Failed to apply to job');
+    } finally {
+      setLoading(false);
     }
   };
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredJobs.length / itemsPerPage);
+  const paginatedJobs = filteredJobs.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -193,11 +218,17 @@ export default function JobsPage() {
               </Card>
             ) : (
               <div className="space-y-4">
-                <p className="text-sm text-muted-foreground">
-                  Showing {filteredJobs.length} of {jobs.length} jobs
-                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-muted-foreground">
+                    Showing {paginatedJobs.length} of {filteredJobs.length} jobs
+                  </p>
+                  <div className="text-sm text-muted-foreground">
+                    Page {currentPage} of {totalPages}
+                  </div>
+                </div>
+
                 <div className="grid gap-4 grid-cols-1">
-                  {filteredJobs.map((job) => (
+                  {paginatedJobs.map((job) => (
                     <JobCard
                       key={job.id}
                       job={job}
@@ -205,6 +236,47 @@ export default function JobsPage() {
                     />
                   ))}
                 </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                  <div className="flex items-center justify-between pt-4 border-t">
+                    <button
+                      onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                      disabled={currentPage === 1}
+                      className="px-4 py-2 text-sm font-medium text-muted-foreground border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Previous
+                    </button>
+
+                    <div className="flex gap-1">
+                      {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                        const pageNum = currentPage <= 3 ? i + 1 : currentPage - 2 + i;
+                        if (pageNum > totalPages) return null;
+                        return (
+                          <button
+                            key={pageNum}
+                            onClick={() => setCurrentPage(pageNum)}
+                            className={`px-3 py-1 text-sm font-medium rounded-lg transition-colors ${
+                              currentPage === pageNum
+                                ? 'bg-primary text-primary-foreground'
+                                : 'text-muted-foreground hover:bg-muted'
+                            }`}
+                          >
+                            {pageNum}
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <button
+                      onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-4 py-2 text-sm font-medium text-muted-foreground border rounded-lg hover:bg-muted disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                      Next
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

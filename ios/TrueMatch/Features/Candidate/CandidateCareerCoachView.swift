@@ -95,6 +95,8 @@ struct CandidateCareerCoachView: View {
                         .padding(theme.spacing.xs)
                         .background(Color(.systemGray6))
                         .cornerRadius(theme.cornerRadii.sm)
+                        .accessibilityLabel("Career guidance message input")
+                        .accessibilityHint("Type your question and press send")
 
                     Button {
                         Task {
@@ -106,6 +108,8 @@ struct CandidateCareerCoachView: View {
                     }
                     .disabled(!viewModel.canSend)
                     .foregroundColor(viewModel.canSend ? theme.colors.primary : .gray)
+                    .accessibilityLabel("Send message")
+                    .accessibilityHint(viewModel.canSend ? "Send your message" : "Enter a message to send")
                 }
                 .padding(theme.spacing.sm)
             }

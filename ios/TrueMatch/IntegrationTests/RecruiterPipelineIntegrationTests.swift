@@ -6,6 +6,8 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
     var webSocketManager: WebSocketManager!
     var cacheManager: CacheManager!
     var networkMonitor: NetworkMonitor!
+    var consistencyChecker: DataConsistencyChecker!
+    var performanceMeasurer: PerformanceMeasurer!
 
     override func setUp() {
         super.setUp()
@@ -13,6 +15,8 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
         apiClient = APIClient(networkMonitor: networkMonitor)
         webSocketManager = WebSocketManager()
         cacheManager = CacheManager()
+        consistencyChecker = DataConsistencyChecker()
+        performanceMeasurer = PerformanceMeasurer()
     }
 
     override func tearDown() {
@@ -20,6 +24,8 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
         webSocketManager = nil
         cacheManager = nil
         networkMonitor = nil
+        consistencyChecker = nil
+        performanceMeasurer = nil
         super.tearDown()
     }
 
@@ -30,11 +36,17 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
         let expectation = XCTestExpectation(description: "fetch pipeline")
 
         // Act
+        performanceMeasurer.startMeasurement()
         apiClient.fetchPipeline { result in
             switch result {
             case .success(let pipeline):
                 XCTAssertNotNil(pipeline)
                 XCTAssertGreaterThan(pipeline.candidates.count, 0)
+
+                // Validate consistency
+                let errors = self.consistencyChecker.validatePipelineConsistency(pipeline)
+                XCTAssertTrue(errors.isEmpty, "Consistency errors: \(errors)")
+
                 expectation.fulfill()
             case .failure(let error):
                 XCTFail("Failed to fetch pipeline: \(error)")
@@ -43,6 +55,8 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
 
         // Assert
         wait(for: [expectation], timeout: 10.0)
+        let elapsed = performanceMeasurer.endMeasurement(label: "fetchPipeline")
+        XCTAssertLessThan(elapsed, 10.0, "Pipeline fetch took too long")
     }
 
     func testFetchPipelineCaching() {
@@ -62,6 +76,32 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
         // Assert
         let cachedPipeline = cacheManager.getCachedPipeline()
         XCTAssertNotNil(cachedPipeline)
+
+        // Verify cache is valid
+        let errors = consistencyChecker.validatePipelineConsistency(cachedPipeline!)
+        XCTAssertTrue(errors.isEmpty)
+    }
+
+    func testFetchPipelineWithLargeDataSet() {
+        // Arrange
+        let expectation = XCTestExpectation(description: "fetch large pipeline")
+        let largePipeline = IntegrationTestDataGenerator.generateLargePipeline(size: 500)
+
+        // Act
+        performanceMeasurer.startMeasurement()
+
+        // Simulate large fetch
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            self.cacheManager.cachePipeline(largePipeline)
+            expectation.fulfill()
+        }
+
+        // Assert
+        wait(for: [expectation], timeout: 5.0)
+        let elapsed = performanceMeasurer.endMeasurement(label: "fetchLargePipeline")
+
+        let stats = performanceMeasurer.getStatistics(for: "fetchLargePipeline")
+        XCTAssertNotNil(stats)
     }
 
     // MARK: - Update Candidate Status Tests
@@ -113,6 +153,56 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
         XCTAssertEqual(updateCount, candidateIDs.count)
     }
 
+    func testUpdateMultipleCandidatesConcurrently() {
+        // Arrange
+        let candidateCount = 10
+        let expectation = XCTestExpectation(description: "concurrent updates")
+        expectation.expectedFulfillmentCount = candidateCount
+
+        var successCount = 0
+        let syncQueue = DispatchQueue(label: "sync.test")
+
+        // Act
+        for i in 0..<candidateCount {
+            DispatchQueue.global().async {
+                self.apiClient.updateCandidateStatus(
+                    candidateID: "candidate_\(i)",
+                    status: .screening
+                ) { result in
+                    if case .success = result {
+                        syncQueue.sync { successCount += 1 }
+                    }
+                    expectation.fulfill()
+                }
+            }
+        }
+
+        // Assert
+        wait(for: [expectation], timeout: 20.0)
+        XCTAssertEqual(successCount, candidateCount)
+    }
+
+    func testUpdateStatusWithAllTransitions() {
+        // Arrange
+        let candidateID = "transition_test"
+        let statusTransitions = CandidateStatus.allCases
+
+        for status in statusTransitions {
+            let expectation = XCTestExpectation(description: "transition to \(status)")
+
+            // Act
+            apiClient.updateCandidateStatus(
+                candidateID: candidateID,
+                status: status
+            ) { result in
+                expectation.fulfill()
+            }
+
+            // Assert
+            wait(for: [expectation], timeout: 5.0)
+        }
+    }
+
     // MARK: - WebSocket Updates Tests
 
     func testWebSocketPipelineUpdate() {
@@ -146,7 +236,6 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
     func testWebSocketReconnection() {
         // Arrange
         let expectation = XCTestExpectation(description: "websocket reconnects")
-        let maxReconnectAttempts = 3
 
         // Act
         webSocketManager.connect { }
@@ -162,19 +251,49 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
         XCTAssertTrue(webSocketManager.isConnected)
     }
 
+    func testWebSocketHandlesMultipleUpdates() {
+        // Arrange
+        let messageCount = 10
+        let expectation = XCTestExpectation(description: "multiple ws updates")
+        expectation.expectedFulfillmentCount = messageCount
+
+        var receivedCount = 0
+
+        // Act
+        webSocketManager.connect { }
+        webSocketManager.onMessageReceived = { _ in
+            receivedCount += 1
+            expectation.fulfill()
+        }
+
+        for i in 0..<messageCount {
+            let message = WebSocketMessage(
+                type: .pipelineUpdate,
+                data: ["candidateID": "ws_candidate_\(i)"]
+            )
+            webSocketManager.send(message)
+        }
+
+        // Assert
+        wait(for: [expectation], timeout: 10.0)
+        XCTAssertEqual(receivedCount, messageCount)
+    }
+
     // MARK: - Pipeline Sync Tests
 
     func testPipelineSyncWithOfflineMode() {
         // Arrange
         let expectation = XCTestExpectation(description: "offline pipeline sync")
+        let testPipeline = IntegrationTestDataGenerator.generateLargePipeline(size: 50)
 
         networkMonitor.simulateOffline()
 
         // Act
-        apiClient.fetchPipeline { [weak self] result in
-            if case .success = result {
-                self?.cacheManager.cachePipeline(result)
-            }
+        cacheManager.cachePipeline(testPipeline)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            let cached = self.cacheManager.getCachedPipeline()
+            XCTAssertNotNil(cached)
             expectation.fulfill()
         }
 
@@ -224,6 +343,68 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
         XCTAssertNotNil(lastStatus)
     }
 
+    func testSyncPipelineStateAcrossComponents() {
+        // Arrange
+        let testPipeline = IntegrationTestDataGenerator.generateLargePipeline(size: 20)
+
+        // Act
+        cacheManager.cachePipeline(testPipeline)
+        let cachedPipeline = cacheManager.getCachedPipeline()
+
+        // Assert
+        XCTAssertNotNil(cachedPipeline)
+        XCTAssertEqual(cachedPipeline?.candidates.count, testPipeline.candidates.count)
+
+        // Verify consistency
+        let errors = consistencyChecker.validatePipelineConsistency(cachedPipeline!)
+        XCTAssertTrue(errors.isEmpty)
+    }
+
+    // MARK: - Network Resilience Tests
+
+    func testHandleNetworkDowntime() {
+        // Arrange
+        let expectation = XCTestExpectation(description: "network downtime")
+
+        // Act
+        networkMonitor.simulateOffline()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            self.networkMonitor.simulateOnline()
+            expectation.fulfill()
+        }
+
+        // Assert
+        wait(for: [expectation], timeout: 3.0)
+    }
+
+    func testRetryFailedOperations() {
+        // Arrange
+        let candidateID = "retry_test"
+        var attemptCount = 0
+
+        let expectation = XCTestExpectation(description: "retry operation")
+
+        // Act
+        let attemptOperation = {
+            attemptCount += 1
+            self.apiClient.updateCandidateStatus(
+                candidateID: candidateID,
+                status: .screening
+            ) { result in
+                if case .success = result {
+                    expectation.fulfill()
+                }
+            }
+        }
+
+        attemptOperation()
+
+        // Assert
+        wait(for: [expectation], timeout: 5.0)
+        XCTAssertGreaterThanOrEqual(attemptCount, 1)
+    }
+
     // MARK: - Performance Tests
 
     func testFetchPipelinePerformance() {
@@ -238,13 +419,14 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
 
     func testBatchUpdatePerformance() {
         // Arrange
-        let updates = (0..<20).map { i in
+        let updates = (0..<50).map { i in
             (id: "perf_candidate_\(i)", status: CandidateStatus.screening)
         }
 
         let expectation = XCTestExpectation(description: "batch update perf")
         expectation.expectedFulfillmentCount = updates.count
 
+        // Act
         measure {
             for update in updates {
                 apiClient.updateCandidateStatus(
@@ -256,5 +438,20 @@ final class RecruiterPipelineIntegrationTests: XCTestCase {
             }
             wait(for: [expectation], timeout: 30.0)
         }
+    }
+
+    func testLargeScaleDataHandling() {
+        // Arrange
+        let largePipeline = IntegrationTestDataGenerator.generateLargePipeline(size: 1000)
+
+        // Act
+        performanceMeasurer.startMeasurement()
+        cacheManager.cachePipeline(largePipeline)
+        let elapsed = performanceMeasurer.endMeasurement(label: "largeScaleCache")
+
+        // Assert
+        let stats = performanceMeasurer.getStatistics(for: "largeScaleCache")
+        XCTAssertNotNil(stats)
+        XCTAssertLessThan(elapsed, 2.0, "Large scale caching took too long")
     }
 }

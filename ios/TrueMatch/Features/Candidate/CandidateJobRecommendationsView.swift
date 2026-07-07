@@ -60,6 +60,10 @@ struct CandidateJobRecommendationsView: View {
                             )
                             .offset(x: cardOffset)
                             .rotationEffect(.degrees(cardRotation))
+                            .accessibilityElement()
+                            .accessibilityLabel("Job: \(currentJob.jobTitle) at \(currentJob.company)")
+                            .accessibilityValue("Match score: \(String(format: "%.0f", currentJob.matchScore)) percent")
+                            .accessibilityHint("Swipe left to reject or right to save this job")
                             .gesture(
                                 DragGesture()
                                     .onChanged { gesture in

@@ -44,12 +44,16 @@ struct CandidateAssessmentResultsView: View {
                                     score: viewModel.traditionalScore,
                                     color: theme.colors.traditional
                                 )
+                                .accessibilityLabel("Traditional Assessment Score")
+                                .accessibilityValue("\(String(format: "%.0f", viewModel.traditionalScore)) percent")
 
                                 ScoreGaugeView(
                                     label: "Semantic",
                                     score: viewModel.semanticScore,
                                     color: theme.colors.primary
                                 )
+                                .accessibilityLabel("Semantic Assessment Score")
+                                .accessibilityValue("\(String(format: "%.0f", viewModel.semanticScore)) percent")
                             }
 
                             HStack(spacing: theme.spacing.md) {
@@ -58,6 +62,8 @@ struct CandidateAssessmentResultsView: View {
                                     score: viewModel.capabilityScore,
                                     color: theme.colors.capability
                                 )
+                                .accessibilityLabel("Capability Assessment Score")
+                                .accessibilityValue("\(String(format: "%.0f", viewModel.capabilityScore)) percent")
                                 .frame(maxWidth: .infinity)
 
                                 Spacer()
@@ -171,6 +177,8 @@ struct CandidateAssessmentResultsView: View {
                         .foregroundColor(.white)
                         .cornerRadius(theme.cornerRadii.md)
                     }
+                    .accessibilityLabel("Browse Jobs")
+                    .accessibilityHint("Navigate to job recommendations based on your assessment results")
                     .padding(.horizontal, theme.spacing.sm)
                     .padding(.vertical, theme.spacing.md)
                 }

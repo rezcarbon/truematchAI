@@ -406,13 +406,31 @@ export default function CVAnalysisResultsPage({
             </Tabs>
           </div>
 
-          {/* Sidebar - Chat */}
-          <div className="lg:col-span-1">
-            {/* Placeholder for follow-up chat when component is ready */}
+          {/* Sidebar - Summary Cards */}
+          <div className="lg:col-span-1 space-y-4">
+            <Card>
+              <CardContent className="pt-6">
+                <div className="space-y-3">
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase">Matching Positions</p>
+                    <p className="text-2xl font-bold">{data.topMatchingPositions?.length || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase">Missing Skills</p>
+                    <p className="text-2xl font-bold">{data.missingCapabilities?.length || 0}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground uppercase">Growth Areas</p>
+                    <p className="text-2xl font-bold">{data.growthOpportunities?.length || 0}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card>
               <CardContent className="pt-6">
                 <p className="text-sm text-muted-foreground text-center">
-                  Chat with Claude about your analysis to get personalized advice.
+                  Get detailed coaching and personalized advice in the career coach chat.
                 </p>
               </CardContent>
             </Card>

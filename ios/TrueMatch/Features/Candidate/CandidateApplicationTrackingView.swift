@@ -134,6 +134,10 @@ struct PipelineStagesView: View {
                                 selectedStage = stage
                             }
                         }
+                        .accessibilityElement()
+                        .accessibilityLabel("\(stage.capitalized) stage")
+                        .accessibilityValue("\(applicationsByStage[stage]?.count ?? 0) applications")
+                        .accessibilityHint("Select to view \(stage) applications")
                     }
                 }
             }

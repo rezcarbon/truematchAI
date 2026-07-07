@@ -26,7 +26,7 @@ final class AssessmentResultsViewModel: ObservableObject {
     @Published var viewedAt: Date?
 
     private let api = APIClient.shared
-    private let candidateId: String
+    let candidateId: String
 
     init(candidateId: String) {
         self.candidateId = candidateId
@@ -35,6 +35,8 @@ final class AssessmentResultsViewModel: ObservableObject {
     // MARK: - Loading
 
     func loadAssessment() async {
+        guard !isLoading else { return }
+
         isLoading = true
         defer { isLoading = false }
 
@@ -50,6 +52,8 @@ final class AssessmentResultsViewModel: ObservableObject {
             self.skillGaps = assessment.skillGaps.sorted { $0.confidenceScore > $1.confidenceScore }
             self.learningPaths = assessment.learningPaths.sorted { $0.estimatedHours }
             self.viewedAt = Date()
+
+            TrueMatchLogger.log(.info, "Assessment: loaded successfully with \(assessment.scores.count) scores")
         } catch {
             TrueMatchLogger.log(.error, "Assessment: load failed: \(error)")
             errorMessage = error.localizedDescription
@@ -68,12 +72,12 @@ final class AssessmentResultsViewModel: ObservableObject {
             case "capability":
                 self.capabilityScore = score.score
             default:
-                break
+                TrueMatchLogger.log(.warning, "Assessment: unknown score type \(score.type)")
             }
         }
     }
 
-    private func computeDeltas() {
+    func computeDeltas() {
         // Delta = Capability - Traditional
         let capabilityVsTraditional = capabilityScore - traditionalScore
         deltas["capability_vs_traditional"] = capabilityVsTraditional
@@ -92,5 +96,15 @@ final class AssessmentResultsViewModel: ObservableObject {
     func didTapBrowseJobs() {
         TrueMatchLogger.log(.info, "Assessment: browse jobs tapped")
         // Navigation is handled by parent view
+    }
+
+    // MARK: - Error Handling
+
+    func clearError() {
+        errorMessage = nil
+    }
+
+    func retry() async {
+        await loadAssessment()
     }
 }
