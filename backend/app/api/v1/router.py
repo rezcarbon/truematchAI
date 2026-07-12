@@ -27,7 +27,7 @@ from app.api.v1 import (
     files,
     governance_reviews,
     jd_simulation,
-    job_search,
+    # job_search,  # Temporarily disabled due to schema import issues
     metrics,
     notifications,
     notifications_api,
@@ -94,6 +94,6 @@ api_router.include_router(compliance.router)
 api_router.include_router(realtime_progress_api.router)
 # Candidate features: Resume versioning, Job search, Applications, Career coaching
 api_router.include_router(resume_versioning.router)
-api_router.include_router(job_search.router)
+# api_router.include_router(job_search.router)  # Temporarily disabled due to schema import issues
 api_router.include_router(applications.router)
 api_router.include_router(career_coach.router)
