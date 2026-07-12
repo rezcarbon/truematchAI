@@ -8,7 +8,6 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.clock import utcnow
 from app.models.resume import Resume
 from app.models.resume_version import ChangeType, ResumeVersion
 from app.services.resume_versioning_service import ContentDiff, ResumVersioningService

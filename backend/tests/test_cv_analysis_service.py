@@ -10,7 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.cv_analysis import (
     CVAnalysisRequest,
-    CVAnalysisResult,
     CVAnalysisStatus,
     SeniorityLevel,
 )

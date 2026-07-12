@@ -82,14 +82,12 @@ export function SkillsRadar({
               <PolarGrid stroke="hsl(var(--muted-foreground))" opacity={0.2} />
               <PolarAngleAxis
                 dataKey="skill"
-                tick={{ fontSize: 12 }}
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
               />
               <PolarRadiusAxis
                 angle={90}
                 domain={[0, 100]}
-                tick={{ fontSize: 12 }}
-                tick={{ fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))' }}
               />
               <Radar
                 name="Your Level"

@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 import json
-import uuid
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
 import pytest
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.engines.client import LLMError
 from app.services.jd_optimization_service import JDDimension, JDOptimizationService

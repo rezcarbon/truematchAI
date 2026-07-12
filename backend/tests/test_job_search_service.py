@@ -1,7 +1,6 @@
 """Tests for job search service."""
 import pytest
 import uuid
-from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,7 +8,6 @@ from app.services.job_search_service import JobSearchService, JobWithMatch
 from app.models.position import Position, PositionStatus
 from app.models.resume import Resume, ResumeStatus
 from app.models.user import User
-from app.core.clock import utcnow
 
 
 class TestJobSearchService:
@@ -269,7 +267,7 @@ class TestJobSearchService:
 
         # Test role keyword filter
         filters = {"role_keywords": ["python"]}
-        filtered_query = service._apply_filters(query, filters)
+        _ = service._apply_filters(query, filters)
         # Just verify it doesn't error
 
     def test_extract_preferences_from_saved(self, service: JobSearchService):

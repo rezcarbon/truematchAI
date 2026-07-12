@@ -5,7 +5,6 @@ from app.engines.matching.matcher import (
     EnhancedMatcher,
     MatchType,
     Skill,
-    MatchResult,
 )
 
 
