@@ -27,7 +27,15 @@ async def get_agent_for_user(
     if user_role == "admin":
         return AdminAgent()
     elif user_role == "recruiter":
-        return RecruiterAgent()
+        # ✅ Route recruiters to M Agent (Layer 1 + Layer 2 integration)
+        # M Agent provides:
+        # - Intent classification (6 categories)
+        # - Agentic loop with tool-result feedback
+        # - Integrity analysis for candidates
+        # - Governance gate integration
+        # - Multi-turn context awareness
+        from app.agents.m_agent_wrapper import MAgentRecruiterWrapper
+        return MAgentRecruiterWrapper()
     elif user_role == "candidate":
         return CandidateAgent()
     else:
