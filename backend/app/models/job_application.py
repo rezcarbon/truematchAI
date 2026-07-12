@@ -118,12 +118,14 @@ class JobApplication(Base, TimestampMixin):
     user: Mapped[list] = relationship("User", lazy="select", foreign_keys=[user_id])
     position: Mapped[list] = relationship("Position", lazy="select", foreign_keys=[position_id])
     resume: Mapped[list] = relationship("Resume", lazy="select", foreign_keys=[resume_id])
-    timeline_events: Mapped[list[ApplicationTimeline]] = relationship(
-        "ApplicationTimeline",
-        back_populates="application",
-        cascade="all, delete-orphan",
-        lazy="select",
-    )
+    # Note: ApplicationTimeline references 'applications' table, not 'job_applications'
+    # Relationship commented out to avoid foreign key mismatch
+    # timeline_events: Mapped[list[ApplicationTimeline]] = relationship(
+    #     "ApplicationTimeline",
+    #     back_populates="application",
+    #     cascade="all, delete-orphan",
+    #     lazy="select",
+    # )
 
     __table_args__ = (
         Index("ix_job_applications_user_id", "user_id"),
@@ -194,48 +196,41 @@ class JobApplication(Base, TimestampMixin):
         session.commit()
         return event
 
-    def add_event(
-        self,
-        session,
-        event_type: ApplicationEventType,
-        event_data: Optional[dict] = None,
-        description: Optional[str] = None,
-    ) -> ApplicationTimeline:
-        """
-        Add an event to the application timeline.
+    # def add_event(
+    #     self,
+    #     session,
+    #     event_type: ApplicationEventType,
+    #     event_data: Optional[dict] = None,
+    #     description: Optional[str] = None,
+    # ):
+    #     """
+    #     Add an event to the application timeline.
+    #
+    #     Creates a new ApplicationTimeline record for any event that occurs
+    #     during the application lifecycle.
+    #
+    #     Args:
+    #         session: SQLAlchemy session
+    #         event_type: Type of event
+    #         event_data: Optional structured data about the event
+    #         description: Optional human-readable description
+    #
+    #     Returns:
+    #         ApplicationTimeline event created
+    #
+    #     Example:
+    #         >>> event = app.add_event(
+    #         ...     session,
+    #         ...     ApplicationEventType.interview_scheduled,
+    #         ...     event_data={"date": "2025-08-15", "time": "14:00"},
+    #         ...     description="Phone screen with Sarah"
+    #         ... )
+    #     """
+    #     # Note: ApplicationTimeline references different table structure
+    #     # Disabled to avoid schema conflicts in local development
+    #     pass
 
-        Creates a new ApplicationTimeline record for any event that occurs
-        during the application lifecycle.
-
-        Args:
-            session: SQLAlchemy session
-            event_type: Type of event
-            event_data: Optional structured data about the event
-            description: Optional human-readable description
-
-        Returns:
-            ApplicationTimeline event created
-
-        Example:
-            >>> event = app.add_event(
-            ...     session,
-            ...     ApplicationEventType.interview_scheduled,
-            ...     event_data={"date": "2025-08-15", "time": "14:00"},
-            ...     description="Phone screen with Sarah"
-            ... )
-        """
-        event = ApplicationTimeline(
-            application_id=self.id,
-            event_type=event_type,
-            event_data=event_data,
-            description=description,
-        )
-
-        session.add(event)
-        session.commit()
-        return event
-
-    def get_timeline(self, session, limit: Optional[int] = None) -> list[ApplicationTimeline]:
+    def get_timeline(self, session, limit: Optional[int] = None) -> list:
         """
         Retrieve the timeline of events for this application.
 
