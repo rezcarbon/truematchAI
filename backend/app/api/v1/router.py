@@ -7,8 +7,10 @@ from app.api.v1 import (
     admin_console,
     agent_plans,
     agents,
+    analysis_evolution,
     applications,
     assessments,
+    assessment_designs,
     ats,
     auth,
     billing,
@@ -36,6 +38,7 @@ from app.api.v1 import (
     realtime_progress_api,
     recruiter_metrics,
     resume_versioning,
+    screening,
     training,
     training_data,
     uploads,
@@ -47,6 +50,8 @@ from app.api.v1.admin import autonomous
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
 api_router.include_router(assessments.router, prefix="/assessments", tags=["assessments"])
+api_router.include_router(assessment_designs.router, tags=["assessment_designs"])  # Phase 2: Assessment designer
+api_router.include_router(analysis_evolution.router, tags=["analysis_evolution"])  # Phase 3-5: Analysis, Matching, Evolution
 api_router.include_router(positions.router, prefix="/positions", tags=["positions"])
 api_router.include_router(decisions.router, prefix="/decisions", tags=["decisions"])
 api_router.include_router(profile.router, prefix="/profile", tags=["profile"])
@@ -57,6 +62,7 @@ api_router.include_router(ats.router, prefix="/ats", tags=["ats"])
 api_router.include_router(bulk_actions.router, prefix="/ats")
 api_router.include_router(recruiter_metrics.router, prefix="/ats")
 api_router.include_router(dei_analytics.router, prefix="/ats")
+api_router.include_router(screening.router, tags=["screening"])  # Phase 1: Screening agent
 # NOTE: admin_console.py was previously named admin.py, which the app/api/v1/admin/
 # PACKAGE silently shadowed — its endpoints (audit, compliance report, governance
 # config, analytics) were never mounted, and the autonomous router got mounted

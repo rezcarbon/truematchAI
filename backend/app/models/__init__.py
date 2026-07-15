@@ -74,6 +74,13 @@ from app.models.transition_analysis import (
     TransitionOutcome,
     TransitionStatus,
 )
+from app.models.screening import (
+    ScreeningBatch,
+    ScreeningResult,
+    ScreeningRecommendation,
+    ScreeningBatchStatus,
+    RecruiterDecision,
+)
 
 __all__ = [
     "TransitionAnalysis",
@@ -160,4 +167,9 @@ __all__ = [
     "ReferralCode",
     "ReferralRedemption",
     "SharedResult",
+    "ScreeningBatch",
+    "ScreeningResult",
+    "ScreeningRecommendation",
+    "ScreeningBatchStatus",
+    "RecruiterDecision",
 ]

@@ -9,7 +9,7 @@ from sqlalchemy import Enum as SAEnum
 from sqlalchemy import ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
 from app.models._mixins import TimestampMixin, uuid_pk
@@ -132,6 +132,9 @@ class Assessment(Base, TimestampMixin):
     human_review_required: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     article_14_compliant: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     review_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    # Phase 3: Analysis result relationship
+    analysis_result = relationship("AnalysisResult", back_populates="assessment", uselist=False)
 
     __table_args__ = (
         Index("ix_assessments_user_id", "user_id"),
