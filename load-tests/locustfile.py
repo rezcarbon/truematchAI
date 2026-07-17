@@ -28,8 +28,8 @@ logger = logging.getLogger(__name__)
 # ===== FIXTURES & DEFAULTS =====
 
 # Test data for realistic scenarios
-TEST_EMAILS = [f"recruiter{i}@truematch.ai" for i in range(1, 101)]
-TEST_CANDIDATES = [f"candidate{i}@truematch.ai" for i in range(1, 1001)]
+TEST_EMAILS = [f"recruiter{i}@truematch.digital" for i in range(1, 101)]
+TEST_CANDIDATES = [f"candidate{i}@truematch.digital" for i in range(1, 1001)]
 TEST_POSITIONS = [
     "Senior Software Engineer",
     "Product Manager",

@@ -8,7 +8,7 @@ metadata:
 spec:
   acme:
     server: https://acme-v02.api.letsencrypt.org/directory
-    email: engineering@truematch.ai
+    email: engineering@truematch.digital
     privateKeySecretRef:
       name: letsencrypt-prod
     solvers:
@@ -28,10 +28,10 @@ spec:
   secretName: truematch-tls
   duration: 2160h # 90d
   renewBefore: 360h # 15d
-  commonName: api.truematch.ai
+  commonName: api.truematch.digital
   dnsNames:
-  - api.truematch.ai
-  - "*.truematch.ai"
+  - api.truematch.digital
+  - "*.truematch.digital"
   issuerRef:
     name: letsencrypt-prod
     kind: Issuer
@@ -55,7 +55,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-send-timeout: "120"
     nginx.ingress.kubernetes.io/proxy-read-timeout: "120"
     nginx.ingress.kubernetes.io/enable-cors: "true"
-    nginx.ingress.kubernetes.io/cors-allow-origin: "https://truematch.ai,https://www.truematch.ai"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "https://truematch.digital,https://www.truematch.digital"
     nginx.ingress.kubernetes.io/cors-allow-credentials: "true"
     nginx.ingress.kubernetes.io/enable-modsecurity: "true"
     nginx.ingress.kubernetes.io/enable-owasp-core-rules: "true"
@@ -68,10 +68,10 @@ spec:
   ingressClassName: nginx
   tls:
   - hosts:
-    - api.truematch.ai
+    - api.truematch.digital
     secretName: truematch-tls
   rules:
-  - host: api.truematch.ai
+  - host: api.truematch.digital
     http:
       paths:
       - path: /

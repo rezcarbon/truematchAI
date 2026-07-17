@@ -73,6 +73,46 @@ class Settings(BaseSettings):
     def minimax_configured(self) -> bool:
         return self.llm_fallback_enabled and bool(self.minimax_api_key.strip())
 
+    # --- Google Cloud Vertex AI (Gemini 2.5, optional secondary routing) ----------
+    # Enables cost-optimized secondary workloads (trajectory, summarization) via
+    # Google's Gemini 2.5 model. When enabled + configured, "secondary" reasoning
+    # routes to Gemini instead of Haiku (or MiniMax). Reduces cost ~60% vs Claude
+    # while maintaining high quality for non-critical verdicts. Requires credentials:
+    # 1. GCP service account JSON (base64-encoded in GOOGLE_APPLICATION_CREDENTIALS env)
+    # 2. GCP project ID with Vertex AI enabled
+    # 3. Region (default: us-central1; supports any region with Vertex AI)
+    # Master switch: when false, Gemini is never used (all secondary → Haiku fallback).
+    gemini_enabled: bool = False
+    # GCP project ID where Vertex AI is enabled (e.g., "truematch-ai-prod")
+    gemini_project_id: str = ""
+    # GCP region hosting Vertex AI (e.g., "us-central1", "asia-southeast1")
+    gemini_region: str = "us-central1"
+    # Model selection for primary vs secondary work.
+    # Primary: "gemini-2.5-pro" (reasoning-heavy, capability verdicts).
+    # Secondary: "gemini-2.5-flash" (fast, cost-optimized, 60% cheaper than pro).
+    gemini_primary_model: str = "gemini-2.5-pro"
+    gemini_secondary_model: str = "gemini-2.5-flash"
+    # Timeout for Gemini API calls (same budget as Claude to keep parity).
+    gemini_timeout_seconds: float = 120.0
+    # Fallback chain priority when Claude fails:
+    # 1. Try primary (Claude Sonnet) → 2. Fallback to Gemini (if configured) →
+    # 3. MiniMax (if configured) → 4. Deterministic mock.
+    # When false, skips Gemini and goes straight to MiniMax/mock on Claude failure.
+    gemini_fallback_enabled: bool = True
+    # Route secondary reasoning to Gemini instead of Haiku (cost optimization).
+    # When true, "secondary" calls skip Haiku and go → Gemini 2.5 Flash.
+    # When false, secondary calls → Haiku as before (Gemini unused unless fallback).
+    gemini_route_secondary: bool = False
+
+    @property
+    def gemini_configured(self) -> bool:
+        """True when Gemini is enabled and GCP credentials are present."""
+        return (
+            self.gemini_enabled
+            and bool(self.gemini_project_id.strip())
+            and self.gemini_project_id != "placeholder"
+        )
+
     # High-assurance assessments: run the capability judgment 3x in parallel and
     # report median + spread (uncertainty as a signal). Triples capability cost.
     assessment_high_assurance: bool = False
@@ -175,7 +215,7 @@ class Settings(BaseSettings):
     # bounded DEV mode that returns a deterministic identity (no real NDI calls).
     singpass_issuer: str = ""  # OIDC discovery base, e.g. https://id.singpass.gov.sg
     singpass_client_id: str = ""
-    singpass_redirect_uri: str = "https://api.truematch.ai/v1/auth/singpass/callback"
+    singpass_redirect_uri: str = "https://api.truematch.digital/v1/auth/singpass/callback"
     singpass_scopes: str = "openid"
     # Paths to OUR private JWKs (JSON) used for token-endpoint client auth
     # (signing) and ID-token decryption. Provisioned via secrets manager; never
@@ -279,7 +319,7 @@ class Settings(BaseSettings):
         description="Email provider: 'smtp', 'sendgrid', or 'ses'"
     )
     EMAIL_FROM_ADDRESS: str = Field(
-        default="noreply@truematch.ai",
+        default="noreply@truematch.digital",
         description="Sender email address for notifications"
     )
 
@@ -323,7 +363,7 @@ class Settings(BaseSettings):
     smtp_port: int = 587  # TLS port (not 465 for SMTPS or 25 for plain)
     smtp_username: str = ""  # email account for sending
     smtp_password: str = ""  # SMTP password or app-specific password
-    smtp_from_email: str = "noreply@truematch.ai"
+    smtp_from_email: str = "noreply@truematch.digital"
     smtp_from_name: str = "TrueMatch"
     smtp_use_tls: bool = True
     # Email service provider (optional, for integrated APIs)

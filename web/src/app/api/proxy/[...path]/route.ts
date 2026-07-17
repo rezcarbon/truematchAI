@@ -9,7 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getToken } from "next-auth/jwt";
 
-const BACKEND = process.env.BACKEND_API_URL || "https://api.truematch.ai/v1";
+const BACKEND = process.env.BACKEND_API_URL || "https://api.truematch.digital/v1";
 const SERVICE_TOKEN = process.env.BACKEND_API_TOKEN;
 
 async function forward(req: NextRequest, segments: string[]) {

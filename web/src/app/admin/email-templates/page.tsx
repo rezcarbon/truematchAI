@@ -393,7 +393,7 @@ export default function EmailTemplatesPage() {
                 <p className="text-xs font-medium text-muted-foreground">
                   FROM:
                 </p>
-                <p className="text-sm">noreply@truematch.ai (TrueMatch)</p>
+                <p className="text-sm">noreply@truematch.digital (TrueMatch)</p>
               </div>
 
               <div>

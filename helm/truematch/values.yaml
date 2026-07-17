@@ -130,7 +130,7 @@ ingress:
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/rate-limit: "100"
   hosts:
-    - host: api.truematch.ai
+    - host: api.truematch.digital
       paths:
         - path: /
           pathType: Prefix

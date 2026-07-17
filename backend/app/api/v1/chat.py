@@ -234,8 +234,9 @@ async def chat(
     db.add(user_msg)
     await db.commit()
 
-    # Get appropriate agent for this user
-    agent = await get_agent_for_user(current_user.id, current_user.role, db)
+    # Get appropriate agent for this user (with custom config if available)
+    # TODO: Extract company_id from user.company_id or request context
+    agent = await get_agent_for_user(current_user.id, current_user.role, db, company_id=None)
 
     # Build candidate context for career coach mode
     candidate_context = None

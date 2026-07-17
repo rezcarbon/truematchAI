@@ -5,6 +5,8 @@ from fastapi import APIRouter
 
 from app.api.v1 import (
     admin_console,
+    agent_configs,
+    agent_configs_extended,
     agent_plans,
     agents,
     analysis_evolution,
@@ -78,6 +80,8 @@ api_router.include_router(chat.router)
 api_router.include_router(chat_streaming.router)  # SSE streaming for real-time progress
 api_router.include_router(chat_actions.router)  # Action confirmation and execution
 api_router.include_router(agent_plans.router)  # Durable agent-plan status
+api_router.include_router(agent_configs.router)  # Agent config management (CRUD, approval workflow)
+api_router.include_router(agent_configs_extended.router)  # Extended: export, batch, notifications
 api_router.include_router(connectors.router)  # External ATS connectors
 api_router.include_router(billing.router)  # Billing & payments (Stripe)
 # CV analysis and JD simulation

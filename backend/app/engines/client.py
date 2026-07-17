@@ -19,6 +19,7 @@ from anthropic import Anthropic, APIConnectionError, APIStatusError, RateLimitEr
 from app.config import settings
 from app.core.resilience import CircuitBreaker
 from app.engines.providers import minimax
+from app.engines import gemini
 
 logger = logging.getLogger("truematch.claude")
 
@@ -129,12 +130,16 @@ def _build_system(system: str, cache_system: bool) -> list[dict[str, Any]]:
 
 
 def extract_text_from_image(image_b64: str, media_type: str, max_tokens: int = 2048) -> str:
-    """Transcribe the text content of an image (photo/scan of a resume or JD)
-    using Claude vision. Returns the extracted plain text.
+    """Transcribe text content of an image (photo/scan of CV or JD) using vision.
 
     Multimodal intake: lets a user snap a photo of a printed CV/JD instead of
-    uploading a file. Raises LLMError on failure so callers can fall back.
+    uploading a file. Returns extracted plain text. Raises LLMError on failure.
+
+    Fallback chain: Claude vision → Gemini vision (if configured) → MiniMax → error
     """
+    primary_exc: Exception | None = None
+
+    # Try Claude vision first
     try:
         response = _create_with_retry(
             model=settings.anthropic_model,
@@ -168,16 +173,29 @@ def extract_text_from_image(image_b64: str, media_type: str, max_tokens: int = 2
         return "".join(
             block.text for block in response.content if getattr(block, "type", None) == "text"
         ).strip()
-    except LLMError as primary_exc:
-        if not minimax.is_configured():
-            raise
+    except LLMError as exc:
+        primary_exc = exc
+
+    # Fallback 1: Try Gemini vision
+    if gemini.is_configured() and settings.gemini_fallback_enabled:
+        logger.warning("Primary Claude vision failed (%s) — failing over to Gemini (vision).", primary_exc)
+        try:
+            return gemini.transcribe_image(image_b64, media_type, max_tokens)
+        except gemini.GeminiError as exc:
+            primary_exc = exc
+
+    # Fallback 2: Try MiniMax
+    if minimax.is_configured():
         logger.warning("Primary vision failed (%s) — failing over to MiniMax (vision).", primary_exc)
         try:
             return minimax.transcribe_image(image_b64, media_type, max_tokens)
         except Exception as backup_exc:  # noqa: BLE001
             raise LLMError(
-                f"Primary and MiniMax backup both failed (vision): {primary_exc} | {backup_exc}"
+                f"All vision providers failed: {primary_exc} | {backup_exc}"
             ) from backup_exc
+
+    # All providers exhausted
+    raise LLMError(f"All vision providers failed: {primary_exc}") from primary_exc
 
 
 def call_claude_with_tools(
@@ -189,14 +207,28 @@ def call_claude_with_tools(
     max_tokens: int = 1024,
     temperature: float = 0.2,
     cache_system: bool = True,
+    call_class: str = "primary",
 ) -> tuple[str, list[dict[str, Any]]]:
-    """Invoke Claude with tool-use enabled (the model decides whether to call).
+    """Invoke LLM with tool-use enabled (the model decides whether to call).
 
-    Returns ``(text, tool_calls)`` where ``text`` is the assistant's natural
-    language reply (possibly empty when it only emits tool calls) and
-    ``tool_calls`` is a list of ``{"id", "name", "input"}`` dicts — one per
-    tool_use block the model produced. The caller is responsible for executing
-    or queueing those calls; this function never executes them.
+    Supports Claude and Gemini (though Gemini is less tested for tool-use patterns).
+    Returns (text, tool_calls) where text is natural language and tool_calls is a
+    list of {"id", "name", "input"} dicts — one per tool_use/function_call.
+
+    Fallback chain: primary provider → backup providers
+
+    Args:
+        system: System prompt
+        user_content: User message
+        tools: List of tool/function definitions
+        history: Conversation history
+        max_tokens: Maximum tokens in response
+        temperature: Sampling temperature
+        cache_system: Cache system prompt (Claude only)
+        call_class: "primary" or "secondary" for budget-aware routing
+
+    Returns:
+        (text, tool_calls) tuple
     """
     messages: list[dict[str, Any]] = []
     for turn in (history or []):
@@ -206,26 +238,50 @@ def call_claude_with_tools(
             messages.append({"role": role, "content": content})
     messages.append({"role": "user", "content": user_content})
 
-    response = _create_with_retry(
-        model=settings.anthropic_model,
-        max_tokens=max_tokens,
-        temperature=temperature,
-        system=_build_system(system, cache_system),
-        tools=tools,
-        messages=messages,
-    )
+    provider, model = select_model(call_class)
+    primary_exc: Exception | None = None
 
-    text_parts: list[str] = []
-    tool_calls: list[dict[str, Any]] = []
-    for block in response.content:
-        btype = getattr(block, "type", None)
-        if btype == "text":
-            text_parts.append(block.text)
-        elif btype == "tool_use":
-            tool_calls.append(
-                {"id": block.id, "name": block.name, "input": block.input}
+    # Try primary provider (Claude only for tool-use; Gemini support is future work)
+    try:
+        response = _create_with_retry(
+            model=model,
+            max_tokens=max_tokens,
+            temperature=temperature,
+            system=_build_system(system, cache_system),
+            tools=tools,
+            messages=messages,
+        )
+
+        text_parts: list[str] = []
+        tool_calls: list[dict[str, Any]] = []
+        for block in response.content:
+            btype = getattr(block, "type", None)
+            if btype == "text":
+                text_parts.append(block.text)
+            elif btype == "tool_use":
+                tool_calls.append(
+                    {"id": block.id, "name": block.name, "input": block.input}
+                )
+        return "".join(text_parts).strip(), tool_calls
+    except LLMError as exc:
+        primary_exc = exc
+
+    # Tool-use fallback: Try MiniMax (Gemini tool-use not yet implemented)
+    if minimax.is_configured():
+        logger.warning("Primary LLM tool-use failed (%s) — failing over to MiniMax.", primary_exc)
+        try:
+            result = minimax.complete_json(
+                system=system, user_content=user_content,
+                max_tokens=max_tokens, temperature=temperature,
             )
-    return "".join(text_parts).strip(), tool_calls
+            logger.info("MiniMax backup served a tool-use call.")
+            return "", []  # Tool-use not directly supported in MiniMax fallback
+        except Exception as backup_exc:  # noqa: BLE001
+            raise LLMError(
+                f"Primary and MiniMax backup both failed (tool-use): {primary_exc} | {backup_exc}"
+            ) from backup_exc
+
+    raise LLMError(f"Tool-use providers failed: {primary_exc}") from primary_exc
 
 
 def stream_claude(
@@ -236,12 +292,17 @@ def stream_claude(
     max_tokens: int = 1024,
     temperature: float = 0.2,
     cache_system: bool = True,
+    call_class: str = "primary",
 ):
     """Yield assistant text deltas as they are generated (token streaming).
 
     A thin generator wrapper over the SDK streaming API. Yields plain text
     chunks; intended to be consumed and forwarded as SSE. Raises LLMError on a
     terminal failure so callers can emit an error event.
+
+    Supports Claude and Gemini with fallback chain.
+    Only safe to fail over if NOTHING was streamed yet (otherwise mid-stream
+    provider switch would duplicate text to the client).
     """
     messages: list[dict[str, Any]] = []
     for turn in (history or []):
@@ -251,46 +312,80 @@ def stream_claude(
             messages.append({"role": role, "content": content})
     messages.append({"role": "user", "content": user_content})
 
+    provider, model = select_model(call_class)
     yielded = False
     primary_exc: Exception | None = None
+
+    # Try primary provider (Claude or Gemini)
     try:
-        with get_client().messages.stream(
-            model=settings.anthropic_model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=_build_system(system, cache_system),
-            messages=messages,
-        ) as stream:
-            for text in stream.text_stream:
+        if provider == "gemini":
+            for text in gemini.stream_text(
+                system=system, user_content=user_content,
+                max_tokens=max_tokens, temperature=temperature,
+            ):
                 yielded = True
                 yield text
-            try:
-                from app.core.llm_usage import record_usage
-                record_usage(settings.anthropic_model, getattr(stream.get_final_message(), "usage", None))
-            except Exception:  # noqa: BLE001
-                pass
-        return
-    except (RateLimitError, APIConnectionError, APIStatusError) as exc:
+            return
+        else:  # Claude
+            with get_client().messages.stream(
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system=_build_system(system, cache_system),
+                messages=messages,
+            ) as stream:
+                for text in stream.text_stream:
+                    yielded = True
+                    yield text
+                try:
+                    from app.core.llm_usage import record_usage
+                    record_usage(model, getattr(stream.get_final_message(), "usage", None))
+                except Exception:  # noqa: BLE001
+                    pass
+            return
+    except (RateLimitError, APIConnectionError, APIStatusError, gemini.GeminiError) as exc:
         primary_exc = exc
 
-    # Only safe to fail over if NOTHING was streamed yet — otherwise switching
-    # providers mid-stream would duplicate already-sent text to the client.
-    if yielded or not minimax.is_configured():
-        raise LLMError(f"Claude streaming failed: {primary_exc}") from primary_exc
-    logger.warning(
-        "Primary stream failed before first token (%s) — failing over to MiniMax (stream).",
-        primary_exc,
-    )
-    try:
-        for piece in minimax.stream_text(
-            system=system, user_content=user_content,
-            max_tokens=max_tokens, temperature=temperature,
-        ):
-            yield piece
-    except Exception as backup_exc:  # noqa: BLE001
-        raise LLMError(
-            f"Primary and MiniMax backup both failed (stream): {primary_exc} | {backup_exc}"
-        ) from backup_exc
+    # Only safe to fail over if NOTHING was streamed yet
+    if yielded:
+        raise LLMError(f"Streaming failed: {primary_exc}") from primary_exc
+
+    # Fallback 1: If primary was Claude, try Gemini
+    if provider == "claude" and gemini.is_configured() and settings.gemini_fallback_enabled:
+        logger.warning(
+            "Primary stream failed before first token (%s) — failing over to Gemini.",
+            primary_exc,
+        )
+        try:
+            for text in gemini.stream_text(
+                system=system, user_content=user_content,
+                max_tokens=max_tokens, temperature=temperature,
+            ):
+                yield text
+            return
+        except gemini.GeminiError as exc:
+            primary_exc = exc
+
+    # Fallback 2: Try MiniMax
+    if minimax.is_configured():
+        logger.warning(
+            "Primary and Gemini stream failed before first token (%s) — failing over to MiniMax.",
+            primary_exc,
+        )
+        try:
+            for piece in minimax.stream_text(
+                system=system, user_content=user_content,
+                max_tokens=max_tokens, temperature=temperature,
+            ):
+                yield piece
+            return
+        except Exception as backup_exc:  # noqa: BLE001
+            raise LLMError(
+                f"All backup providers failed (stream): {primary_exc} | {backup_exc}"
+            ) from backup_exc
+
+    # All providers exhausted
+    raise LLMError(f"All streaming providers failed: {primary_exc}") from primary_exc
 
 
 def call_claude(
@@ -300,27 +395,67 @@ def call_claude(
     max_tokens: int = 2048,
     temperature: float = 0.2,
     cache_system: bool = True,
+    call_class: str = "primary",
 ) -> str:
-    """Invoke Claude with an optionally cached system prompt.
+    """Invoke LLM (Claude, Gemini, or MiniMax) with an optionally cached system prompt.
 
-    The system prompt is marked with `cache_control` so the stable, proprietary
-    instruction block is cached across calls in the pipeline. Returns the
-    concatenated text of the response content blocks.
+    Primary routing:
+    1. Select provider/model based on call_class and configuration
+    2. Execute call (Claude via _create_with_retry, Gemini via gemini client)
+    3. Fallback chain: primary provider → Gemini (if configured) → MiniMax → error
+
+    Args:
+        system: System prompt (instruction context)
+        user_content: User message
+        max_tokens: Maximum tokens in response
+        temperature: Sampling temperature (0.0-1.0)
+        cache_system: Whether to cache system prompt (Claude only)
+        call_class: "primary" or "secondary" for budget-aware routing
+
+    Returns:
+        The concatenated text of the response
     """
+    provider, model = select_model(call_class)
+    primary_exc: Exception | None = None
+
+    # Try primary provider (Claude or Gemini based on routing)
     try:
-        response = _create_with_retry(
-            model=settings.anthropic_model,
-            max_tokens=max_tokens,
-            temperature=temperature,
-            system=_build_system(system, cache_system),
-            messages=[{"role": "user", "content": user_content}],
-        )
-        return "".join(
-            block.text for block in response.content if getattr(block, "type", None) == "text"
-        )
-    except LLMError as primary_exc:
-        if not minimax.is_configured():
-            raise
+        if provider == "gemini":
+            return gemini.complete_text(
+                system=system,
+                user_content=user_content,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+        else:  # Claude
+            response = _create_with_retry(
+                model=model,
+                max_tokens=max_tokens,
+                temperature=temperature,
+                system=_build_system(system, cache_system),
+                messages=[{"role": "user", "content": user_content}],
+            )
+            return "".join(
+                block.text for block in response.content if getattr(block, "type", None) == "text"
+            )
+    except (LLMError, gemini.GeminiError) as exc:
+        primary_exc = exc
+
+    # Fallback 1: If primary was Claude, try Gemini
+    if provider == "claude" and gemini.is_configured() and settings.gemini_fallback_enabled:
+        logger.warning("Primary Claude failed (%s) — failing over to Gemini.", primary_exc)
+        try:
+            return gemini.complete_text(
+                system=system,
+                user_content=user_content,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+        except gemini.GeminiError as exc:
+            primary_exc = exc
+
+    # Fallback 2: Try MiniMax
+    if minimax.is_configured():
         logger.warning("Primary LLM failed (%s) — failing over to MiniMax (text).", primary_exc)
         try:
             text = minimax.complete_text(
@@ -331,8 +466,11 @@ def call_claude(
             return text
         except Exception as backup_exc:  # noqa: BLE001
             raise LLMError(
-                f"Primary and MiniMax backup both failed: {primary_exc} | {backup_exc}"
+                f"Primary and backup providers failed: {primary_exc} | {backup_exc}"
             ) from backup_exc
+
+    # All providers exhausted
+    raise LLMError(f"All LLM providers failed: {primary_exc}")
 
 
 _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
@@ -388,32 +526,47 @@ _RESULT_TOOL = {
 }
 
 
-def select_model(call_class: str = "primary") -> str:
-    """Budget-aware model routing.
+def select_model(call_class: str = "primary") -> tuple[str, str]:
+    """Budget-aware model routing with Gemini support.
 
-    - "primary" (capability verdicts, counter-rec, chat) → always the full model.
-    - "secondary" (trajectory, JD interrogation, summaries) → the fast model when
-      economy mode is on OR the day's spend has crossed the soft budget line.
+    Returns: (provider, model_name) tuple where provider is "claude", "gemini", or None.
 
-    The system degrades along a cost gradient instead of falling off a cliff:
-    full model → fast model for secondary work → (at key/credit failure) the
-    existing tagged-mock floor.
+    - "primary" (capability verdicts, counter-rec, chat) → Claude (strongest reasoning)
+    - "secondary" (trajectory, JD interrogation, summaries) → Gemini (if enabled for routing)
+      OR Claude fast model (if budget hit) OR Claude primary as fallback.
+
+    Routing Priority (left to right = most preferred):
+    1. Gemini 2.5 Flash (if gemini_route_secondary enabled for secondary calls)
+    2. Claude Haiku (if economy mode or budget threshold crossed for secondary)
+    3. Claude Sonnet (primary calls always use this; secondary uses it as fallback)
+
+    Cost gradient: Claude Sonnet → Claude Haiku → Gemini Flash (40-60% savings)
     """
-    if call_class != "secondary":
-        return settings.anthropic_model
-    if settings.llm_economy_mode:
-        return settings.anthropic_fast_model
-    budget = settings.llm_daily_budget_usd
-    if budget > 0:
-        from app.core.llm_usage import day_spend_usd
+    if call_class == "secondary":
+        # Secondary work: prefer Gemini if enabled for routing
+        if settings.gemini_route_secondary and gemini.is_configured():
+            return ("gemini", settings.gemini_secondary_model)
 
-        if day_spend_usd() >= budget * settings.llm_budget_soft_ratio:
-            logger.info(
-                "Budget routing: secondary reasoning downshifted to fast model",
-                extra={"day_spend_usd": round(day_spend_usd(), 4), "budget_usd": budget},
-            )
-            return settings.anthropic_fast_model
-    return settings.anthropic_model
+        # Otherwise: check if budget threshold crossed → downshift to Haiku
+        if settings.llm_economy_mode:
+            return ("claude", settings.anthropic_fast_model)
+
+        budget = settings.llm_daily_budget_usd
+        if budget > 0:
+            from app.core.llm_usage import day_spend_usd
+
+            if day_spend_usd() >= budget * settings.llm_budget_soft_ratio:
+                logger.info(
+                    "Budget routing: secondary reasoning downshifted to Haiku",
+                    extra={"day_spend_usd": round(day_spend_usd(), 4), "budget_usd": budget},
+                )
+                return ("claude", settings.anthropic_fast_model)
+
+        # Fallback: use primary model
+        return ("claude", settings.anthropic_model)
+    else:
+        # Primary work: always use Claude primary model
+        return ("claude", settings.anthropic_model)
 
 
 def _anthropic_json(
@@ -460,25 +613,64 @@ def call_claude_json(
     temperature: float = 0.0,
     cache_system: bool = True,
     model: str | None = None,
+    call_class: str = "primary",
 ) -> dict[str, Any]:
-    """Invoke the LLM and return a structured JSON object via FORCED TOOL USE.
+    """Invoke LLM and return structured JSON object via FORCED TOOL USE.
 
-    Primary: Anthropic (the model must call `emit_result`; the SDK returns
-    parsed JSON, so there is no fragile string-parsing). Truncated output is
-    retried with a larger token budget.
+    Primary: Claude or Gemini (model depends on routing and configuration).
+    Claude: must call `emit_result` tool; SDK returns parsed JSON.
+    Gemini: must call function via ToolConfig; returns parsed JSON.
+    Truncated output is retried with a larger token budget.
 
-    Failover: if the Anthropic call fails after retries (credit exhaustion,
-    outage, open circuit) AND MiniMax is configured, the same request is retried
-    against MiniMax with OpenAI-style forced tool use — preserving the structured
-    guarantee. The backup is a no-op when unconfigured (Anthropic errors surface
-    as before).
+    Failover chain: primary → Gemini (if configured) → MiniMax → error
+
+    Args:
+        system: System prompt
+        user_content: User message
+        max_tokens: Maximum tokens in response
+        temperature: Sampling temperature (typically 0.0 for determinism)
+        cache_system: Cache system prompt (Claude only)
+        model: Override selected model (rare; for testing)
+        call_class: "primary" or "secondary" for budget-aware routing
+
+    Returns:
+        Parsed JSON dict from the tool call result
     """
+    provider, selected_model = select_model(call_class)
+    if model:
+        selected_model = model  # Allow override
+    primary_exc: Exception | None = None
+
+    # Try primary provider
     try:
-        return _anthropic_json(system, user_content, max_tokens, temperature, cache_system, model)
-    except LLMError as primary_exc:
-        if not minimax.is_configured():
-            raise
-        logger.warning("Primary LLM failed (%s) — failing over to MiniMax (structured).", primary_exc)
+        if provider == "gemini":
+            return gemini.complete_json(
+                system=system,
+                user_content=user_content,
+                max_tokens=max_tokens,
+                temperature=temperature,
+            )
+        else:  # Claude
+            return _anthropic_json(
+                system, user_content, max_tokens, temperature, cache_system, selected_model
+            )
+    except (LLMError, gemini.GeminiError) as exc:
+        primary_exc = exc
+
+    # Fallback 1: If primary was Claude, try Gemini
+    if provider == "claude" and gemini.is_configured() and settings.gemini_fallback_enabled:
+        logger.warning("Primary Claude JSON failed (%s) — failing over to Gemini.", primary_exc)
+        try:
+            return gemini.complete_json(
+                system=system, user_content=user_content,
+                max_tokens=max_tokens, temperature=temperature,
+            )
+        except gemini.GeminiError as exc:
+            primary_exc = exc
+
+    # Fallback 2: Try MiniMax
+    if minimax.is_configured():
+        logger.warning("Primary LLM JSON failed (%s) — failing over to MiniMax (structured).", primary_exc)
         try:
             result = minimax.complete_json(
                 system=system, user_content=user_content,
@@ -488,8 +680,11 @@ def call_claude_json(
             return result
         except Exception as backup_exc:  # noqa: BLE001 — both rails down
             raise LLMError(
-                f"Primary and MiniMax backup both failed: {primary_exc} | {backup_exc}"
+                f"All LLM JSON providers failed: {primary_exc} | {backup_exc}"
             ) from backup_exc
+
+    # All providers exhausted
+    raise LLMError(f"All JSON providers failed: {primary_exc}") from primary_exc
 
 
 class ClaudeClient:

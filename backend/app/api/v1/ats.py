@@ -361,7 +361,7 @@ async def get_interview_ics(interview_id: str, user: CurrentUser, db: DBSession)
     end_dt = interview.scheduled_at + timedelta(minutes=60)
     end = end_dt.strftime("%Y%m%dT%H%M%SZ")
     location = interview.meeting_link or ""
-    uid = f"{interview.id}@truematch.ai"
+    uid = f"{interview.id}@truematch.digital"
 
     ics = "\r\n".join([
         "BEGIN:VCALENDAR",

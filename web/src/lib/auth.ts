@@ -9,7 +9,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 
 // Get BACKEND URL - read dynamically to ensure env vars are loaded
 function getBackendUrl(): string {
-  const backend = process.env.BACKEND_API_URL || "https://api.truematch.ai/v1";
+  const backend = process.env.BACKEND_API_URL || "https://api.truematch.digital/v1";
   return backend;
 }
 

@@ -63,6 +63,13 @@ from app.models.training_data import (
 )
 from app.models.device_token import DeviceToken
 from app.models.agent_plan import AgentPlan
+from app.models.agent_config import (
+    AgentConfig,
+    AgentConfigVersion,
+    AgentConfigAudit,
+    AgentConfigStatus,
+    AgentConfigAuditAction,
+)
 from app.models.user_memory import UserAgentMemory
 from app.models.role_cluster import RoleCluster
 from app.models.billing import Order, Entitlement, CreditLedger, Coupon, WebhookEvent
@@ -157,6 +164,11 @@ __all__ = [
     "TrainingLearningSession",
     "DeviceToken",
     "AgentPlan",
+    "AgentConfig",
+    "AgentConfigVersion",
+    "AgentConfigAudit",
+    "AgentConfigStatus",
+    "AgentConfigAuditAction",
     "UserAgentMemory",
     "RoleCluster",
     "Order",

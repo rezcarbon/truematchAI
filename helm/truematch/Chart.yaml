@@ -9,10 +9,10 @@ keywords:
   - recruitment
   - ai
   - machine-learning
-home: https://truematch.ai
+home: https://truematch.digital
 sources:
   - https://github.com/truematch/platform
 maintainers:
   - name: TrueMatch Engineering
-    email: engineering@truematch.ai
+    email: engineering@truematch.digital
 dependencies: []

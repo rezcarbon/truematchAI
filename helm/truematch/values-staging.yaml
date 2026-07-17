@@ -66,7 +66,7 @@ redis:
 ingress:
   enabled: true
   hosts:
-    - host: api-staging.truematch.ai
+    - host: api-staging.truematch.digital
       paths:
         - path: /
           pathType: Prefix

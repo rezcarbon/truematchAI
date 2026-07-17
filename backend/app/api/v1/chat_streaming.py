@@ -61,7 +61,7 @@ async def stream_chat_message(
     from app.agents.agent_tools import tools_for_role, tool_calls_to_actions
     from app.engines.client import _build_system, get_client, is_live
 
-    agent = await get_agent_for_user(user.id, user.role, db)
+    agent = await get_agent_for_user(user.id, user.role, db, company_id=None)
     system_prompt, user_context = await agent.prepare_turn(payload.message, user, db)
     message = payload.message
 

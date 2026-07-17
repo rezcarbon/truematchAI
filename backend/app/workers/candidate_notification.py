@@ -56,7 +56,7 @@ class CandidateNotificationWorker:
         company_name: str,
         assessment_url: str,
         recruiter_name: str = "Our team",
-        recruiter_email: str = "support@truematch.ai",
+        recruiter_email: str = "support@truematch.digital",
     ) -> bool:
         """
         Send notification when assessment starts.
@@ -146,7 +146,7 @@ class CandidateNotificationWorker:
         position_title: str,
         company_name: str,
         recruiter_name: str = "Our team",
-        recruiter_email: str = "support@truematch.ai",
+        recruiter_email: str = "support@truematch.digital",
         strengths: Optional[list[str]] = None,
     ) -> bool:
         """
@@ -238,7 +238,7 @@ class CandidateNotificationWorker:
         position_title: str,
         company_name: str,
         recruiter_name: str = "Our team",
-        recruiter_email: str = "support@truematch.ai",
+        recruiter_email: str = "support@truematch.digital",
         rejection_reason: str = "Thank you for your interest in this position.",
     ) -> bool:
         """

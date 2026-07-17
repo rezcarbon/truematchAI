@@ -903,7 +903,7 @@ class TestMultiUserConcurrent:
             for i in range(5):
                 user = User(
                     id=uuid.uuid4(),
-                    email=f"user_{i}_{uuid.uuid4()}@test.truematch.ai",
+                    email=f"user_{i}_{uuid.uuid4()}@test.truematch.digital",
                     password_hash="hashed",
                     role="recruiter",
                     created_at=datetime.now(timezone.utc),
@@ -997,7 +997,7 @@ class TestMultiUserConcurrent:
             # Create user
             user = User(
                 id=uuid.uuid4(),
-                email=f"race_test_{uuid.uuid4()}@test.truematch.ai",
+                email=f"race_test_{uuid.uuid4()}@test.truematch.digital",
                 password_hash="hashed",
                 role="recruiter",
                 created_at=datetime.now(timezone.utc),
