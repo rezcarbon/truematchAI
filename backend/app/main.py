@@ -188,12 +188,15 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 
 
 # Middleware order (outermost first): security headers -> request-id/logging -> rate limit -> CORS.
+# CORS is restricted in production to prevent CSRF attacks
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    expose_headers=["X-Request-ID"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestContextMiddleware)
