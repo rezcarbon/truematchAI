@@ -1,29 +1,44 @@
 """Celery application instance."""
 from __future__ import annotations
 
+import logging
 from celery import Celery
 
 from app.config import settings
+
+logger = logging.getLogger(__name__)
+
+# Define all task modules, but only include those that exist
+_TASK_MODULES = [
+    "app.workers.tasks",
+    "app.workers.retention",
+    "app.workers.agents.ingest_cv",
+    "app.workers.agents.ingest_jd",
+    "app.workers.agents.ingest_drive",
+    "app.workers.render_reports",
+    "app.workers.cv_analysis",
+    "app.workers.capability_translation",
+    "app.workers.transition_intelligence",
+    "app.workers.jd_simulation",
+    "app.workers.alerts",
+    "app.workers.dlq",
+    "app.workers.user_memory",
+]
+
+# Try to import each module; skip if it doesn't exist
+_INCLUDE = []
+for module in _TASK_MODULES:
+    try:
+        __import__(module)
+        _INCLUDE.append(module)
+    except ImportError as e:
+        logger.warning(f"Task module not found: {module} - {e}")
 
 celery_app = Celery(
     "truematch",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=[
-        "app.workers.tasks",
-        "app.workers.retention",
-        "app.workers.agents.ingest_cv",
-        "app.workers.agents.ingest_jd",
-        "app.workers.agents.ingest_drive",
-        "app.workers.render_reports",
-        "app.workers.cv_analysis",
-        "app.workers.capability_translation",
-        "app.workers.transition_intelligence",
-        "app.workers.jd_simulation",
-        "app.workers.alerts",
-        "app.workers.dlq",
-        "app.workers.user_memory",
-    ],
+    include=_INCLUDE,
 )
 
 celery_app.conf.update(
