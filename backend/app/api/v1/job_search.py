@@ -5,7 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.deps import CurrentUser, DBSession
 from app.schemas.job_search import (
@@ -50,7 +50,7 @@ async def create_job_search(
     # - Create search record in database
     # - Optionally trigger initial search
     # - Return search metadata
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -69,7 +69,7 @@ async def get_job_search(
     # - Verify ownership
     # - Return search criteria and stats
     # - Handle NotFoundError if not exists
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -111,7 +111,7 @@ async def update_job_search(
     # - Update fields
     # - Trigger new search if criteria changed
     # - Persist changes
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.delete(
@@ -130,7 +130,7 @@ async def delete_job_search(
     # - Verify ownership
     # - Archive or soft delete the search
     # - Clean up related saved jobs if needed
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -157,7 +157,7 @@ async def execute_job_search(
     # - Score matches against user profile
     # - Store results in cache/database
     # - Return paginated results
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -210,7 +210,7 @@ async def save_job(
     # - Add job to saved list
     # - Store notes if provided
     # - Return saved job details
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.post(
@@ -230,7 +230,7 @@ async def bulk_save_jobs(
     # - Add all to saved list
     # - Apply tag if provided
     # - Log action
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -270,7 +270,7 @@ async def unsave_job(
     # TODO: Implement unsave job
     # - Verify ownership
     # - Remove from saved list
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -295,7 +295,7 @@ async def get_search_stats(
     # - Aggregate results data
     # - Calculate statistics
     # - Return summary stats
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.post(
@@ -317,7 +317,7 @@ async def setup_search_alerts(
     # - Create alert configuration
     # - Set up notification schedule
     # - Validate notification channel
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -335,7 +335,7 @@ async def get_alert_settings(
     # TODO: Implement get alerts
     # - Verify ownership
     # - Return alert configuration
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.delete(
@@ -354,7 +354,7 @@ async def delete_search_alerts(
     # - Verify ownership
     # - Disable alerts
     # - Clear notification schedule
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -378,7 +378,7 @@ async def pause_job_search(
     # - Verify ownership
     # - Update status to paused
     # - Stop alert notifications
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.post(
@@ -398,7 +398,7 @@ async def resume_job_search(
     # - Update status to active
     # - Re-enable alerts
     # - Trigger new search
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────

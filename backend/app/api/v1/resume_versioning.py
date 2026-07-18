@@ -5,7 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.deps import CurrentUser, DBSession
 from app.schemas.resume_versioning import (
@@ -50,7 +50,7 @@ async def create_resume_version(
     # - Create new version in database
     # - Set is_default flag if requested
     # - Log the action
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -69,7 +69,7 @@ async def get_resume_version(
     # - Verify ownership (belongs to user)
     # - Return full content and metadata
     # - Handle NotFoundError if not exists
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -109,7 +109,7 @@ async def update_resume_version(
     # - Verify ownership
     # - Update fields (name, description, status, default flag)
     # - Persist changes
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.delete(
@@ -128,7 +128,7 @@ async def delete_resume_version(
     # - Verify ownership
     # - Set status to archived (soft delete)
     # - Handle if it's the default version
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -155,7 +155,7 @@ async def tailor_resume_for_job(
     # - Call AI service to tailor resume
     # - Return preview and recommended changes
     # - Optionally save as new version
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -182,7 +182,7 @@ async def optimize_resume_for_ats(
     # - Call AI/formatting service to optimize
     # - Format for common ATS systems
     # - Optionally save as new version
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -207,7 +207,7 @@ async def compare_resume_versions(
     # - Extract and compare sections
     # - Calculate similarity score
     # - Return structured differences
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.post(
@@ -227,7 +227,7 @@ async def download_resume_version(
     # - Generate file in requested format
     # - Set appropriate headers
     # - Return file stream
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -252,7 +252,7 @@ async def bulk_version_actions(
     # - Apply action to all versions
     # - Handle special cases (e.g., only one default)
     # - Log bulk action
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -275,7 +275,7 @@ async def get_version_history(
     # - Query audit trail for this version
     # - Return chronological list of changes
     # - Include who made changes (user/AI system)
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(

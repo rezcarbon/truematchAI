@@ -22,7 +22,11 @@ class Settings(BaseSettings):
     )
 
     # Database
-    database_url: str = "postgresql+asyncpg://truematch:password@localhost:5432/truematch"
+    database_url: str = Field(
+        default="",
+        env="DATABASE_URL",
+        description="PostgreSQL connection URL - required for production",
+    )
 
     # Redis / Celery
     redis_url: str = "redis://localhost:6379/0"
@@ -36,7 +40,11 @@ class Settings(BaseSettings):
         return self.redis_url
 
     # Anthropic
-    anthropic_api_key: str = "sk-ant-placeholder"
+    anthropic_api_key: str = Field(
+        default="",
+        env="ANTHROPIC_API_KEY",
+        description="Anthropic API key - required for production",
+    )
     anthropic_model: str = "claude-sonnet-4-6"
     # Cheaper/faster model used for SECONDARY reasoning (trajectory, JD
     # interrogation) when economy mode or the soft budget kicks in.

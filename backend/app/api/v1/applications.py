@@ -5,7 +5,7 @@ import logging
 import uuid
 from typing import Optional
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, HTTPException, Query, status
 
 from app.deps import CurrentUser, DBSession
 from app.schemas.applications import (
@@ -55,7 +55,7 @@ async def submit_application(
     # - Optionally apply directly via ATS integration
     # - Send confirmation notification
     # - Log the action
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -75,7 +75,7 @@ async def get_application(
     # - Return full application details
     # - Include cover letter and custom answers
     # - Handle NotFoundError if not exists
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -120,7 +120,7 @@ async def update_application(
     # - Update allowed fields (not submission data)
     # - Handle status transitions
     # - Persist changes
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.delete(
@@ -138,7 +138,7 @@ async def delete_application(
     # TODO: Implement delete application
     # - Verify ownership
     # - Soft delete (archive)
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -167,7 +167,7 @@ async def schedule_interview(
     # - Send calendar invite if requested
     # - Update application status
     # - Send notifications
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -185,7 +185,7 @@ async def get_application_interviews(
     # - Verify ownership
     # - Return chronological list of interviews
     # - Include scheduled and completed
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.post(
@@ -209,7 +209,7 @@ async def log_interview(
     # - Parse feedback
     # - Update application status if moving to next round
     # - Store interview notes and feedback
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.put(
@@ -230,7 +230,7 @@ async def update_interview(
     # - Verify ownership
     # - Update interview fields
     # - Send update notification if date changed
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.post(
@@ -275,7 +275,7 @@ async def get_application_stats(
     # - Calculate conversion rates
     # - Get timeline metrics
     # - Return aggregate stats
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -294,7 +294,7 @@ async def get_application_history(
     # - Verify ownership
     # - Query audit trail
     # - Return chronological status changes
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 @router.get(
@@ -314,7 +314,7 @@ async def get_suggested_follow_up(
     # - Check time since last interaction
     # - Generate appropriate suggestion
     # - Include template if applicable
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -360,7 +360,7 @@ async def analyze_rejection(
     # - Call AI service to analyze gaps
     # - Provide improvement suggestions
     # - Return structured analysis
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -387,7 +387,7 @@ async def withdraw_application(
     # - Update status to withdrawn
     # - Store withdrawal reason
     # - Send notification to company if applicable
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
@@ -412,7 +412,7 @@ async def bulk_application_actions(
     # - Apply action to each
     # - Handle status updates, tagging, etc.
     # - Log bulk action
-    pass
+    raise HTTPException(status_code=501, detail="Feature not yet implemented")
 
 
 # ─────────────────────────────────────────────────────────────────────────
