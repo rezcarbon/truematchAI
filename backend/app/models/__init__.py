@@ -88,6 +88,16 @@ from app.models.screening import (
     ScreeningBatchStatus,
     RecruiterDecision,
 )
+from app.models.career_coach import (
+    CareerCoaching,
+    CareerGoal,
+    PersonalizedCareerPlan,
+    SkillAssessment,
+    InterviewPrepSession,
+    CoachingSession,
+    CoachQuestion,
+    CoachingProgressReport,
+)
 
 __all__ = [
     "TransitionAnalysis",
@@ -184,4 +194,12 @@ __all__ = [
     "ScreeningRecommendation",
     "ScreeningBatchStatus",
     "RecruiterDecision",
+    "CareerCoaching",
+    "CareerGoal",
+    "PersonalizedCareerPlan",
+    "SkillAssessment",
+    "InterviewPrepSession",
+    "CoachingSession",
+    "CoachQuestion",
+    "CoachingProgressReport",
 ]

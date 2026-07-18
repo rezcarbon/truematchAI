@@ -21,7 +21,7 @@ from app.core.exceptions import (
     TrueMatchError,
     problem_detail_from_exception,
 )
-from app.core.logging import RequestContextMiddleware, configure_logging, get_request_id
+from app.core.logging import RequestContextMiddleware, SecurityHeadersMiddleware, configure_logging, get_request_id
 from app.core.observability import init_sentry, setup_metrics
 from app.core.ratelimit import RateLimitMiddleware
 
@@ -187,7 +187,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception) -> JSONR
 # ─ Middleware ────────────────────────────────────────────────────────────
 
 
-# Middleware order (outermost first): request-id/logging -> rate limit -> CORS.
+# Middleware order (outermost first): security headers -> request-id/logging -> rate limit -> CORS.
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.cors_origins,
@@ -197,6 +197,7 @@ app.add_middleware(
 )
 app.add_middleware(RateLimitMiddleware)
 app.add_middleware(RequestContextMiddleware)
+app.add_middleware(SecurityHeadersMiddleware)
 
 setup_metrics(app)
 
