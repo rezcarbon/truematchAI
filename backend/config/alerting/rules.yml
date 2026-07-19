@@ -1,0 +1,362 @@
+# TrueMatch AI - Alert Rules
+# Phase 3: Alerting & Incident Response
+#
+# Prometheus alert rules for production monitoring
+
+groups:
+  - name: api_alerts
+    interval: 30s
+    rules:
+      - alert: APIHighErrorRate
+        expr: |
+          (sum(rate(http_requests_total{job="api", status=~"5.."}[5m])) /
+           sum(rate(http_requests_total{job="api"}[5m]))) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          service: api
+          team: backend
+        annotations:
+          summary: "API error rate is high"
+          description: "Error rate is {{ $value | humanizePercentage }} on {{ $labels.instance }}"
+          runbook_url: "https://wiki.internal/runbooks/api-errors"
+
+      - alert: APILatencyHigh
+        expr: |
+          histogram_quantile(0.99,
+            rate(http_request_duration_seconds_bucket{job="api"}[5m])
+          ) > 2
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+          team: backend
+        annotations:
+          summary: "API latency is high"
+          description: "99th percentile latency is {{ $value }}s on {{ $labels.instance }}"
+
+      - alert: APIDownPods
+        expr: |
+          count(up{job="api", kubernetes_namespace="truematch-prod"} == 0) > 0
+        for: 2m
+        labels:
+          severity: critical
+          service: api
+          team: backend
+        annotations:
+          summary: "API pods are down"
+          description: "{{ $value }} API pod(s) are down"
+
+      - alert: APIHighMemoryUsage
+        expr: |
+          (container_memory_usage_bytes{pod=~"api-.*", namespace="truematch-prod"} /
+           container_spec_memory_limit_bytes{pod=~"api-.*", namespace="truematch-prod"}) > 0.9
+        for: 5m
+        labels:
+          severity: warning
+          service: api
+          team: backend
+        annotations:
+          summary: "API pod memory usage is high"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.pod }}"
+
+      - alert: APIHighCPUUsage
+        expr: |
+          (rate(container_cpu_usage_seconds_total{pod=~"api-.*", namespace="truematch-prod"}[1m]) /
+           container_spec_cpu_quota{pod=~"api-.*", namespace="truematch-prod"} * 100000000) > 0.8
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+          team: backend
+        annotations:
+          summary: "API pod CPU usage is high"
+          description: "CPU usage is {{ $value | humanizePercentage }} on {{ $labels.pod }}"
+
+      - alert: APIConnectionPoolExhausted
+        expr: |
+          pg_stat_activity_count{job="postgres"} >
+          (pg_settings_max_connections{job="postgres"} * 0.8)
+        for: 5m
+        labels:
+          severity: critical
+          service: api
+          team: backend
+        annotations:
+          summary: "Database connection pool is exhausted"
+          description: "Using {{ $value }} of {{ $labels.max_conn }} connections"
+
+  - name: worker_alerts
+    interval: 30s
+    rules:
+      - alert: WorkerHighQueueDepth
+        expr: |
+          celery_queue_length{job="worker"} > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: worker
+          team: backend
+        annotations:
+          summary: "Worker queue is backed up"
+          description: "Queue depth is {{ $value }} tasks on {{ $labels.queue }}"
+
+      - alert: WorkerHighFailureRate
+        expr: |
+          (sum(rate(celery_task_total{job="worker", status="failure"}[5m])) /
+           sum(rate(celery_task_total{job="worker"}[5m]))) > 0.1
+        for: 10m
+        labels:
+          severity: critical
+          service: worker
+          team: backend
+        annotations:
+          summary: "Worker task failure rate is high"
+          description: "Failure rate is {{ $value | humanizePercentage }}"
+
+      - alert: WorkerDownPods
+        expr: |
+          count(up{job="worker", kubernetes_namespace="truematch-prod"} == 0) > 0
+        for: 5m
+        labels:
+          severity: critical
+          service: worker
+          team: backend
+        annotations:
+          summary: "Worker pods are down"
+          description: "{{ $value }} worker pod(s) are down"
+
+      - alert: WorkerTaskTimeout
+        expr: |
+          rate(celery_task_timeout_total{job="worker"}[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          service: worker
+          team: backend
+        annotations:
+          summary: "Worker tasks are timing out"
+          description: "Task timeout rate is {{ $value }}/sec"
+
+      - alert: WorkerMemoryLeak
+        expr: |
+          deriv(container_memory_usage_bytes{pod=~"worker-.*", namespace="truematch-prod"}[1h]) > 1000000
+        for: 30m
+        labels:
+          severity: warning
+          service: worker
+          team: backend
+        annotations:
+          summary: "Potential memory leak in worker"
+          description: "Memory increasing by {{ $value | humanize }}B/sec on {{ $labels.pod }}"
+
+  - name: database_alerts
+    interval: 30s
+    rules:
+      - alert: DatabaseDown
+        expr: |
+          up{job="postgres"} == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: database
+          team: backend
+        annotations:
+          summary: "Database is down"
+          description: "PostgreSQL instance {{ $labels.instance }} is unreachable"
+
+      - alert: DatabaseHighConnections
+        expr: |
+          pg_stat_activity_count{job="postgres", state="active"} >
+          (pg_settings_max_connections{job="postgres"} * 0.9)
+        for: 5m
+        labels:
+          severity: critical
+          service: database
+          team: backend
+        annotations:
+          summary: "Database connection count is high"
+          description: "Using {{ $value }} of {{ $labels.max_conn }} connections"
+
+      - alert: DatabaseSlowQueries
+        expr: |
+          rate(pg_stat_statements_calls{job="postgres", query=~".*SELECT.*"}[5m]) > 0 and
+          pg_stat_statements_mean_time{job="postgres"} > 1000
+        for: 10m
+        labels:
+          severity: warning
+          service: database
+          team: backend
+        annotations:
+          summary: "Slow queries detected"
+          description: "Average query time is {{ $value }}ms"
+
+      - alert: DatabaseCacheHitLow
+        expr: |
+          (pg_stat_database_blks_hit{job="postgres", datname="truematch_prod"} /
+           (pg_stat_database_blks_hit{job="postgres", datname="truematch_prod"} +
+            pg_stat_database_blks_read{job="postgres", datname="truematch_prod"})) < 0.9
+        for: 15m
+        labels:
+          severity: warning
+          service: database
+          team: backend
+        annotations:
+          summary: "Database cache hit ratio is low"
+          description: "Cache hit ratio is {{ $value | humanizePercentage }}"
+
+      - alert: DatabaseDiskSpaceLow
+        expr: |
+          (node_filesystem_avail_bytes{mountpoint="/var/lib/postgresql"} /
+           node_filesystem_size_bytes{mountpoint="/var/lib/postgresql"}) < 0.1
+        for: 10m
+        labels:
+          severity: critical
+          service: database
+          team: backend
+        annotations:
+          summary: "Database disk space is low"
+          description: "Only {{ $value | humanizePercentage }} disk space remaining"
+
+      - alert: DatabaseReplicationLag
+        expr: |
+          pg_replication_lag{job="postgres"} > 10
+        for: 5m
+        labels:
+          severity: warning
+          service: database
+          team: backend
+        annotations:
+          summary: "Database replication lag is high"
+          description: "Replication lag is {{ $value }}s on {{ $labels.slot }}"
+
+  - name: infrastructure_alerts
+    interval: 30s
+    rules:
+      - alert: NodeCPUHigh
+        expr: |
+          (100 - (avg(irate(node_cpu_seconds_total{mode="idle"}[5m])) by (node) * 100)) > 85
+        for: 10m
+        labels:
+          severity: warning
+          service: infrastructure
+          team: platform
+        annotations:
+          summary: "Node CPU usage is high"
+          description: "CPU usage is {{ $value | humanize }}% on {{ $labels.node }}"
+
+      - alert: NodeMemoryHigh
+        expr: |
+          ((node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) /
+           node_memory_MemTotal_bytes) > 0.85
+        for: 10m
+        labels:
+          severity: warning
+          service: infrastructure
+          team: platform
+        annotations:
+          summary: "Node memory usage is high"
+          description: "Memory usage is {{ $value | humanizePercentage }} on {{ $labels.node }}"
+
+      - alert: NodeDiskSpaceLow
+        expr: |
+          ((node_filesystem_size_bytes - node_filesystem_avail_bytes) /
+           node_filesystem_size_bytes) > 0.85
+        for: 10m
+        labels:
+          severity: critical
+          service: infrastructure
+          team: platform
+        annotations:
+          summary: "Node disk space is low"
+          description: "Disk usage is {{ $value | humanizePercentage }} on {{ $labels.device }}"
+
+      - alert: NodeNotReady
+        expr: |
+          kube_node_status_condition{condition="Ready", status="true"} == 0
+        for: 5m
+        labels:
+          severity: critical
+          service: infrastructure
+          team: platform
+        annotations:
+          summary: "Kubernetes node is not ready"
+          description: "Node {{ $labels.node }} is not ready"
+
+      - alert: PodCrashLooping
+        expr: |
+          rate(kube_pod_container_status_restarts_total{namespace="truematch-prod"}[15m]) > 0.1
+        for: 15m
+        labels:
+          severity: warning
+          service: infrastructure
+          team: platform
+        annotations:
+          summary: "Pod is crash looping"
+          description: "Pod {{ $labels.pod }} in namespace {{ $labels.namespace }} is restarting frequently"
+
+  - name: custom_alerts
+    interval: 30s
+    rules:
+      - alert: MatchingEngineHighLatency
+        expr: |
+          histogram_quantile(0.95, rate(truematch_matching_engine_duration_seconds_bucket[5m])) > 5
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+          team: backend
+        annotations:
+          summary: "Matching engine latency is high"
+          description: "95th percentile latency is {{ $value }}s"
+
+      - alert: DataValidationErrors
+        expr: |
+          rate(truematch_validation_errors_total[5m]) > 0.1
+        for: 10m
+        labels:
+          severity: warning
+          service: api
+          team: backend
+        annotations:
+          summary: "High data validation error rate"
+          description: "Error rate is {{ $value }}/sec"
+
+      - alert: BatchProcessingFailed
+        expr: |
+          rate(truematch_batch_processing_failed_total[5m]) > 0.05
+        for: 10m
+        labels:
+          severity: warning
+          service: worker
+          team: backend
+        annotations:
+          summary: "Batch processing failures detected"
+          description: "Failure rate is {{ $value }}/sec"
+
+  - name: sentry_alerts
+    interval: 60s
+    rules:
+      - alert: SentryHighErrorCount
+        expr: |
+          increase(sentry_errors_total{environment="production"}[1h]) > 100
+        for: 10m
+        labels:
+          severity: warning
+          service: monitoring
+          team: backend
+        annotations:
+          summary: "Sentry error count is high"
+          description: "{{ $value }} errors in the last hour"
+
+      - alert: SentryNewErrorType
+        expr: |
+          sentry_error_rate{environment="production", is_new="true"} > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: monitoring
+          team: backend
+        annotations:
+          summary: "New error type detected"
+          description: "Error type: {{ $labels.error_type }}"

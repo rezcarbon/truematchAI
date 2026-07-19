@@ -1,0 +1,456 @@
+{
+  "dashboards": [
+    {
+      "title": "TrueMatch AI - System Overview",
+      "uid": "truematch-system-overview",
+      "tags": ["production", "system"],
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 1,
+          "title": "API Instances",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "count(up{job='api', kubernetes_namespace='truematch-prod'})",
+              "legendFormat": "Running"
+            }
+          ],
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0}
+        },
+        {
+          "id": 2,
+          "title": "Worker Instances",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "count(up{job='worker', kubernetes_namespace='truematch-prod'})",
+              "legendFormat": "Running"
+            }
+          ],
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0}
+        },
+        {
+          "id": 3,
+          "title": "Scheduler Instances",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "count(up{job='scheduler', kubernetes_namespace='truematch-prod'})",
+              "legendFormat": "Running"
+            }
+          ],
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0}
+        },
+        {
+          "id": 4,
+          "title": "Database Status",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "up{job='postgres'}",
+              "legendFormat": "Connected"
+            }
+          ],
+          "gridPos": {"h": 4, "w": 6, "x": 18, "y": 0}
+        },
+        {
+          "id": 5,
+          "title": "Request Rate",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(http_requests_total{job='api'}[1m])",
+              "legendFormat": "{{method}} {{path}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4}
+        },
+        {
+          "id": 6,
+          "title": "Request Latency (p99)",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job='api'}[5m]))",
+              "legendFormat": "{{method}} {{path}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4}
+        },
+        {
+          "id": 7,
+          "title": "Error Rate",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(http_requests_total{job='api', status=~'5..'}[1m])",
+              "legendFormat": "{{status}} {{path}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12}
+        },
+        {
+          "id": 8,
+          "title": "CPU Usage by Pod",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(container_cpu_usage_seconds_total{pod=~'api-.*|worker-.*|scheduler-.*', namespace='truematch-prod'}[1m])",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12}
+        }
+      ]
+    },
+    {
+      "title": "TrueMatch AI - API Performance",
+      "uid": "truematch-api-performance",
+      "tags": ["production", "api"],
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 1,
+          "title": "RPS by Endpoint",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{job='api'}[1m])) by (path)",
+              "legendFormat": "{{path}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+        },
+        {
+          "id": 2,
+          "title": "Latency Distribution",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job='api'}[5m]))",
+              "legendFormat": "p95"
+            },
+            {
+              "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{job='api'}[5m]))",
+              "legendFormat": "p99"
+            },
+            {
+              "expr": "histogram_quantile(0.999, rate(http_request_duration_seconds_bucket{job='api'}[5m]))",
+              "legendFormat": "p999"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+        },
+        {
+          "id": 3,
+          "title": "HTTP Status Codes",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{job='api'}[1m])) by (status)",
+              "legendFormat": "{{status}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+        },
+        {
+          "id": 4,
+          "title": "Active Connections",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "sum(http_connections_active{job='api'})",
+              "legendFormat": "Active"
+            }
+          ],
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 8}
+        },
+        {
+          "id": 5,
+          "title": "Database Connections",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "pg_stat_activity_count{job='postgres'}",
+              "legendFormat": "{{state}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12}
+        }
+      ]
+    },
+    {
+      "title": "TrueMatch AI - Worker Status",
+      "uid": "truematch-worker-status",
+      "tags": ["production", "workers"],
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Task Processing Rate",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(celery_task_total{job='worker'}[1m])",
+              "legendFormat": "{{task}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+        },
+        {
+          "id": 2,
+          "title": "Task Success/Failure",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(celery_task_total{job='worker', status='success'}[1m])",
+              "legendFormat": "Success"
+            },
+            {
+              "expr": "rate(celery_task_total{job='worker', status='failure'}[1m])",
+              "legendFormat": "Failure"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+        },
+        {
+          "id": 3,
+          "title": "Queue Depth",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "celery_queue_length{job='worker'}",
+              "legendFormat": "{{queue}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+        },
+        {
+          "id": 4,
+          "title": "Worker Utilization",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(container_cpu_usage_seconds_total{pod=~'worker-.*', namespace='truematch-prod'}[1m])",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+        }
+      ]
+    },
+    {
+      "title": "TrueMatch AI - Resource Usage",
+      "uid": "truematch-resource-usage",
+      "tags": ["production", "resources"],
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Memory Usage",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "container_memory_usage_bytes{pod=~'api-.*|worker-.*|scheduler-.*', namespace='truematch-prod'} / 1024 / 1024",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0}
+        },
+        {
+          "id": 2,
+          "title": "CPU Usage",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(container_cpu_usage_seconds_total{pod=~'api-.*|worker-.*|scheduler-.*', namespace='truematch-prod'}[1m])",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0}
+        },
+        {
+          "id": 3,
+          "title": "Disk I/O",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(container_fs_io_time_seconds_total{pod=~'api-.*|worker-.*', namespace='truematch-prod'}[1m])",
+              "legendFormat": "{{pod}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8}
+        },
+        {
+          "id": 4,
+          "title": "Network I/O",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "rate(container_network_transmit_bytes_total{pod=~'api-.*|worker-.*', namespace='truematch-prod'}[1m])",
+              "legendFormat": "TX {{pod}}"
+            },
+            {
+              "expr": "rate(container_network_receive_bytes_total{pod=~'api-.*|worker-.*', namespace='truematch-prod'}[1m])",
+              "legendFormat": "RX {{pod}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8}
+        }
+      ]
+    },
+    {
+      "title": "TrueMatch AI - Database Health",
+      "uid": "truematch-database-health",
+      "tags": ["production", "database"],
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Connection Pool Status",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "pg_stat_activity_count{job='postgres', state='active'}",
+              "legendFormat": "Active"
+            }
+          ],
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0}
+        },
+        {
+          "id": 2,
+          "title": "Cache Hit Ratio",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "pg_stat_database_blks_hit{job='postgres', datname='truematch_prod'} / (pg_stat_database_blks_hit{job='postgres', datname='truematch_prod'} + pg_stat_database_blks_read{job='postgres', datname='truematch_prod'})",
+              "legendFormat": "Hit Ratio"
+            }
+          ],
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0}
+        },
+        {
+          "id": 3,
+          "title": "Query Performance",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "pg_stat_statements_mean_time{job='postgres'}",
+              "legendFormat": "{{query}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4}
+        },
+        {
+          "id": 4,
+          "title": "Index Usage",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "pg_stat_user_indexes_idx_scan{job='postgres'}",
+              "legendFormat": "{{indexname}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4}
+        },
+        {
+          "id": 5,
+          "title": "Table Sizes",
+          "type": "piechart",
+          "targets": [
+            {
+              "expr": "pg_total_relation_size_bytes{job='postgres'}",
+              "legendFormat": "{{relname}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12}
+        },
+        {
+          "id": 6,
+          "title": "Database Replication Lag",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "pg_replication_lag{job='postgres'}",
+              "legendFormat": "{{slot}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12}
+        }
+      ]
+    },
+    {
+      "title": "TrueMatch AI - Business Metrics",
+      "uid": "truematch-business-metrics",
+      "tags": ["production", "business"],
+      "timezone": "browser",
+      "panels": [
+        {
+          "id": 1,
+          "title": "Matches Created (Daily)",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "increase(truematch_matches_created_total[1d])",
+              "legendFormat": "Matches"
+            }
+          ],
+          "gridPos": {"h": 4, "w": 6, "x": 0, "y": 0}
+        },
+        {
+          "id": 2,
+          "title": "Success Rate",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "truematch_matches_success_rate",
+              "legendFormat": "Success Rate"
+            }
+          ],
+          "gridPos": {"h": 4, "w": 6, "x": 6, "y": 0}
+        },
+        {
+          "id": 3,
+          "title": "Active Users",
+          "type": "stat",
+          "targets": [
+            {
+              "expr": "truematch_active_users",
+              "legendFormat": "Users"
+            }
+          ],
+          "gridPos": {"h": 4, "w": 6, "x": 12, "y": 0}
+        },
+        {
+          "id": 4,
+          "title": "API Usage by Feature",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "sum(rate(http_requests_total{job='api'}[1m])) by (path)",
+              "legendFormat": "{{path}}"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4}
+        },
+        {
+          "id": 5,
+          "title": "Processing Duration",
+          "type": "graph",
+          "targets": [
+            {
+              "expr": "histogram_quantile(0.95, rate(truematch_processing_duration_seconds_bucket[5m]))",
+              "legendFormat": "p95"
+            },
+            {
+              "expr": "histogram_quantile(0.99, rate(truematch_processing_duration_seconds_bucket[5m]))",
+              "legendFormat": "p99"
+            }
+          ],
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4}
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,492 @@
+# TrueMatch AI - Sentry Configuration
+# Phase 3: Error Tracking & Monitoring
+#
+# Sentry configuration for error tracking, performance monitoring, and alerting
+
+# Sentry Server Configuration
+sentry:
+  # Organization settings
+  organization_name: "truematch"
+  organization_slug: "truematch"
+
+  # Project settings
+  project_name: "TrueMatch Backend - Production"
+  project_slug: "truematch-backend-prod"
+
+  # Authentication
+  auth_token: "${SENTRY_AUTH_TOKEN}"  # Set via environment variable
+  api_url: "https://sentry.truematch.ai/api/0/"
+
+  # Data routing
+  dsn: "${SENTRY_DSN}"  # https://[key]@sentry.truematch.ai/[project-id]
+
+# Python SDK Configuration
+sdk:
+  name: "sentry-sdk"
+  version: "1.40.0"
+
+  # Integrations
+  integrations:
+    - name: "logging"
+      enabled: true
+      level: "WARNING"
+
+    - name: "django"
+      enabled: true
+      transaction_style: "url"
+      middleware_spans: true
+
+    - name: "fastapi"
+      enabled: true
+      transaction_style: "url"
+
+    - name: "starlette"
+      enabled: true
+      transaction_style: "url"
+
+    - name: "sqlalchemy"
+      enabled: true
+      record_cursor_variables: true
+
+    - name: "celery"
+      enabled: true
+      exclude_logger_names:
+        - "celery.beat"
+        - "celery.app.utils"
+
+    - name: "redis"
+      enabled: true
+
+    - name: "aiohttp"
+      enabled: true
+
+# Tracing & Performance Monitoring
+tracing:
+  enabled: true
+
+  # Sampling
+  traces_sample_rate: 0.1  # 10% of transactions
+
+  # Profiling
+  profiles_sample_rate: 0.1  # 10% of transactions with profiling
+
+  # Transaction naming
+  transaction_style: "url"
+
+  # Span context
+  attach_stacktrace: true
+  include_source_context: true
+
+  # Performance monitoring thresholds
+  performance_thresholds:
+    http_request:
+      slow: 2000  # milliseconds
+      critical: 5000
+    db_query:
+      slow: 1000
+      critical: 2000
+    celery_task:
+      slow: 5000
+      critical: 10000
+
+# Error Tracking Configuration
+errors:
+  enabled: true
+
+  # Exception filtering
+  ignore_exceptions:
+    - "django.http.DisallowedHost"
+    - "django.core.exceptions.DisallowedHost"
+    - "logging.exceptions.DisallowedHost"
+
+  # Before sending hook
+  before_send: null  # Configure in code if needed
+
+  # Attach context
+  with_locals: false  # Don't send local variables (privacy)
+  include_source_context: true
+  max_value_length: 1024
+
+  # Breadcrumbs
+  max_breadcrumbs: 100
+  include_breadcrumbs: true
+
+  breadcrumb_categories:
+    enabled:
+      - "ui.click"
+      - "ui.input"
+      - "http"
+      - "sql"
+      - "cache"
+    disabled: []
+
+# Release Tracking
+releases:
+  enabled: true
+
+  # Automatic release detection
+  auto_detect: true
+
+  # Release name format
+  # Will be set via CI/CD pipeline with: sentry-cli releases create <version>
+
+# Environment Configuration
+environments:
+  production:
+    enabled: true
+    name: "production"
+
+    # Environment-specific settings
+    debug: false
+    error_sampling_rate: 1.0
+    trace_sampling_rate: 0.1
+    profile_sampling_rate: 0.1
+
+  staging:
+    enabled: true
+    name: "staging"
+    debug: false
+    error_sampling_rate: 0.5
+    trace_sampling_rate: 0.5
+    profile_sampling_rate: 0.2
+
+  development:
+    enabled: false
+    name: "development"
+
+# Alerting & Notifications
+alerts:
+  # Alert rules
+  rules:
+    - name: "High Error Rate"
+      condition: "error_rate > 5%"
+      interval: "5m"
+      enabled: true
+      notify:
+        - channel: "slack"
+          webhook: "${SLACK_WEBHOOK_ALERTS}"
+          mentions: ["@backend-team"]
+        - channel: "email"
+          recipients: ["ops@truematch.ai"]
+        - channel: "pagerduty"
+          service_id: "${PAGERDUTY_SERVICE_ID}"
+          severity: "high"
+
+    - name: "New Issue Type"
+      condition: "issue_is_new"
+      interval: "1m"
+      enabled: true
+      notify:
+        - channel: "slack"
+          webhook: "${SLACK_WEBHOOK_ALERTS}"
+        - channel: "email"
+          recipients: ["backend-team@truematch.ai"]
+
+    - name: "Issue Regression"
+      condition: "issue_regressed"
+      interval: "5m"
+      enabled: true
+      notify:
+        - channel: "slack"
+          webhook: "${SLACK_WEBHOOK_ALERTS}"
+        - channel: "pagerduty"
+          service_id: "${PAGERDUTY_SERVICE_ID}"
+          severity: "high"
+
+    - name: "Performance Degradation"
+      condition: "transaction_duration > 2000ms"
+      interval: "5m"
+      enabled: true
+      notify:
+        - channel: "slack"
+          webhook: "${SLACK_WEBHOOK_ALERTS}"
+
+# Data Privacy & Security
+privacy:
+  enabled: true
+
+  # PII stripping
+  before_send_transaction: null  # Configure in code
+
+  # URL redaction
+  sanitize_urls:
+    enabled: true
+    patterns:
+      - "password"
+      - "passwd"
+      - "secret"
+      - "token"
+      - "api_key"
+      - "authorization"
+
+  # HTTP header filtering
+  filtered_headers:
+    - "Authorization"
+    - "X-API-Key"
+    - "X-Token"
+    - "Cookie"
+    - "X-CSRF-Token"
+    - "X-XSRF-Token"
+
+  # POST data filtering
+  filtered_fields:
+    - "password"
+    - "passwd"
+    - "secret"
+    - "token"
+    - "api_key"
+    - "access_token"
+    - "refresh_token"
+    - "credit_card"
+    - "ssn"
+    - "social_security_number"
+
+  # IP address handling
+  send_client_ip: false  # Don't send client IP for privacy
+  server_ip_header: "HTTP_X_FORWARDED_FOR"
+
+# Attachment Upload Configuration
+attachments:
+  enabled: true
+
+  # Max attachment size
+  max_attachment_size: 10485760  # 10MB
+
+  # Types of attachments
+  types_allowed:
+    - "log_file"
+    - "crash_report"
+    - "debug_meta"
+
+# Source Maps Configuration
+source_maps:
+  enabled: false  # Backend service, not needed for JS
+
+  # If using at all
+  upload_sources: false
+  include_sources: false
+  strip_source_roots: true
+
+# Custom Tags & Context
+tags:
+  # Environment tags (automatically added)
+  - name: "environment"
+    source: "environment"
+
+  - name: "release"
+    source: "release"
+
+  # Custom tags
+  - name: "service"
+    default: "truematch-backend"
+
+  - name: "region"
+    default: "us-west-2"
+
+  - name: "instance"
+    source: "pod_name"
+
+  - name: "namespace"
+    source: "kubernetes_namespace"
+
+# Request Configuration
+request:
+  # Include request bodies in events (disable for privacy)
+  include_request_body: false
+
+  # Include query strings
+  include_query_string: true
+
+  # Include headers
+  include_headers: true
+
+  # Ignore certain paths from transaction recording
+  ignore_paths:
+    - "/_health"
+    - "/livez"
+    - "/readyz"
+    - "/metrics"
+    - "/ping"
+    - "/api/v1/health"
+
+# Database Configuration
+database:
+  enabled: true
+
+  # Record database operations
+  record_db_operations: true
+
+  # Include query in spans
+  include_sql_query: true
+
+  # Slow query threshold (milliseconds)
+  slow_query_threshold: 1000
+
+  # Max query length to record
+  max_query_length: 4096
+
+# Celery/Worker Configuration
+celery:
+  enabled: true
+
+  # Monitor task execution
+  monitor_tasks: true
+
+  # Track retries
+  track_retries: true
+
+  # Ignore certain tasks
+  ignore_tasks:
+    - "celery.chord_unlock"
+    - "celery.backend_cleanup"
+
+# Redis Configuration
+redis:
+  enabled: true
+
+  # Monitor Redis commands
+  record_commands: true
+
+  # Skip certain commands from tracking
+  skip_commands:
+    - "PING"
+    - "INFO"
+    - "COMMAND"
+
+# HTTP Client Configuration
+http_client:
+  enabled: true
+
+  # Record outbound HTTP requests
+  record_requests: true
+
+  # Timeout threshold for slow requests
+  slow_request_threshold: 5000
+
+# Logging Configuration
+logging:
+  enabled: true
+
+  # Capture log messages as breadcrumbs
+  capture_logs: true
+
+  # Log levels to capture
+  log_levels:
+    - "ERROR"
+    - "WARNING"
+    - "INFO"
+
+  # Don't capture certain loggers
+  ignore_loggers:
+    - "urllib3"
+    - "boto"
+    - "botocore"
+    - "paramiko"
+
+# Server Configuration (on-prem only, ignore for SaaS)
+server:
+  # Sentry server settings if self-hosted
+  enabled: false
+
+# Metrics Configuration
+metrics:
+  enabled: true
+
+  # Capture custom metrics
+  custom_metrics: true
+
+  # Metric intervals
+  intervals:
+    - "1m"
+    - "5m"
+    - "15m"
+
+  # Custom metric prefixes
+  custom_metrics_prefix: "truematch."
+
+# Code Mappings
+code_mappings:
+  enabled: true
+
+  # Platform-specific mappings
+  # These help Sentry map errors to source code repositories
+  mappings:
+    - platform: "python"
+      stack_root: "/app/"
+      source_root: "."
+      repository_url: "https://github.com/truematch/truematch-ai"
+      branch: "main"
+
+# Integration Configuration
+integrations_config:
+  slack:
+    enabled: true
+    webhook_url: "${SLACK_WEBHOOK_ALERTS}"
+    organization_slug: "truematch"
+    channel: "#alerts"
+    mention_user_ids: []
+    mention_team_ids: ["backend-team"]
+
+  pagerduty:
+    enabled: true
+    token: "${PAGERDUTY_TOKEN}"
+    organization_id: "truematch-prod"
+    service_ids:
+      - "${PAGERDUTY_SERVICE_ID}"
+
+  github:
+    enabled: false  # Configure if desired
+    organization: "truematch"
+    repository: "truematch-ai"
+    token: "${GITHUB_TOKEN}"
+
+# Replay Configuration (Session Replay)
+replay:
+  enabled: false  # Backend service, typically for frontend
+
+  # If needed for debugging
+  mask_all_text: true
+  mask_all_images: true
+  block_all_media: true
+
+# Inbound Filters
+inbound_filters:
+  enabled: true
+
+  # Filter events by various criteria
+  filters:
+    - type: "error_messages"
+      pattern: "DisallowedHost"
+      action: "drop"
+
+    - type: "error_messages"
+      pattern: "ConnectionResetError"
+      action: "rate_limit"  # Rate limit instead of drop
+      rate_limit: 0.5  # 50%
+
+    - type: "legacy_browsers"
+      action: "drop"
+
+# Security Header Configuration
+security:
+  # CSP reporting (if applicable)
+  csp_report_uri: "https://sentry.truematch.ai/api/1/csp-report/"
+
+  # CORS
+  allow_urls:
+    - "https://api.truematch.ai"
+    - "https://app.truematch.ai"
+    - "https://truematch.ai"
+
+# Data Retention
+data_retention:
+  # Days to retain data
+  retained_events: 90
+  retained_attachments: 30
+  retained_sessions: 30
+  retained_replays: 14
+
+# Development Configuration
+development:
+  debug: false
+  sample_rate: 0.0  # Don't send errors from dev environment
