@@ -255,3 +255,131 @@ class CandidateContext(BaseModel):
     recent_assessments: Optional[int]
     strengths: Optional[list[str]]
     growth_areas: Optional[list[str]]
+
+
+# ============================================================================
+# Job Search Endpoints (Additional Models)
+# ============================================================================
+
+
+class CreateJobSearchRequest(BaseModel):
+    """Request to create a new job search."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    name: str = Field(..., description="Name of the search")
+    role: Optional[str] = None
+    location: Optional[str] = None
+    salary_min: Optional[int] = None
+    salary_max: Optional[int] = None
+    remote_only: Optional[bool] = False
+    keywords: Optional[list[str]] = None
+    auto_apply: Optional[bool] = False
+
+
+class UpdateJobSearchRequest(BaseModel):
+    """Request to update a job search."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    name: Optional[str] = None
+    role: Optional[str] = None
+    location: Optional[str] = None
+    salary_min: Optional[int] = None
+    salary_max: Optional[int] = None
+    remote_only: Optional[bool] = None
+    keywords: Optional[list[str]] = None
+    auto_apply: Optional[bool] = None
+
+
+class JobSearchDetailResponse(BaseModel):
+    """Detailed response for a job search."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    role: Optional[str]
+    location: Optional[str]
+    salary_min: Optional[int]
+    salary_max: Optional[int]
+    remote_only: bool
+    keywords: Optional[list[str]]
+    auto_apply: bool
+    status: str
+    results_count: int
+    last_executed: Optional[datetime]
+    created_at: datetime
+    updated_at: datetime
+
+
+class SearchResultsResponse(BaseModel):
+    """Search results response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    search_id: uuid.UUID
+    items: list[JobSearchResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
+
+
+class SearchStatsResponse(BaseModel):
+    """Statistics for a search."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    search_id: uuid.UUID
+    total_results: int
+    results_this_week: int
+    results_this_month: int
+    saved_count: int
+    applied_count: int
+    average_match_score: float
+
+
+class BulkSaveJobsRequest(BaseModel):
+    """Request to bulk save jobs."""
+
+    job_ids: list[str]
+    list_name: Optional[str] = "Default"
+    tag: Optional[str] = None
+
+
+class AlertSettingsRequest(BaseModel):
+    """Request to setup alerts."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    enabled: bool = True
+    frequency: str = Field("daily", description="daily, weekly, or real-time")
+    min_match_score: int = Field(60, ge=0, le=100)
+    notification_channels: list[str] = Field(default_factory=lambda: ["email"])
+
+
+class AlertSettingsResponse(BaseModel):
+    """Alert settings response."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    search_id: uuid.UUID
+    enabled: bool
+    frequency: str
+    min_match_score: int
+    notification_channels: list[str]
+    created_at: datetime
+    updated_at: datetime
+
+
+class SearchListResponse(BaseModel):
+    """List of job searches."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    items: list[JobSearchDetailResponse]
+    total: int
+    page: int
+    page_size: int
+    total_pages: int
