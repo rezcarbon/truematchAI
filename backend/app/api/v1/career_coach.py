@@ -12,7 +12,7 @@ from fastapi import APIRouter, Query, status, HTTPException
 from sqlalchemy import select, desc, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError, AccessDeniedError
+from app.core.exceptions import NotFoundError, AuthorizationError
 from app.deps import CurrentUser, DBSession
 from app.models.career_coach import (
     CareerCoaching,
@@ -59,7 +59,7 @@ logger = logging.getLogger("truematch.career_coach")
 def verify_ownership(user_id: uuid.UUID, record_user_id: uuid.UUID) -> None:
     """Verify user owns the record."""
     if record_user_id != user_id:
-        raise AccessDeniedError("You do not have permission to access this resource")
+        raise AuthorizationError("You do not have permission to access this resource")
 
 
 async def paginate_query(db: AsyncSession, query, page: int, page_size: int):

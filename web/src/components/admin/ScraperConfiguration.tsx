@@ -40,12 +40,12 @@ const SCRAPER_INFO = {
 
 function RiskBadge({ level }: { level: 'low' | 'high' | 'critical' }) {
   if (level === 'low') {
-    return <Badge className="bg-green-100 text-green-800">✓ Safe</Badge>;
+    return <Badge className="bg-green-100 text-green-800"> Safe</Badge>;
   }
   if (level === 'high') {
-    return <Badge variant="destructive" className="bg-amber-100 text-amber-800">⚠️ High Risk</Badge>;
+    return <Badge variant="destructive" className="bg-amber-100 text-amber-800"> High Risk</Badge>;
   }
-  return <Badge variant="destructive">🚫 Critical Risk</Badge>;
+  return <Badge variant="destructive"> Critical Risk</Badge>;
 }
 
 function ApprovalStatus({ approved, riskLevel }: { approved: boolean; riskLevel: string }) {
@@ -56,12 +56,12 @@ function ApprovalStatus({ approved, riskLevel }: { approved: boolean; riskLevel:
       {approved ? (
         <>
           <CheckCircle className="h-3.5 w-3.5 text-green-600" />
-          <span className="text-green-700">Legal approval: ✓ Approved</span>
+          <span className="text-green-700">Legal approval:  Approved</span>
         </>
       ) : (
         <>
           <AlertTriangle className="h-3.5 w-3.5 text-amber-600" />
-          <span className="text-amber-700">Legal approval: ⚠️ Requires review</span>
+          <span className="text-amber-700">Legal approval:  Requires review</span>
         </>
       )}
     </div>
@@ -165,9 +165,9 @@ export function ScraperConfiguration({
                       {/* API Key Status */}
                       <div className="text-xs">
                         {scraper.hasApiKey ? (
-                          <p className="text-green-700">✓ API key configured</p>
+                          <p className="text-green-700"> API key configured</p>
                         ) : (
-                          <p className="text-amber-700">⚠️ API key required</p>
+                          <p className="text-amber-700"> API key required</p>
                         )}
                       </div>
                     </div>

@@ -1,5 +1,13 @@
 // Custom Cypress Commands
 
+declare global {
+  namespace Cypress {
+    interface Chainable {
+      login(email: string, password: string): Chainable<void>;
+    }
+  }
+}
+
 /**
  * Login command - simulate user login
  */
@@ -18,6 +26,8 @@ Cypress.Commands.add('login', (email: string, password: string) => {
   // Wait for redirect
   cy.url().should('not.include', '/auth/login');
 });
+
+export {};
 
 /**
  * Upload file command
@@ -49,7 +59,7 @@ Cypress.Commands.add('waitForAPI', (method: string, url: string) => {
 Cypress.Commands.add(
   'mockAPI',
   (method: string, url: string, response: any, statusCode: number = 200) => {
-    cy.intercept(method, url, {
+    cy.intercept(method as any, url, {
       statusCode,
       body: response,
     }).as('mockedCall');

@@ -197,7 +197,7 @@ export default function ChatPage() {
           const fileMsg: Message = {
             id: Math.random().toString(),
             role: 'user',
-            content: `📎 Uploaded: ${file.name}`,
+            content: ` Uploaded: ${file.name}`,
             timestamp: new Date(),
             attachments: [fileData],
           };
@@ -287,7 +287,7 @@ export default function ChatPage() {
         if (eventType === 'token') {
           appendToAssistant((data.text as string) || '');
         } else if (eventType === 'error') {
-          appendToAssistant(`\n\n⚠️ ${(data.error as string) || 'stream error'}`);
+          appendToAssistant(`\n\n ${(data.error as string) || 'stream error'}`);
         } else if (eventType === 'done') {
           const actions = (data.actions as Action[]) || [];
           const messageId = data.message_id as string;
@@ -326,7 +326,7 @@ export default function ChatPage() {
       if (buffer.trim()) handleFrame(buffer);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
-      appendToAssistant('\n\n⚠️ Could not reach the assistant.');
+      appendToAssistant('\n\n Could not reach the assistant.');
     } finally {
       setLoading(false);
     }
@@ -535,7 +535,7 @@ export default function ChatPage() {
               onClick={() => setShowSidebar(!showSidebar)}
               className="lg:hidden p-2 hover:bg-secondary rounded"
             >
-              ☰
+              
             </button>
             <div className="flex-1">
               <h1 className="text-lg font-semibold">
@@ -579,7 +579,7 @@ export default function ChatPage() {
                 <div className="space-y-2 text-sm">
                   {modeDescriptions[chatMode].examples.map((example, idx) => (
                     <p key={idx} className="text-muted-foreground">
-                      💡 Try: "{example}"
+                       Try: "{example}"
                     </p>
                   ))}
                 </div>
@@ -614,13 +614,13 @@ export default function ChatPage() {
                     {msg.actions_taken.map((action) => (
                       <div key={action.id} className="flex items-center gap-2">
                         {action.status === 'completed' && (
-                          <span className="text-green-400">✓</span>
+                          <span className="text-green-400"></span>
                         )}
                         {action.status === 'pending' && (
                           <Loader2 className="h-3 w-3 animate-spin" />
                         )}
                         {action.status === 'failed' && (
-                          <span className="text-red-400">✗</span>
+                          <span className="text-red-400"></span>
                         )}
                         <span>{action.description}</span>
                       </div>

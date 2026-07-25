@@ -50,8 +50,8 @@ export function BulkActionToolbar({
       });
       setShowStageMenu(false);
       onStageSelect?.(stage);
-    } catch (err) {
-      // Error handled by hook
+    } catch (e) {
+      console.error(`Exception: ${e.message}`, e);
     }
   };
 
@@ -69,8 +69,8 @@ export function BulkActionToolbar({
       });
       setNewTag('');
       setShowTagMenu(false);
-    } catch (err) {
-      // Error handled by hook
+    } catch (e) {
+      console.error(`Exception: ${e.message}`, e);
     }
   };
 
@@ -86,8 +86,8 @@ export function BulkActionToolbar({
         type: 'reject',
         candidateIds: [], // Would be passed from parent
       });
-    } catch (err) {
-      // Error handled by hook
+    } catch (e) {
+      console.error(`Exception: ${e.message}`, e);
     }
   };
 
@@ -216,7 +216,7 @@ export function BulkActionToolbar({
 
       {/* Info */}
       <p className="text-xs text-muted-foreground mt-2">
-        💡 Tip: Select candidates and use actions above to bulk manage your pipeline
+         Tip: Select candidates and use actions above to bulk manage your pipeline
       </p>
     </Card>
   );

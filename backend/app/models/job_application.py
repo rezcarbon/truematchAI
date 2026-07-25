@@ -122,9 +122,6 @@ class JobApplication(Base, TimestampMixin):
     # Relationship commented out to avoid foreign key mismatch
     # timeline_events: Mapped[list[ApplicationTimeline]] = relationship(
     #     "ApplicationTimeline",
-    #     back_populates="application",
-    #     cascade="all, delete-orphan",
-    #     lazy="select",
     # )
 
     __table_args__ = (
@@ -196,7 +193,6 @@ class JobApplication(Base, TimestampMixin):
         session.commit()
         return event
 
-    # def add_event(
     #     self,
     #     session,
     #     event_type: ApplicationEventType,
@@ -247,7 +243,7 @@ class JobApplication(Base, TimestampMixin):
         Example:
             >>> timeline = app.get_timeline(session)
             >>> for event in timeline:
-            ...     print(f"{event.created_at}: {event.event_type.value}")
+            logger.info(f"{event.created_at}: {event.event_type.value}")
         """
         query = session.query(ApplicationTimeline).filter(
             ApplicationTimeline.application_id == self.id,
@@ -274,7 +270,7 @@ class JobApplication(Base, TimestampMixin):
         Example:
             >>> is_valid, error = app.validate_status_transition(ApplicationStatus.rejected)
             >>> if not is_valid:
-            ...     print(f"Cannot transition: {error}")
+            logger.info(f"Cannot transition: {error}")
         """
         current = self.status
         reason = None
@@ -312,7 +308,7 @@ class JobApplication(Base, TimestampMixin):
 
         Example:
             >>> app_dict = app.to_dict()
-            >>> print(f"Status: {app_dict['status']}")
+            logger.info(f"Status: {app_dict['status']}")
         """
         return {
             "id": str(self.id),

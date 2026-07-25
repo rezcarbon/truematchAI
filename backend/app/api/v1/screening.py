@@ -18,7 +18,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_db, get_current_user
+from app.deps import get_db, get_current_user
 from app.models.user import User, UserRole
 from app.schemas.screening import (
     ScreeningBatchCreateRequest,
@@ -216,7 +216,7 @@ async def get_pending_reviews(
     batch_id: UUID,
     page: int = Query(1, ge=1),
     limit: int = Query(10, ge=1, le=100),
-    sort_by: str = Query("confidence_desc", regex="^(confidence_desc|created_asc)$"),
+    sort_by: str = Query("confidence_desc", pattern="^(confidence_desc|created_asc)$"),
     recruiter: User = Depends(require_recruiter),
     db: AsyncSession = Depends(get_db),
 ) -> dict:
@@ -253,7 +253,6 @@ async def get_pending_reviews(
             card = ScreeningResultSummaryCard(
                 screening_result_id=result.id,
                 candidate_name=f"{result.user_id}",  # TODO: Get from user model
-                candidate_email="",  # TODO: Get from user model
                 resume_id=result.resume_id,
                 agent_recommendation=result.agent_recommendation,
                 confidence_score=result.confidence_score,

@@ -76,7 +76,7 @@ export default function InternalMobilityPage() {
               {status === "uploading" ? "Uploading…" : "Upload CV"}
             </Button>
           )}
-          {resumeId && <p className="text-sm text-success">CV uploaded ✓</p>}
+          {resumeId && <p className="text-sm text-success">CV uploaded </p>}
         </CardContent>
       </Card>
 

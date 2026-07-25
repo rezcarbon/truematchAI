@@ -59,7 +59,7 @@ describe('JobCard', () => {
   it('renders location and remote work info', () => {
     render(<JobCard job={mockJob} />);
     expect(screen.getByText('San Francisco, CA')).toBeInTheDocument();
-    expect(screen.getByText('🔄 Hybrid')).toBeInTheDocument();
+    expect(screen.getByText(' Hybrid')).toBeInTheDocument();
   });
 
   it('displays salary range', () => {
@@ -126,11 +126,11 @@ describe('JobCard', () => {
   it('handles different remote work types', () => {
     const fullyRemoteJob = { ...mockJob, remote: 'fully' as const };
     const { rerender } = render(<JobCard job={fullyRemoteJob} />);
-    expect(screen.getByText('🏠 Fully Remote')).toBeInTheDocument();
+    expect(screen.getByText(' Fully Remote')).toBeInTheDocument();
 
     const onsiteJob = { ...mockJob, remote: 'onsite' as const };
     rerender(<JobCard job={onsiteJob} />);
-    expect(screen.getByText('🏢 On-site')).toBeInTheDocument();
+    expect(screen.getByText(' On-site')).toBeInTheDocument();
   });
 
   it('applies correct color coding for match scores', () => {

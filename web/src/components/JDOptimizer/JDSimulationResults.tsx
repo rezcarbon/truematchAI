@@ -397,7 +397,7 @@ export default function JDSimulationResults({
             {result.improvements.map((improvement, index) => (
               <li key={index} className="flex gap-3 text-gray-700">
                 <span className="text-blue-600 font-bold flex-shrink-0">
-                  ✓
+                  
                 </span>
                 <span>{improvement}</span>
               </li>

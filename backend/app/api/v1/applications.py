@@ -155,7 +155,7 @@ async def list_applications(
     """List all applications owned by the current user."""
     try:
         from sqlalchemy import select, desc, func
-        from app.models.applications import Application
+        from app.models.application import Application
 
         stmt = select(Application).where(Application.user_id == user.id)
 

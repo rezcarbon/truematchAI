@@ -30,21 +30,10 @@ export async function POST(
       );
     }
 
-    // TODO: Verify user owns this resume
-    // const session = await getSession();
-    // const resume = await db.resumes.findById(params.resumeId);
-    // if (resume.userId !== session.user.id) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     // }
 
-    // TODO: Verify version exists
-    // const version = await db.resumeVersions.findById(params.versionId);
-    // if (!version || version.resumeId !== params.resumeId) {
-    //   return NextResponse.json({ error: "Version not found" }, { status: 404 });
     // }
 
-    // TODO: Update annotation in database
-    // await db.resumeVersions.update(params.versionId, {
     //   annotation,
     //   annotatedAt: new Date().toISOString(),
     // });

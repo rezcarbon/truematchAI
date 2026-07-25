@@ -34,11 +34,11 @@ export function StrengthsCard({ strengths, loading = false }: StrengthsCardProps
   };
 
   const evidenceIcons = {
-    GitHub: '🐙',
-    ORCID: '🔬',
-    DOI: '📄',
-    LinkedIn: '💼',
-    Patents: '🏆',
+    GitHub: '',
+    ORCID: '',
+    DOI: '',
+    LinkedIn: '',
+    Patents: '',
   };
 
   if (loading) {

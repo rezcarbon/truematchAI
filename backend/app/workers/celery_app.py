@@ -25,20 +25,13 @@ _TASK_MODULES = [
     "app.workers.user_memory",
 ]
 
-# Try to import each module; skip if it doesn't exist
-_INCLUDE = []
-for module in _TASK_MODULES:
-    try:
-        __import__(module)
-        _INCLUDE.append(module)
-    except ImportError as e:
-        logger.warning(f"Task module not found: {module} - {e}")
-
+# Create celery_app BEFORE importing task modules to avoid circular imports
+# Task modules import celery_app during their initialization
 celery_app = Celery(
     "truematch",
     broker=settings.celery_broker_url,
     backend=settings.celery_result_backend,
-    include=_INCLUDE,
+    include=[],  # Will be populated after celery_app is created
 )
 
 celery_app.conf.update(
@@ -121,3 +114,16 @@ celery_app.conf.update(
         },
     },
 )
+
+# Now that celery_app is fully initialized, import task modules
+# This avoids circular import errors: task modules import celery_app during init
+_INCLUDE = []
+for module in _TASK_MODULES:
+    try:
+        __import__(module)
+        _INCLUDE.append(module)
+    except ImportError as e:
+        logger.warning(f"Task module not found: {module} - {e}")
+
+# Update celery_app with the successfully imported modules
+celery_app.conf.update(include=_INCLUDE)

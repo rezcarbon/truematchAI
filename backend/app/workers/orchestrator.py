@@ -125,24 +125,24 @@ class TrueMatchOrchestrator:
         # Start file system monitor
         logger.info("Starting file system monitor...")
         self.file_monitor.start()
-        logger.info(f"  ✓ File monitor active: {self.file_monitor.inbox_path}")
+        logger.info(f"   File monitor active: {self.file_monitor.inbox_path}")
 
         # Start email ingestor (if enabled)
         if settings.email_ingestion_enabled:
             logger.info("Starting email ingestor...")
             try:
                 await start_email_ingestion()
-                logger.info(f"  ✓ Email ingestor active: {settings.email_imap_host}")
+                logger.info(f"   Email ingestor active: {settings.email_imap_host}")
             except Exception as e:
-                logger.error(f"  ✗ Email ingestor failed to start: {e}")
+                logger.error(f"   Email ingestor failed to start: {e}")
 
         # Start assessment processor (worker pool)
         logger.info(f"Starting assessment processor ({settings.max_concurrent_assessments} workers)...")
         try:
             asyncio.create_task(self.assessment_processor.start())
-            logger.info("  ✓ Assessment processor active")
+            logger.info("   Assessment processor active")
         except Exception as e:
-            logger.error(f"  ✗ Assessment processor failed to start: {e}")
+            logger.error(f"   Assessment processor failed to start: {e}")
 
         # Schedule learning recalibration (Phase D)
         if getattr(settings, "learning_enable", True):
@@ -152,38 +152,38 @@ class TrueMatchOrchestrator:
                 await self.provenance_learning_orchestrator.schedule_learning_recalibration(
                     interval_hours=recalibration_interval
                 )
-                logger.info(f"  ✓ Learning recalibration scheduled (every {recalibration_interval}h)")
+                logger.info(f"   Learning recalibration scheduled (every {recalibration_interval}h)")
             except Exception as e:
-                logger.error(f"  ✗ Learning recalibration scheduling failed: {e}")
+                logger.error(f"   Learning recalibration scheduling failed: {e}")
 
         logger.info("═" * 80)
         logger.info("TRUEMATCH AI-NATIVE ORCHESTRATOR READY")
         logger.info("═" * 80)
         logger.info("")
         logger.info("Phase A: Autonomy Layer")
-        logger.info("  ✓ File system monitoring (folder drop)")
-        logger.info("  ✓ Email ingestion (IMAP polling)" if settings.email_ingestion_enabled else "  ○ Email ingestion (disabled)")
-        logger.info("  ✓ Assessment queue (priority-based)")
-        logger.info("  ✓ Assessment processor (concurrent workers)")
-        logger.info("  ✓ Notifications (Slack/email/in-app)")
+        logger.info("   File system monitoring (folder drop)")
+        logger.info("   Email ingestion (IMAP polling)" if settings.email_ingestion_enabled else "  ○ Email ingestion (disabled)")
+        logger.info("   Assessment queue (priority-based)")
+        logger.info("   Assessment processor (concurrent workers)")
+        logger.info("   Notifications (Slack/email/in-app)")
         logger.info("")
         logger.info("Phase B: Governance Layer")
-        logger.info("  ✓ Coherence gate (mandatory)")
-        logger.info("  ✓ Consistency gate (mandatory)")
-        logger.info("  ✓ Fidelity gate (mandatory)")
-        logger.info("  ✓ Bias detection gate (mandatory)")
+        logger.info("   Coherence gate (mandatory)")
+        logger.info("   Consistency gate (mandatory)")
+        logger.info("   Fidelity gate (mandatory)")
+        logger.info("   Bias detection gate (mandatory)")
         logger.info("")
         logger.info("Phase C: Provenance & Reproducibility")
-        logger.info("  ✓ SHA-256 input hashing")
-        logger.info("  ✓ Model version tracking")
-        logger.info("  ✓ Immutable audit trail")
-        logger.info("  ✓ Reproducibility verification")
+        logger.info("   SHA-256 input hashing")
+        logger.info("   Model version tracking")
+        logger.info("   Immutable audit trail")
+        logger.info("   Reproducibility verification")
         logger.info("")
         logger.info("Phase D: Learning Loop Integration")
-        logger.info("  ✓ Capability weight updates")
-        logger.info("  ✓ Credential equivalency learning")
-        logger.info("  ✓ Automatic recalibration")
-        logger.info("  ✓ Batch re-scoring")
+        logger.info("   Capability weight updates")
+        logger.info("   Credential equivalency learning")
+        logger.info("   Automatic recalibration")
+        logger.info("   Batch re-scoring")
         logger.info("")
         logger.info("Decision Thresholds:")
         logger.info(f"  • Auto-Approve: {settings.decision_auto_approve_threshold}")
@@ -205,18 +205,18 @@ class TrueMatchOrchestrator:
         # Stop file monitor
         logger.info("Stopping file system monitor...")
         self.file_monitor.stop()
-        logger.info("  ✓ File monitor stopped")
+        logger.info("   File monitor stopped")
 
         # Stop email ingestor
         if settings.email_ingestion_enabled:
             logger.info("Stopping email ingestor...")
             stop_email_ingestion()
-            logger.info("  ✓ Email ingestor stopped")
+            logger.info("   Email ingestor stopped")
 
         # Stop assessment processor
         logger.info("Stopping assessment processor...")
         self.assessment_processor.stop()
-        logger.info("  ✓ Assessment processor stopped")
+        logger.info("   Assessment processor stopped")
 
         logger.info("═" * 80)
         logger.info("TRUEMATCH AI-NATIVE ORCHESTRATOR STOPPED")

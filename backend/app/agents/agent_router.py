@@ -57,7 +57,7 @@ async def get_agent_for_user(
 
     except Exception as e:
         # If factory fails, fall back to hardcoded agents
-        print(f"Warning: Agent factory failed, using hardcoded defaults: {e}")
+        logger.info(f"Warning: Agent factory failed, using hardcoded defaults: {e}")
         if user_role == "admin":
             from app.agents.admin_agent import AdminAgent
             return AdminAgent()

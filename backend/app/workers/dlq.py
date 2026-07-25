@@ -110,7 +110,7 @@ def _send_dlq_alert(
             "attachments": [
                 {
                     "color": "#FF0000",  # Red for critical
-                    "title": "❌ Assessment Failed - DLQ Required",
+                    "title": " Assessment Failed - DLQ Required",
                     "title_link": f"{settings.frontend_url}/assessments/{assessment_id}"
                     if settings.frontend_url
                     else None,

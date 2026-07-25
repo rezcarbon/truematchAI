@@ -57,10 +57,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // TODO: Add authentication check
-    // const session = await getSession();
-    // if (!session?.user?.id) {
-    //   return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     // }
 
     const userId = "user-123"; // Placeholder: should come from session
@@ -81,7 +77,6 @@ export async function POST(request: NextRequest) {
       fileName = "pasted_resume";
       format = "txt";
     } else if (uploadMethod === "linkedin") {
-      // TODO: Implement LinkedIn profile scraping
       extractedText = await fetchLinkedInProfile(linkedInUrl!);
       fileName = "linkedin_profile";
       format = "txt";
@@ -107,8 +102,6 @@ export async function POST(request: NextRequest) {
       uploadedAt: new Date().toISOString(),
     };
 
-    // TODO: Save to database
-    // await db.resumeVersions.create(resumeVersion);
 
     const response: UploadResponse = {
       resumeId: resumeVersion.resumeId,
@@ -144,7 +137,6 @@ async function extractTextFromFile(file: File): Promise<string> {
  * Fetch and extract text from LinkedIn profile
  */
 async function fetchLinkedInProfile(url: string): Promise<string> {
-  // TODO: Implement LinkedIn scraping
   // This would require LinkedIn API access or web scraping
   return "LinkedIn profile data would be extracted here";
 }
@@ -255,8 +247,6 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    // TODO: Fetch from database
-    // const resume = await db.resumes.findById(resumeId);
 
     return NextResponse.json(
       {

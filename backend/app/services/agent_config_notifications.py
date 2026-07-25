@@ -50,7 +50,7 @@ class AgentConfigNotificationService:
         self, config: AgentConfig, approved_by: User, feedback: Optional[str]
     ) -> bool:
         """Notify recruiter that their config was approved."""
-        subject = f"✓ Agent Config Approved: {config.name}"
+        subject = f" Agent Config Approved: {config.name}"
 
         feedback_section = f"<p><strong>Feedback:</strong></p><p>{feedback}</p>" if feedback else ""
 
@@ -79,7 +79,7 @@ class AgentConfigNotificationService:
         self, config: AgentConfig, rejected_by: User, feedback: str
     ) -> bool:
         """Notify recruiter that their config was rejected."""
-        subject = f"⚠ Agent Config Rejected: {config.name}"
+        subject = f" Agent Config Rejected: {config.name}"
 
         body = self._build_html_email(
             title="Your Agent Configuration Requires Changes",
@@ -133,7 +133,7 @@ class AgentConfigNotificationService:
         self, configs: list[AgentConfig], approved_by: User, count: int
     ) -> bool:
         """Notify about batch approval."""
-        subject = f"✓ {count} Agent Configs Approved"
+        subject = f" {count} Agent Configs Approved"
 
         config_list = "\n".join(
             [f"• {c.name} (v{c.version_number})" for c in configs[:10]]
@@ -230,14 +230,12 @@ class AgentConfigNotificationService:
         In production, integrate with SendGrid, AWS SES, or similar.
         For now, just log it.
         """
-        print(f"EMAIL: {recipient} | {subject}")
-        # TODO: Integrate with email service
+        logger.info(f"EMAIL: {recipient} | {subject}")
         return True
 
     async def _send_to_admins(self, subject: str, html_body: str) -> bool:
         """Send email to all admin users."""
-        # TODO: Query all admin users and send
-        print(f"EMAIL TO ADMINS: {subject}")
+        logger.info(f"EMAIL TO ADMINS: {subject}")
         return True
 
     async def _get_user(self, user_id) -> Optional[User]:

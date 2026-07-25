@@ -89,8 +89,8 @@ export function ScorecardForm({
       await submitScorecard(interviewId, competencyScores, feedback, recommendation);
       onSuccess?.();
       onClose();
-    } catch (err) {
-      // Error already shown as toast
+    } catch (e) {
+      console.error(`Exception: ${e.message}`, e);
     }
   };
 
@@ -192,10 +192,10 @@ export function ScorecardForm({
                       : 'border-gray-200 hover:border-gray-300'
                   }`}
                 >
-                  {rec === 'strong_yes' && '👍 Strong Yes'}
-                  {rec === 'yes' && '✅ Yes'}
-                  {rec === 'no' && '❌ No'}
-                  {rec === 'strong_no' && '👎 Strong No'}
+                  {rec === 'strong_yes' && ' Strong Yes'}
+                  {rec === 'yes' && ' Yes'}
+                  {rec === 'no' && ' No'}
+                  {rec === 'strong_no' && ' Strong No'}
                 </button>
               ))}
             </div>

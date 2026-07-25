@@ -2,12 +2,11 @@
 from __future__ import annotations
 
 import uuid
-from typing import list
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_db, get_current_user
+from app.deps import get_db, get_current_user
 from app.models import User
 from app.services.agent_config_service import AgentConfigService
 from app.services.agent_config_export import AgentConfigExportService
@@ -63,7 +62,7 @@ async def export_config_as_pdf(
 @router.get("/{config_id}/export/details")
 async def export_config_details(
     config_id: uuid.UUID,
-    format: str = Query("json", regex="^(json|csv)$"),
+    format: str = Query("json", pattern="^(json|csv)$"),
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
 ):

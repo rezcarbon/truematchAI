@@ -90,7 +90,7 @@ export default async function CandidatesPage() {
 
                 {/* Governance */}
                 <div className="w-20 text-center">
-                  <GovernanceBadge status={c.governanceStatus} label={c.governanceStatus === "review" ? "⚠ Review" : "✓"} />
+                  <GovernanceBadge status={c.governanceStatus} label={c.governanceStatus === "review" ? " Review" : ""} />
                 </div>
               </div>
             </Card>

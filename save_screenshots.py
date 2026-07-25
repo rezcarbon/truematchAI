@@ -87,7 +87,7 @@ All screenshots captured on July 7, 2026 using Claude Browser Automation.
 - Candidate List with 3-Signal Scores:
   - Priya Nair: ATS 43 → CAP 87 (Delta: +44) | Stage: Screening
   - Sofia Alvarez: ATS 39 → CAP 79 (Delta: +40) | Stage: New
-  - Aisha Rahman: ATS 65 → CAP 82 (Delta: +17) | Stage: Screening ⚠️ Review
+  - Aisha Rahman: ATS 65 → CAP 82 (Delta: +17) | Stage: Screening  Review
   - Daniel Osei: ATS 72 → CAP 69 (Delta: -3) | Stage: New
   - Marcus Lee: ATS 88 → CAP 71 (Delta: -17) | Stage: Interview
   - Tom Becker: ATS 91 → CAP 58 (Delta: -33) | Stage: Rejected
@@ -130,13 +130,13 @@ All screenshots captured on July 7, 2026 using Claude Browser Automation.
 ## Usage in Presentation
 
 These screenshots demonstrate:
-✅ Clean, professional UI design
-✅ Real, meaningful data
-✅ 3-Signal capability assessment system
-✅ Governance & compliance indicators
-✅ Multi-role platform (admin, recruiter, candidate)
-✅ AI-native features (chat, automation)
-✅ Production-ready quality
+ Clean, professional UI design
+ Real, meaningful data
+ 3-Signal capability assessment system
+ Governance & compliance indicators
+ Multi-role platform (admin, recruiter, candidate)
+ AI-native features (chat, automation)
+ Production-ready quality
 
 ## Embedding Instructions
 
@@ -162,19 +162,19 @@ All screenshots:
 
     manifest_path = SCREENSHOTS_DIR / "MANIFEST.md"
     manifest_path.write_text(manifest)
-    print(f"✅ Manifest created: {manifest_path}")
+    logger.info(f" Manifest created: {manifest_path}")
 
 if __name__ == "__main__":
     create_manifest()
-    print("\n📸 Screenshots Ready!")
-    print(f"📁 Location: {SCREENSHOTS_DIR}")
-    print("\nScreenshot Files (from Claude browser automation):")
-    print("  1. 01_login_page.png")
-    print("  2. 02_admin_dashboard.png")
-    print("  3. 03_recruiter_dashboard.png")
-    print("  4. 04_candidate_dashboard.png")
-    print("  5. 05_chat_interface.png")
-    print("  6. 06_assessment_results.png")
-    print("  7. 07_pipeline_positions.png")
-    print("  8. 08_jd_simulation.png")
-    print("\n✅ Run this script to finalize screenshot organization")
+    logger.info("\n Screenshots Ready!")
+    logger.info(f" Location: {SCREENSHOTS_DIR}")
+    logger.info("\nScreenshot Files (from Claude browser automation):")
+    logger.info("  1. 01_login_page.png")
+    logger.info("  2. 02_admin_dashboard.png")
+    logger.info("  3. 03_recruiter_dashboard.png")
+    logger.info("  4. 04_candidate_dashboard.png")
+    logger.info("  5. 05_chat_interface.png")
+    logger.info("  6. 06_assessment_results.png")
+    logger.info("  7. 07_pipeline_positions.png")
+    logger.info("  8. 08_jd_simulation.png")
+    logger.info("\n Run this script to finalize screenshot organization")

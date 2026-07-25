@@ -106,10 +106,10 @@ export function JobCard({ job, onApply, isLoading = false }: JobCardProps) {
           </span>
           <span className="flex items-center gap-1 px-2 py-1 rounded-full bg-muted text-xs">
             {job.remote === 'fully'
-              ? '🏠 Fully Remote'
+              ? ' Fully Remote'
               : job.remote === 'hybrid'
-              ? '🔄 Hybrid'
-              : '🏢 On-site'}
+              ? ' Hybrid'
+              : ' On-site'}
           </span>
         </div>
 

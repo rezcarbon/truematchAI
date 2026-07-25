@@ -320,12 +320,12 @@ class TestCompleteHiringWorkflow:
         """Test success criteria for complete workflow.
 
         Success criteria:
-        - Resume ingested and extracted ✓
-        - Assessment created with 3 scores (traditional, semantic, capability) ✓
-        - Decision type determined (approval/advisory/escalate) ✓
-        - Interview scheduled within 5 business days ✓
-        - Notification sent to candidate ✓
-        - All artifacts linked (queue → assessment → interview → audit) ✓
+        - Resume ingested and extracted 
+        - Assessment created with 3 scores (traditional, semantic, capability) 
+        - Decision type determined (approval/advisory/escalate) 
+        - Interview scheduled within 5 business days 
+        - Notification sent to candidate 
+        - All artifacts linked (queue → assessment → interview → audit) 
         """
         async with test_async_db() as session:
             # Create workflow artifacts

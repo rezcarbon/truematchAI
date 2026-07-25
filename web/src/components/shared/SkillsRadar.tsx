@@ -141,7 +141,7 @@ export function SkillsRadar({
                   </div>
                   <div className="flex-shrink-0 ml-2">
                     {aligned ? (
-                      <span className="text-green-600 font-semibold text-xs">✓</span>
+                      <span className="text-green-600 font-semibold text-xs"></span>
                     ) : (
                       <span className="text-amber-600 font-semibold text-xs">+{Math.round(gap)}</span>
                     )}

@@ -80,7 +80,7 @@ async def test_endpoint(
                 times.append(elapsed)
 
             except Exception as e:
-                print(f"  ❌ Error: {e}")
+                logger.info(f"   Error: {e}")
                 return None
 
     avg_time = statistics.mean(times)
@@ -116,20 +116,20 @@ def print_result(result: Dict):
         "delete_endpoint"
     )
 
-    status = "✅" if avg < threshold else "⚠️" if avg < threshold * 1.5 else "❌"
+    status = "" if avg < threshold else "" if avg < threshold * 1.5 else ""
 
-    print(f"{status} {result['name']:<50} {avg:>7.1f}ms (±{result['std_dev_ms']:>5.1f}ms)")
+    logger.info(f"{status} {result['name']:<50} {avg:>7.1f}ms (±{result['std_dev_ms']:>5.1f}ms)")
 
 
 async def run_all_tests():
     """Run all performance tests."""
-    print("🚀 TrueMatch AI - Phase 1 Performance Testing")
-    print("=" * 80)
-    print()
+    logger.info(" TrueMatch AI - Phase 1 Performance Testing")
+    logger.info("=" * 80)
+    logger.info()
 
     # Test applications endpoints
-    print("📊 Applications Module")
-    print("-" * 80)
+    logger.info(" Applications Module")
+    logger.info("-" * 80)
 
     tests = [
         ("GET", "/candidates/applications?page=1&page_size=20", "List Applications"),
@@ -149,11 +149,11 @@ async def run_all_tests():
         result = await test_endpoint(*test)
         print_result(result)
 
-    print()
+    logger.info()
 
     # Test job search endpoints
-    print("📊 Job Search Module")
-    print("-" * 80)
+    logger.info(" Job Search Module")
+    logger.info("-" * 80)
 
     tests = [
         ("GET", "/candidates/job-search?page=1&page_size=20", "List Job Searches"),
@@ -170,11 +170,11 @@ async def run_all_tests():
         result = await test_endpoint(*test)
         print_result(result)
 
-    print()
+    logger.info()
 
     # Test resume versioning endpoints
-    print("📊 Resume Versioning Module")
-    print("-" * 80)
+    logger.info(" Resume Versioning Module")
+    logger.info("-" * 80)
 
     tests = [
         ("GET", "/candidates/resume-versions?page=1&page_size=20", "List Resume Versions"),
@@ -189,15 +189,15 @@ async def run_all_tests():
         result = await test_endpoint(*test)
         print_result(result)
 
-    print()
-    print("=" * 80)
+    logger.info()
+    logger.info("=" * 80)
     print_summary()
 
 
 def print_summary():
     """Print performance summary."""
-    print("📈 Performance Summary")
-    print("-" * 80)
+    logger.info(" Performance Summary")
+    logger.info("-" * 80)
 
     all_times = []
     for times in results.values():
@@ -209,12 +209,12 @@ def print_summary():
         overall_max = max(all_times)
         overall_std = statistics.stdev(all_times) if len(all_times) > 1 else 0
 
-        print(f"Total Requests:  {len(all_times)}")
-        print(f"Avg Response:    {overall_avg:.1f}ms")
-        print(f"Min Response:    {overall_min:.1f}ms")
-        print(f"Max Response:    {overall_max:.1f}ms")
-        print(f"Std Deviation:   {overall_std:.1f}ms")
-        print()
+        logger.info(f"Total Requests:  {len(all_times)}")
+        logger.info(f"Avg Response:    {overall_avg:.1f}ms")
+        logger.info(f"Min Response:    {overall_min:.1f}ms")
+        logger.info(f"Max Response:    {overall_max:.1f}ms")
+        logger.info(f"Std Deviation:   {overall_std:.1f}ms")
+        logger.info()
 
         # Identify slow endpoints
         slow_endpoints = []
@@ -224,15 +224,15 @@ def print_summary():
                 slow_endpoints.append((name, avg))
 
         if slow_endpoints:
-            print("⚠️  Slow Endpoints (>300ms):")
+            logger.  Slow Endpoints (>300ms):)
             for name, avg in sorted(slow_endpoints, key=lambda x: x[1], reverse=True):
-                print(f"   - {name}: {avg:.1f}ms")
+                logger.info(f"   - {name}: {avg:.1f}ms")
         else:
-            print("✅ All endpoints performing well")
+            logger.info(" All endpoints performing well")
 
-    print()
-    print("=" * 80)
-    print(f"Test completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    logger.info()
+    logger.info("=" * 80)
+    logger.info(f"Test completed at {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
 
 
 if __name__ == "__main__":

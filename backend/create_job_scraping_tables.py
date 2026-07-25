@@ -107,31 +107,31 @@ async def create_tables():
         "CREATE INDEX IF NOT EXISTS ix_upload_field_mapping_is_system ON upload_field_mapping(is_system)",
     ]
 
-    print("🔧 Creating job scraping tables...\n")
+    logger.info(" Creating job scraping tables...\n")
 
     try:
         async with engine.begin() as conn:
             for i, statement in enumerate(sql_statements, 1):
                 try:
                     await conn.execute(text(statement))
-                    status = "✅" if len(statement) > 50 else "✓"
+                    status = "" if len(statement) > 50 else ""
                     if "CREATE TABLE" in statement:
                         table_name = statement.split("CREATE TABLE IF NOT EXISTS ")[1].split(" (")[0]
-                        print(f"{status} Created table: {table_name}")
+                        logger.info(f"{status} Created table: {table_name}")
                     elif "CREATE INDEX" in statement:
                         index_name = statement.split("CREATE INDEX IF NOT EXISTS ")[1].split(" ")[0]
-                        print(f"{status} Created index: {index_name}")
+                        logger.info(f"{status} Created index: {index_name}")
                 except Exception as e:
-                    print(f"⚠️  Statement {i}: {str(e)[:100]}")
+                    logger.info(f"  Statement {i}: {str(e)[:100]}")
 
         # Update alembic version
         async with engine.begin() as conn:
             await conn.execute(text("UPDATE alembic_version SET version_num = '0010'"))
-            print(f"\n✅ Updated alembic_version to 0010")
+            logger.info(f"\n Updated alembic_version to 0010")
 
-        print("\n" + "="*60)
-        print("✅ ALL JOB SCRAPING TABLES CREATED SUCCESSFULLY!")
-        print("="*60)
+        logger.info("\n" + "="*60)
+        logger.info(" ALL JOB SCRAPING TABLES CREATED SUCCESSFULLY!")
+        logger.info("="*60)
 
         # Verify tables were created
         async with engine.begin() as conn:
@@ -144,15 +144,15 @@ async def create_tables():
             """))
             tables = result.fetchall()
 
-            print(f"\n📊 Verification: {len(tables)}/5 tables exist")
+            logger.info(f"\n Verification: {len(tables)}/5 tables exist")
             for (table,) in tables:
-                print(f"   ✓ {table}")
+                logger.info(f"    {table}")
 
-        print("\n✨ Database is now ready for job scraping features!")
+        logger.info("\n Database is now ready for job scraping features!")
         return True
 
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        logger.info(f"\n Error: {e}")
         import traceback
         traceback.print_exc()
         return False

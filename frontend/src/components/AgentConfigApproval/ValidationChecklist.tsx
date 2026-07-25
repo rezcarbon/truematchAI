@@ -12,11 +12,11 @@ interface ValidationChecklistProps {
 const StatusIcon: React.FC<{ status: string }> = ({ status }) => {
   switch (status) {
     case "passed":
-      return <span className="text-green-600 text-xl">✓</span>;
+      return <span className="text-green-600 text-xl"></span>;
     case "failed":
-      return <span className="text-red-600 text-xl">✗</span>;
+      return <span className="text-red-600 text-xl"></span>;
     case "warning":
-      return <span className="text-yellow-600 text-xl">⚠</span>;
+      return <span className="text-yellow-600 text-xl"></span>;
     case "missing":
     case "incomplete":
       return <span className="text-gray-400 text-xl">◯</span>;
@@ -85,9 +85,9 @@ export const ValidationChecklist: React.FC<ValidationChecklistProps> = ({ valida
             <div className="text-sm text-gray-600 mb-1">Recommendation</div>
             <div className="font-medium">
               {recommendation === "approve" ? (
-                <span className="text-green-600">✓ Approve</span>
+                <span className="text-green-600"> Approve</span>
               ) : (
-                <span className="text-yellow-600">⚠ Review Required</span>
+                <span className="text-yellow-600"> Review Required</span>
               )}
             </div>
           </div>
@@ -116,7 +116,7 @@ export const ValidationChecklist: React.FC<ValidationChecklistProps> = ({ valida
           <ul className="space-y-1">
             {val.warnings.map((warning, i) => (
               <li key={i} className="text-sm text-yellow-800 flex items-start gap-2">
-                <span className="text-yellow-600 font-bold mt-0.5">⚠</span>
+                <span className="text-yellow-600 font-bold mt-0.5"></span>
                 <span>{warning}</span>
               </li>
             ))}
@@ -152,7 +152,7 @@ export const ValidationChecklist: React.FC<ValidationChecklistProps> = ({ valida
           {Object.entries(version_checks).map(([key, value]) => (
             <div key={key} className="flex items-center gap-2">
               <span className={value ? "text-green-600 text-lg" : "text-gray-400 text-lg"}>
-                {value ? "✓" : "◯"}
+                {value ? "" : "◯"}
               </span>
               <span className="text-sm">
                 {key

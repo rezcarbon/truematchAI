@@ -612,7 +612,7 @@ class ScreeningAgent:
             if matched:
                 summary_lines.append("KEY MATCHES:")
                 for skill in matched[:3]:
-                    summary_lines.append(f"  ✓ {skill}")
+                    summary_lines.append(f"   {skill}")
                 summary_lines.append("")
 
             if missing:

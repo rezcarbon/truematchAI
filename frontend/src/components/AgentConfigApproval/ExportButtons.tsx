@@ -102,7 +102,7 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({
           className="px-3 py-1 text-sm bg-red-100 text-red-700 rounded hover:bg-red-200 disabled:opacity-50"
           title="Export approval checklist as PDF"
         >
-          {exporting ? "Exporting..." : "📄 Export PDF"}
+          {exporting ? "Exporting..." : " Export PDF"}
         </button>
         <button
           onClick={handleExportJSON}
@@ -118,7 +118,7 @@ export const ExportButtons: React.FC<ExportButtonsProps> = ({
           className="px-3 py-1 text-sm bg-green-100 text-green-700 rounded hover:bg-green-200 disabled:opacity-50"
           title="Export as CSV"
         >
-          {exporting ? "Exporting..." : "📊 CSV"}
+          {exporting ? "Exporting..." : " CSV"}
         </button>
       </div>
 

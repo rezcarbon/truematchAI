@@ -70,12 +70,12 @@ class MAgentRecruiterWrapper:
             )
             self.run_recruiter_agent = run_recruiter_agent
             self.m_agent_imported = True
-            self.logger.info("[M Agent] ✅ Import successful - M Agent Layer 1 & 2 active")
+            self.logger.info("[M Agent]  Import successful - M Agent Layer 1 & 2 active")
             return True
         except ImportError as e:
-            self.logger.error(f"[M Agent] ❌ Import failed: {e}")
+            self.logger.error(f"[M Agent]  Import failed: {e}")
             self.logger.warning(
-                "[M Agent] ⚠️  M Agent package unavailable - "
+                "[M Agent]   M Agent package unavailable - "
                 "falling back to local RecruiterAgent for full service continuity"
             )
             self.m_agent_imported = False
@@ -137,11 +137,11 @@ class MAgentRecruiterWrapper:
             if not self.m_agent_imported:
                 # FALLBACK: M Agent not available, use local RecruiterAgent
                 self.logger.warning(
-                    "[M Agent] ⚠️  M Agent not available - routing to fallback agent",
+                    "[M Agent]   M Agent not available - routing to fallback agent",
                     extra=execution_context
                 )
                 self.logger.info(
-                    "[M Agent] 🔄 Fallback: Routing to local RecruiterAgent",
+                    "[M Agent]  Fallback: Routing to local RecruiterAgent",
                     extra=execution_context
                 )
                 # Delegate to fallback agent - same interface, full compatibility
@@ -163,7 +163,7 @@ class MAgentRecruiterWrapper:
                     "streaming_supported": True,
                 }
                 self.logger.info(
-                    "[M Agent] ✅ Fallback completed successfully",
+                    "[M Agent]  Fallback completed successfully",
                     extra={
                         **execution_context,
                         "response_length": len(fallback_response.text),
@@ -255,7 +255,7 @@ class MAgentRecruiterWrapper:
             # Log error but don't re-raise - attempt fallback on any M Agent error
             error_msg = str(e)[:200]
             self.logger.error(
-                f"[M Agent] ❌ Error in M Agent path: {error_msg}",
+                f"[M Agent]  Error in M Agent path: {error_msg}",
                 extra=execution_context,
                 exc_info=True
             )
@@ -263,7 +263,7 @@ class MAgentRecruiterWrapper:
             # If M Agent path failed, try fallback agent as last resort
             try:
                 self.logger.warning(
-                    "[M Agent] 🔄 Attempting fallback to local RecruiterAgent due to M Agent error",
+                    "[M Agent]  Attempting fallback to local RecruiterAgent due to M Agent error",
                     extra=execution_context
                 )
                 fallback_response = await self.fallback_agent.respond(
@@ -285,14 +285,14 @@ class MAgentRecruiterWrapper:
                     "streaming_supported": True,
                 }
                 self.logger.info(
-                    "[M Agent] ✅ Fallback recovered from M Agent error",
+                    "[M Agent]  Fallback recovered from M Agent error",
                     extra=execution_context
                 )
                 return fallback_response
             except Exception as fallback_error:
                 # Both M Agent and fallback failed - this is critical
                 self.logger.critical(
-                    f"[M Agent] 🔴 CRITICAL: Both M Agent and fallback failed. "
+                    f"[M Agent]  CRITICAL: Both M Agent and fallback failed. "
                     f"M Agent error: {error_msg}. Fallback error: {str(fallback_error)[:200]}",
                     extra=execution_context,
                     exc_info=True

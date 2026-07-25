@@ -49,7 +49,7 @@ function WorkCard({ c }: { c: (typeof mockPipeline)[0] }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
             <p className="truncate text-sm font-semibold">{c.name}</p>
-            <GovernanceBadge status={c.governanceStatus} label={c.governanceStatus === "review" ? "Review" : "✓"} />
+            <GovernanceBadge status={c.governanceStatus} label={c.governanceStatus === "review" ? "Review" : ""} />
           </div>
           <p className="truncate text-xs text-muted-foreground">{c.appliedFor}</p>
           {priority === "red" && <p className="mt-0.5 text-[11px] font-medium text-red-600">Scorecard needed</p>}
@@ -127,7 +127,7 @@ export default async function RecruiterDashboard() {
           { label: "Open roles",       value: openRoles,    icon: Briefcase,     color: "text-primary" },
           { label: "Interviews today", value: interviews,   icon: Calendar,      color: "text-blue-600" },
           { label: "Under review",     value: reviewNeeded, icon: AlertTriangle, color: "text-amber-600" },
-          { label: "Hidden gems ⚡",   value: highDelta,    icon: Zap,           color: "text-amber-500" },
+          { label: "Hidden gems ",   value: highDelta,    icon: Zap,           color: "text-amber-500" },
         ].map(({ label, value, icon: Icon, color }) => (
           <Card key={label}>
             <CardContent className="flex items-center gap-4 p-4">
@@ -235,7 +235,7 @@ export default async function RecruiterDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="divide-y pb-2">
-              <EventRow time="14:32" icon={Zap}           color="text-amber-500"      text="Maya O. → AI Leader — δ+65 ⚡ counter-rec" />
+              <EventRow time="14:32" icon={Zap}           color="text-amber-500"      text="Maya O. → AI Leader — δ+65  counter-rec" />
               <EventRow time="14:28" icon={CheckCircle2}  color="text-emerald-500"    text="Assessment complete — M. Reezan" />
               <EventRow time="14:25" icon={FileText}      color="text-blue-500"       text="JD 'Eco Director' analysed — 75/100" />
               <EventRow time="14:20" icon={Inbox}         color="text-purple-500"     text="CV ingested — Sarah Chen" />

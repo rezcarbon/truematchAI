@@ -158,7 +158,7 @@ class ResumeVersion(Base, TimestampMixin):
         Example:
             >>> version = ResumeVersion.get_by_version(session, resume_id, 2)
             >>> if version:
-            ...     print(f"Quality score: {version.quality_score}")
+            logger.info(f"Quality score: {version.quality_score}")
         """
         return session.query(cls).filter(
             cls.resume_id == resume_id,
@@ -180,7 +180,7 @@ class ResumeVersion(Base, TimestampMixin):
             >>> version = session.query(ResumeVersion).filter_by(version_number=1).first()
             >>> diff = version.compute_diff_to_current()
             >>> if diff:
-            ...     print(f"Added sections: {diff.get('added', [])}")
+            logger.info(f"Added sections: {diff.get('added', [])}")
         """
         if self.is_current:
             return None
@@ -200,7 +200,7 @@ class ResumeVersion(Base, TimestampMixin):
         Example:
             >>> current = version.get_current_version(session)
             >>> if current and current.id != version.id:
-            ...     print("This is not the current version")
+            logger.info("This is not the current version")
         """
         return session.query(ResumeVersion).filter(
             ResumeVersion.resume_id == self.resume_id,
@@ -217,7 +217,7 @@ class ResumeVersion(Base, TimestampMixin):
         Example:
             >>> result = version.validate_content()
             >>> if not result['is_valid']:
-            ...     print(f"Issues found: {result['issues']}")
+            logger.info(f"Issues found: {result['issues']}")
         """
         issues = []
         score = self.quality_score or 0.0
@@ -253,7 +253,7 @@ class ResumeVersion(Base, TimestampMixin):
 
         Example:
             >>> version_dict = version.to_dict()
-            >>> print(f"Version {version_dict['version_number']} by {version_dict['created_by_id']}")
+            logger.info(f"Version {version_dict['version_number']} by {version_dict['created_by_id']}")
         """
         return {
             "id": str(self.id),

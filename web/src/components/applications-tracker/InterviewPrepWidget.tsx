@@ -158,7 +158,7 @@ export function InterviewPrepWidget({
                       key={i}
                       className="flex items-start gap-2 text-sm text-foreground p-2 bg-yellow-50 rounded"
                     >
-                      <span className="text-yellow-600">⚠</span>
+                      <span className="text-yellow-600"></span>
                       <span>{challenge}</span>
                     </li>
                   ))}
@@ -176,7 +176,7 @@ export function InterviewPrepWidget({
                       key={i}
                       className="flex items-start gap-2 text-sm text-foreground p-2 bg-green-50 rounded"
                     >
-                      <span className="text-green-600">✓</span>
+                      <span className="text-green-600"></span>
                       <span>{tip}</span>
                     </li>
                   ))}

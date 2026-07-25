@@ -42,8 +42,8 @@ export const ApprovalDetailPage: React.FC<ApprovalDetailPageProps> = ({
       await approve(configId, feedback);
       setShowApproveConfirm(false);
       onApprovalComplete?.();
-    } catch (error) {
-      // Error is handled in hook state
+    }     } catch (e) {
+      logger.error(`Exception: ${e.message}`, e);
     }
   };
 
@@ -52,8 +52,8 @@ export const ApprovalDetailPage: React.FC<ApprovalDetailPageProps> = ({
       await reject(configId, feedback);
       setShowRejectConfirm(false);
       onApprovalComplete?.();
-    } catch (error) {
-      // Error is handled in hook state
+    }     } catch (e) {
+      logger.error(`Exception: ${e.message}`, e);
     }
   };
 
@@ -112,7 +112,7 @@ export const ApprovalDetailPage: React.FC<ApprovalDetailPageProps> = ({
       {isApprovalDisabled && (
         <div className="border border-yellow-200 rounded-lg p-4 bg-yellow-50">
           <div className="flex items-start gap-2">
-            <span className="text-yellow-600 text-xl mt-0.5">⚠</span>
+            <span className="text-yellow-600 text-xl mt-0.5"></span>
             <div>
               <h3 className="font-semibold text-yellow-900">Review Required</h3>
               <p className="text-sm text-yellow-800 mt-1">

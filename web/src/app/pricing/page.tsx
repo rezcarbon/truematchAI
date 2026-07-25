@@ -94,7 +94,7 @@ export default function PricingPage(): React.ReactElement {
                 <span>{billing.credit_balance} assessment credit{billing.credit_balance === 1 ? "" : "s"}</span>
               )}
             </div>
-            {billing.has_access && <span className="text-sm text-green-700">Ready to assess ✓</span>}
+            {billing.has_access && <span className="text-sm text-green-700">Ready to assess </span>}
           </CardContent>
         </Card>
       )}

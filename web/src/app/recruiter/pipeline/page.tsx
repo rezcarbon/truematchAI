@@ -101,9 +101,8 @@ export default function PipelinePage() {
   const handleStageChange = async (candidateId: string, newStage: string) => {
     try {
       await updateStage(candidateId, newStage);
-    } catch (err) {
-      // Error already handled by hook
-      throw err;
+    } catch (e) {
+      console.error(`Exception: ${e.message}`, e);
     }
   };
 
@@ -135,9 +134,8 @@ export default function PipelinePage() {
       await executeBulkAction(request);
       setSelectedCandidates(new Set()); // Clear selection after action
       await (candidates as any).refetch(); // Refetch to update UI
-    } catch (err) {
-      // Error already handled by hook
-      throw err;
+    } catch (e) {
+      console.error(`Exception: ${e.message}`, e);
     }
   };
 

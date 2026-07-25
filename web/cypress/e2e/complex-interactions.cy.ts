@@ -335,7 +335,7 @@ describe('WebSocket Real-time Updates', () => {
       const initialCount = cards.length;
 
       // Simulate WebSocket message (in real scenario, use websocket interceptor)
-      cy.window().then((win) => {
+      cy.window().then((win: any) => {
         // Trigger a simulated update
         if (win.mockWebSocket) {
           win.mockWebSocket.simulateNewApplication();
@@ -359,7 +359,7 @@ describe('WebSocket Real-time Updates', () => {
       .should('contain', 'Applied');
 
     // Simulate status update
-    cy.window().then((win) => {
+    cy.window().then((win: any) => {
       if (win.mockWebSocket) {
         win.mockWebSocket.simulateStatusUpdate('accepted');
       }
@@ -458,7 +458,7 @@ describe('Tab Navigation', () => {
 
 describe('Responsive Layout', () => {
   it('should adapt layout for mobile', () => {
-    cy.viewport('iphone-12');
+    cy.viewport(375, 812);
     cy.visit('/candidate/dashboard');
 
     // Sidebar should not be visible on mobile

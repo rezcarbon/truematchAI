@@ -209,7 +209,7 @@ export function JobDetailsModal({
               <div className="grid grid-cols-2 gap-3">
                 {job.benefits.map((benefit, idx) => (
                   <div key={idx} className="flex items-center gap-2 text-gray-700">
-                    <span className="text-green-600">✓</span>
+                    <span className="text-green-600"></span>
                     <span>{benefit}</span>
                   </div>
                 ))}

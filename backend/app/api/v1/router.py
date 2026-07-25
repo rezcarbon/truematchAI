@@ -13,6 +13,7 @@ from app.api.v1 import (
     applications,
     assessments,
     assessment_designs,
+    assessment_results,
     ats,
     auth,
     billing,
@@ -31,6 +32,7 @@ from app.api.v1 import (
     files,
     governance_reviews,
     jd_simulation,
+    jobs_management,
     # job_search,  # Temporarily disabled due to schema import issues
     metrics,
     notifications,
@@ -39,6 +41,7 @@ from app.api.v1 import (
     profile,
     realtime_progress_api,
     recruiter_metrics,
+    resume_upload,
     resume_versioning,
     screening,
     training,
@@ -51,6 +54,9 @@ from app.api.v1.admin import autonomous
 
 api_router = APIRouter()
 api_router.include_router(auth.router, prefix="/auth", tags=["auth"])
+api_router.include_router(resume_upload.router, tags=["resume-upload"])  # Resume upload
+api_router.include_router(jobs_management.router, tags=["jobs"])  # Job management
+api_router.include_router(assessment_results.router, tags=["assessment-results"])  # Assessment results
 api_router.include_router(assessments.router, prefix="/assessments", tags=["assessments"])
 api_router.include_router(assessment_designs.router, tags=["assessment_designs"])  # Phase 2: Assessment designer
 api_router.include_router(analysis_evolution.router, tags=["analysis_evolution"])  # Phase 3-5: Analysis, Matching, Evolution

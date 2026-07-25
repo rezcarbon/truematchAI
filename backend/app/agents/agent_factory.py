@@ -80,7 +80,7 @@ class AgentFactory:
         except Exception as e:
             # If database is down or there's an error, just return None
             # and the agent will use hardcoded defaults
-            print(f"Warning: Failed to load agent config from database: {e}")
+            logger.info(f"Warning: Failed to load agent config from database: {e}")
             return None
 
     def _instantiate_base_agent(self, user_role: str) -> AdminAgent | RecruiterAgent | CandidateAgent:

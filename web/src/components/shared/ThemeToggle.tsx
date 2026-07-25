@@ -35,7 +35,7 @@ export function ThemeToggle() {
         ))}
       </div>
       <p className="text-xs text-muted-foreground">
-        {isDark ? '🌙 Dark mode enabled' : '☀️ Light mode enabled'}
+        {isDark ? ' Dark mode enabled' : ' Light mode enabled'}
       </p>
     </div>
   );

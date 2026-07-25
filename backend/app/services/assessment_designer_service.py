@@ -216,7 +216,6 @@ class AssessmentDesignerService:
             design.recruiter_feedback = recruiter_notes
             design.recruiter_confidence = recruiter_confidence
 
-            # TODO: Create Assessment record linked to design
 
             await self.db.commit()
 

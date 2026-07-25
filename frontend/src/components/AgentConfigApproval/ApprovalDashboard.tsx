@@ -180,11 +180,11 @@ export const ApprovalDashboard: React.FC = () => {
                 <div className="flex items-center gap-2">
                   {approval.recommendation === "approve" ? (
                     <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-800">
-                      ✓ Ready
+                       Ready
                     </span>
                   ) : (
                     <span className="inline-block px-3 py-1 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">
-                      ⚠ Review
+                       Review
                     </span>
                   )}
                 </div>

@@ -141,7 +141,7 @@ export const DashboardWithBatchFeatures: React.FC = () => {
           onClick={() => setBatchMode(true)}
           className="px-3 py-1 text-sm text-blue-600 hover:text-blue-800 border border-blue-200 rounded"
         >
-          ☑ Enable Batch Mode
+           Enable Batch Mode
         </button>
       )}
 

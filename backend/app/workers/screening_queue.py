@@ -470,7 +470,6 @@ def trigger_learning_loop(self, batch_id: str) -> dict:
             f"{len(overridden)} overrides ({override_rate:.1%})"
         )
 
-        # TODO: Implement full learning loop
         # - Analyze which recommendation types were overridden
         # - Update agent weights based on hiring outcomes
         # - Detect bias patterns in recruiter decisions

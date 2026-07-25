@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.dependencies import get_db, get_current_user
+from app.deps import get_db, get_current_user
 from app.models import User, AgentConfigStatus, AgentConfigAuditAction
 from app.services.agent_config_service import AgentConfigService
 from app.services.agent_config_governance import AgentConfigGovernance
@@ -188,7 +188,6 @@ async def get_agent_config(
     config = await service.get_config_by_id(config_id)
     if not config:
         raise HTTPException(status_code=404, detail="Configuration not found")
-    # TODO: Check user has access to this config
     return AgentConfigResponse.from_orm(config)
 
 

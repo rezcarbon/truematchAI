@@ -135,6 +135,7 @@ class AgentConfig(Base, TimestampMixin):
         "AgentConfigVersion",
         back_populates="config",
         cascade="all, delete-orphan",
+        foreign_keys="[AgentConfigVersion.config_id]",
     )
     audit_logs = relationship(
         "AgentConfigAudit",
@@ -222,7 +223,7 @@ class AgentConfigVersion(Base, TimestampMixin):
     # Why was this version created? "Updated instructions for clarity", etc.
 
     # Relationships
-    config = relationship("AgentConfig", back_populates="versions")
+    config = relationship("AgentConfig", back_populates="versions", foreign_keys="[AgentConfigVersion.config_id]")
 
     __table_args__ = (
         Index("ix_agent_config_versions_config_id", config_id),
@@ -287,7 +288,7 @@ class AgentConfigAudit(Base, TimestampMixin):
     # User-provided reason for change: "Updated for clarity", "Feedback from team", etc.
 
     # Context (for debugging)
-    metadata: Mapped[dict] = mapped_column(
+    audit_metadata: Mapped[dict] = mapped_column(
         JSONB, nullable=False, default=dict
     )  # Additional context: IP address, user agent, etc.
 

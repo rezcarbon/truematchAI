@@ -84,7 +84,7 @@ export function InterviewScheduler({
         meetingPlatform: formData.meetingPlatform,
       });
 
-      addToast(`Interview scheduled for ${candidateName}! 🎉`, 'success');
+      addToast(`Interview scheduled for ${candidateName}! `, 'success');
       onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to schedule interview';
@@ -191,7 +191,7 @@ export function InterviewScheduler({
           {formData.date && formData.time && (
             <div className="bg-primary/5 border border-primary/20 rounded-lg p-4 space-y-2">
               <p className="text-sm">
-                <span className="font-medium">📅 Interview Scheduled For:</span>
+                <span className="font-medium"> Interview Scheduled For:</span>
               </p>
               <p className="text-sm">
                 {new Date(`${formData.date}T${formData.time}`).toLocaleString('en-US', {

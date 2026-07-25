@@ -125,7 +125,7 @@ describe('SkillsRadar', () => {
     ];
 
     render(<SkillsRadar data={data} />);
-    expect(screen.getByText('✓')).toBeInTheDocument();
+    expect(screen.getByText('')).toBeInTheDocument();
   });
 
   it('has scrollable skills details section', () => {

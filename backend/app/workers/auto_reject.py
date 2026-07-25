@@ -307,7 +307,7 @@ async def process_auto_reject_batch(
         ...     assessment_ids=[id1, id2, id3],
         ...     user_id=recruiter_id,
         ... )
-        >>> print(f"Rejected {result['rejected']} of {result['total']}")
+        logger.info(f"Rejected {result['rejected']} of {result['total']}")
     """
     worker = AutoRejectWorker(db)
     results = {

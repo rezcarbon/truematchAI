@@ -102,12 +102,12 @@ async def setup_tables():
         for i, stmt in enumerate(sql_statements, 1):
             try:
                 await conn.execute(text(stmt))
-                print(f"✓ SQL {i}/{len(sql_statements)} executed")
+                logger.info(f" SQL {i}/{len(sql_statements)} executed")
             except Exception as e:
-                print(f"✗ SQL {i} failed: {e}")
+                logger.info(f" SQL {i} failed: {e}")
                 raise
 
-    print("\n✅ All tables created successfully!")
+    logger.info("\n All tables created successfully!")
 
     # List tables
     async with engine.begin() as conn:
@@ -115,9 +115,9 @@ async def setup_tables():
             "SELECT tablename FROM pg_tables WHERE schemaname='public' ORDER BY tablename"
         ))
         tables = result.fetchall()
-        print(f"\n📊 Total tables: {len(tables)}")
+        logger.info(f"\n Total tables: {len(tables)}")
         for (table,) in tables[-10:]:
-            print(f"  - {table}")
+            logger.info(f"  - {table}")
 
 if __name__ == "__main__":
     asyncio.run(setup_tables())

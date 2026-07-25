@@ -35,14 +35,14 @@ const STAGE_COLORS: Record<string, string> = {
 };
 
 const SOURCE_ICONS: Record<string, string> = {
-  linkedin: '💼',
-  referral: '👥',
-  indeed: '📌',
-  glassdoor: '⭐',
-  company_website: '🌐',
-  recruiter_outreach: '📧',
-  university: '🎓',
-  unknown: '❓',
+  linkedin: '',
+  referral: '',
+  indeed: '',
+  glassdoor: '',
+  company_website: '',
+  recruiter_outreach: '',
+  university: '',
+  unknown: '',
 };
 
 export function CandidateDetailModal({
@@ -131,9 +131,9 @@ export function CandidateDetailModal({
                   : 'border-transparent text-muted-foreground hover:text-foreground'
               }`}
             >
-              {tab === 'overview' && '📊 Overview'}
-              {tab === 'resume' && '📄 Resume'}
-              {tab === 'interviews' && '🎤 Interviews'}
+              {tab === 'overview' && ' Overview'}
+              {tab === 'resume' && ' Resume'}
+              {tab === 'interviews' && ' Interviews'}
             </button>
           ))}
         </div>
@@ -166,9 +166,9 @@ export function CandidateDetailModal({
                   <div key={label} className={`rounded-lg p-4 ${color}`}>
                     <p className="text-xs font-medium opacity-75">{label}</p>
                     <p className="text-2xl font-bold mt-1">{score ? Math.round(score) : '—'}%</p>
-                    {score && score >= 80 && <p className="text-xs mt-1">✅ Strong</p>}
-                    {score && score >= 60 && score < 80 && <p className="text-xs mt-1">⚠️ Moderate</p>}
-                    {score && score < 60 && <p className="text-xs mt-1">❌ Weak</p>}
+                    {score && score >= 80 && <p className="text-xs mt-1"> Strong</p>}
+                    {score && score >= 60 && score < 80 && <p className="text-xs mt-1"> Moderate</p>}
+                    {score && score < 60 && <p className="text-xs mt-1"> Weak</p>}
                   </div>
                 ))}
               </div>
@@ -209,10 +209,10 @@ export function CandidateDetailModal({
                 <h3 className="font-semibold text-sm">Summary</h3>
                 <p className="text-sm text-muted-foreground">
                   {averageScore && averageScore >= 80
-                    ? '🟢 Strong candidate - excellent alignment with position requirements'
+                    ? ' Strong candidate - excellent alignment with position requirements'
                     : averageScore && averageScore >= 60
-                    ? '🟡 Moderate candidate - meets core requirements, gaps in some areas'
-                    : '🔴 Weak candidate - significant gaps against position requirements'}
+                    ? ' Moderate candidate - meets core requirements, gaps in some areas'
+                    : ' Weak candidate - significant gaps against position requirements'}
                 </p>
               </div>
 

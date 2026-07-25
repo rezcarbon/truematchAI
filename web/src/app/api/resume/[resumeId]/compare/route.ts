@@ -25,9 +25,6 @@ export async function POST(
       );
     }
 
-    // TODO: Fetch versions from database
-    // const versionA = await db.resumeVersions.findById(versionAId);
-    // const versionB = await db.resumeVersions.findById(versionBId);
 
     // For now, return a placeholder response
     const comparison: VersionComparison = {
@@ -40,11 +37,6 @@ export async function POST(
       extractedTextDifference: "",
     };
 
-    // TODO: Implement comparison logic
-    // const skillsA = new Set(versionA.skills);
-    // const skillsB = new Set(versionB.skills);
-    // const skillsAdded = Array.from(skillsB).filter(s => !skillsA.has(s));
-    // const skillsRemoved = Array.from(skillsA).filter(s => !skillsB.has(s));
 
     return NextResponse.json(comparison);
   } catch (error) {

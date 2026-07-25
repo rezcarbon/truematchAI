@@ -143,7 +143,7 @@ class SavedJob(Base):
 
         Example:
             >>> is_saved = job.toggle_save(session)
-            >>> print(f"Job is now {'saved' if is_saved else 'archived'}")
+            logger.info(f"Job is now {'saved' if is_saved else 'archived'}")
         """
         now = utcnow()
         old_status = self.status
@@ -272,7 +272,7 @@ class SavedJob(Base):
 
         Example:
             >>> count = SavedJob.get_user_saved_count(session, user_id)
-            >>> print(f"User has {count} saved jobs")
+            logger.info(f"User has {count} saved jobs")
         """
         query = session.query(cls).filter(cls.user_id == user_id)
 
@@ -290,7 +290,7 @@ class SavedJob(Base):
 
         Example:
             >>> data = job.to_dict()
-            >>> print(f"Match score: {data['match_score']}")
+            logger.info(f"Match score: {data['match_score']}")
         """
         return {
             "id": str(self.id),
@@ -384,7 +384,7 @@ class SavedJobsList(Base):
 
         Example:
             >>> list_data = job_list.to_dict()
-            >>> print(f"List has {list_data['job_count']} jobs")
+            logger.info(f"List has {list_data['job_count']} jobs")
         """
         return {
             "id": str(self.id),

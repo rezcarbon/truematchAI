@@ -24,6 +24,7 @@ from typing import Optional, Dict, List
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import ProgrammingError, OperationalError
 
 from app.models.chat import ChatSession, ChatMessage
 from app.models.user import User
@@ -266,7 +267,7 @@ class AutonomousLoopManager:
 
         self.running = True
 
-        # ✅ Initialize database connection with production pool settings
+        #  Initialize database connection with production pool settings
         self._engine = create_async_engine(
             settings.database_url,
             echo=False,
@@ -294,7 +295,7 @@ class AutonomousLoopManager:
                     )
                     self.metrics.record_error(str(e))
 
-                # ✅ Add jitter to prevent thundering herd
+                #  Add jitter to prevent thundering herd
                 jitter = random.uniform(-POLLING_JITTER_SECONDS, POLLING_JITTER_SECONDS)
                 sleep_time = max(1, POLLING_INTERVAL_SECONDS + jitter)
 
@@ -366,6 +367,17 @@ class AutonomousLoopManager:
                 # Report metrics periodically
                 await self._report_metrics()
 
+            except (ProgrammingError, OperationalError) as e:
+                if "autonomous_settings" in str(e) or "does not exist" in str(e):
+                    logger.debug(
+                        "Autonomous loop skipping cycle: autonomous_settings table not ready",
+                        extra={"error": str(e)},
+                    )
+                    return
+                logger.error(
+                    f"Database error in process cycle: {e}",
+                    extra={"error_type": type(e).__name__},
+                )
             except Exception as e:
                 logger.error(
                     f"Error in process cycle: {e}",
@@ -373,17 +385,30 @@ class AutonomousLoopManager:
                 )
 
     async def _get_autonomous_users(self, db: AsyncSession) -> list[uuid.UUID]:
-        """Get list of users with autonomous mode enabled."""
-        stmt = select(AutonomousSettings.user_id).where(
-            AutonomousSettings.enabled.is_(True)
-        )
-        result = await db.execute(stmt)
-        return [row[0] for row in result.all()]
+        """Get list of users with autonomous mode enabled.
+
+        Returns empty list if autonomous_settings table doesn't exist yet
+        (e.g., before migrations are run).
+        """
+        try:
+            stmt = select(AutonomousSettings.user_id).where(
+                AutonomousSettings.enabled.is_(True)
+            )
+            result = await db.execute(stmt)
+            return [row[0] for row in result.all()]
+        except (ProgrammingError, OperationalError) as e:
+            if "autonomous_settings" in str(e) or "does not exist" in str(e):
+                logger.warning(
+                    "autonomous_settings table does not exist yet; migrations may not have been run",
+                    extra={"error": str(e)},
+                )
+                return []
+            raise
 
     async def _process_user_tasks(self, user_id: uuid.UUID, db: AsyncSession):
         """Process tasks for a specific user.
 
-        ✅ Includes rate limiting, budget enforcement, and error handling
+         Includes rate limiting, budget enforcement, and error handling
         """
         # Load user
         user = await db.get(User, user_id)
@@ -398,7 +423,7 @@ class AutonomousLoopManager:
         if not settings_record or not settings_record.enabled:
             return
 
-        # ✅ Check rate limiting
+        #  Check rate limiting
         can_execute, reason = settings_record.can_execute_action()
         if not can_execute:
             logger.debug(
@@ -413,7 +438,7 @@ class AutonomousLoopManager:
         # Find pending tasks for this user
         pending_messages = await self._get_pending_messages(user_id, db)
 
-        # ✅ Limit batch size to prevent resource exhaustion
+        #  Limit batch size to prevent resource exhaustion
         pending_messages = pending_messages[:MAX_BATCH_SIZE]
 
         for message in pending_messages:
@@ -457,7 +482,7 @@ class AutonomousLoopManager:
                     },
                 )
 
-                # ✅ Check budget before executing actions
+                #  Check budget before executing actions
                 total_cost = sum(
                     CostCalculator.calculate_action_cost(a.get("type", "send"))
                     for a in pending_actions
@@ -493,7 +518,7 @@ class AutonomousLoopManager:
                 agent_message.actions_taken = executed
                 await db.commit()
 
-                # ✅ Record actual cost
+                #  Record actual cost
                 settings_record.record_action(cost=total_cost)
                 await db.commit()
 
@@ -633,7 +658,6 @@ class AutonomousLoopManager:
         """
         # Count pending DLQ reviews directly from the in-memory list. Calling
         # asyncio.run() here was a bug: get_status() is sync and is invoked from
-        # async contexts (health checks), where asyncio.run() raises
         # "cannot be called from a running event loop".
         dlq_pending = sum(
             1 for a in self.dlq.failed_actions if a.get("status") == "pending_review"

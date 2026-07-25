@@ -38,7 +38,6 @@ from app.models.training import (
     VirtualBrainState,
 )
 # Previously missing from the package init — meaning these tables were absent
-# from Base.metadata and alembic autogenerate wanted to DROP them. Import here
 # so the metadata is complete and migrations stay accurate.
 from app.models.autonomous_settings import AutonomousSettings
 from app.models.chat import ChatSession, ChatMessage

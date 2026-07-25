@@ -601,7 +601,6 @@ def disparate_impact_hourly_analysis() -> dict[str, Any]:
                                 f"demographic '{demographic}', ratio {group_data['four_fifths_ratio']:.3f}"
                             )
 
-                            # TODO: Send admin alert (Slack, email, etc.)
                             # _alert_admin_disparate_impact(
                             #     position_id, demographic, group_data
                             # )

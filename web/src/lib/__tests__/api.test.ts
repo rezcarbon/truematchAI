@@ -43,8 +43,8 @@ describe('API Client', () => {
 
       try {
         await fetch('/api/proxy/assessments/1')
-      } catch (error) {
-        // Error is expected
+      } catch (e) {
+        console.error(`Exception: ${e.message}`, e);
       }
 
       expect(global.fetch).toHaveBeenCalled()

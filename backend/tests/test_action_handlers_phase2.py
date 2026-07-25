@@ -176,7 +176,7 @@ class TestActionHandlers:
             "type": "upload",
             "parameters": {
                 "file_id": "s3://bucket/file",
-                "file_type": "invalid_type",  # ❌ Invalid
+                "file_type": "invalid_type",  #  Invalid
                 "filename": "file.pdf",
             },
         }
@@ -194,7 +194,7 @@ class TestActionHandlers:
             "parameters": {
                 "file_id": "s3://bucket/file",
                 "file_type": "resume",
-                "filename": "../../../etc/passwd",  # ❌ Path traversal attempt
+                "filename": "../../../etc/passwd",  #  Path traversal attempt
             },
         }
 
@@ -209,7 +209,7 @@ class TestActionHandlers:
             "id": "upload_5",
             "type": "upload",
             "parameters": {
-                # Missing file_id ❌
+                # Missing file_id 
                 "file_type": "resume",
                 "filename": "resume.pdf",
             },
@@ -247,7 +247,7 @@ class TestActionHandlers:
             "id": "analyze_2",
             "type": "analyze",
             "parameters": {
-                "resume_id": "not-a-uuid",  # ❌ Invalid UUID
+                "resume_id": "not-a-uuid",  #  Invalid UUID
                 "analysis_type": "cv_analysis",
             },
         }
@@ -307,7 +307,7 @@ class TestActionHandlers:
             "type": "analyze",
             "parameters": {
                 "resume_id": str(resume.id),
-                "analysis_type": "invalid_analysis",  # ❌ Invalid type
+                "analysis_type": "invalid_analysis",  #  Invalid type
             },
         }
 
@@ -381,7 +381,7 @@ class TestActionHandlers:
             "parameters": {
                 "position_id": str(position.id),
                 "candidate_ids": [str(uuid4())],
-                "criteria": "invalid_criteria",  # ❌ Invalid
+                "criteria": "invalid_criteria",  #  Invalid
             },
         }
 
@@ -397,7 +397,7 @@ class TestActionHandlers:
             "type": "rank",
             "parameters": {
                 "position_id": str(position.id),
-                "candidate_ids": [],  # ❌ Empty
+                "candidate_ids": [],  #  Empty
                 "criteria": "skill_match",
             },
         }
@@ -409,7 +409,7 @@ class TestActionHandlers:
 
     async def test_rank_too_many_candidates(self, user, position, db_session):
         """Too many candidates rejected."""
-        candidate_ids = [str(uuid4()) for _ in range(101)]  # ❌ > 100
+        candidate_ids = [str(uuid4()) for _ in range(101)]  #  > 100
         action = {
             "id": "rank_4",
             "type": "rank",
@@ -478,7 +478,7 @@ class TestActionHandlers:
             "type": "schedule",
             "parameters": {
                 "application_id": str(application.id),
-                "interview_type": "invalid_type",  # ❌ Invalid
+                "interview_type": "invalid_type",  #  Invalid
                 "scheduled_time": "2026-06-15T14:00:00Z",
                 "duration_minutes": 30,
             },
@@ -498,7 +498,7 @@ class TestActionHandlers:
                 "application_id": str(application.id),
                 "interview_type": "phone_screen",
                 "scheduled_time": "2026-06-15T14:00:00Z",
-                "duration_minutes": 10,  # ❌ < 15 min
+                "duration_minutes": 10,  #  < 15 min
             },
         }
 
@@ -515,7 +515,7 @@ class TestActionHandlers:
             "parameters": {
                 "application_id": str(application.id),
                 "interview_type": "phone_screen",
-                "scheduled_time": "not-a-datetime",  # ❌ Invalid
+                "scheduled_time": "not-a-datetime",  #  Invalid
                 "duration_minutes": 30,
             },
         }
@@ -577,7 +577,7 @@ class TestActionHandlers:
                 "application_id": str(application.id),
                 "assessment_id": str(assessment.id),
                 "position_id": str(application.position_id),
-                "decision": "invalid_decision",  # ❌ Invalid
+                "decision": "invalid_decision",  #  Invalid
             },
         }
 
@@ -652,7 +652,7 @@ class TestActionHandlers:
             "type": "send",
             "parameters": {
                 "recipient_id": str(other_user.id),
-                "message_type": "invalid_type",  # ❌ Invalid
+                "message_type": "invalid_type",  #  Invalid
                 "context": {},
             },
         }

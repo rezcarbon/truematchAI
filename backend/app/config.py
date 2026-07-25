@@ -85,7 +85,6 @@ class Settings(BaseSettings):
     # Enables cost-optimized secondary workloads (trajectory, summarization) via
     # Google's Gemini 2.5 model. When enabled + configured, "secondary" reasoning
     # routes to Gemini instead of Haiku (or MiniMax). Reduces cost ~60% vs Claude
-    # while maintaining high quality for non-critical verdicts. Requires credentials:
     # 1. GCP service account JSON (base64-encoded in GOOGLE_APPLICATION_CREDENTIALS env)
     # 2. GCP project ID with Vertex AI enabled
     # 3. Region (default: us-central1; supports any region with Vertex AI)
@@ -203,7 +202,6 @@ class Settings(BaseSettings):
         return self.s3_enabled
 
     # Field-level encryption (PII at rest). Keys are base64-encoded and injected
-    # from a secrets manager / KMS-wrapped at deploy time. NEVER committed.
     #   encryption_key       : 32-byte base64 AES-256 data-encryption key
     #   encryption_index_key : base64 HMAC key for searchable blind indexes
     # When unset, the app runs UNENCRYPTED (dev only) and logs a warning.

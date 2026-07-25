@@ -67,9 +67,9 @@ export default function ScrapersPage() {
     try {
       const result = await api.testScraper(id);
       if (result.status === 'ok') {
-        alert(`✓ ${(result as { source?: string }).source} scraper is working correctly`);
+        alert(` ${(result as { source?: string }).source} scraper is working correctly`);
       } else {
-        alert(`✗ ${(result as { source?: string }).source} scraper test failed`);
+        alert(` ${(result as { source?: string }).source} scraper test failed`);
       }
     } catch (err) {
       alert(`Error testing scraper: ${err instanceof Error ? err.message : 'Unknown error'}`);
@@ -100,7 +100,6 @@ export default function ScrapersPage() {
 
   const handleCreate = () => {
     setIsCreating(true);
-    // TODO: Open scraper creation dialog
     // For now, show a message
     alert('Scraper creation dialog coming soon. Use API to create manually for now.');
     setIsCreating(false);

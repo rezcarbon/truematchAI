@@ -84,7 +84,7 @@ class AgentLearningLog(Base):
     updated_at = Column(DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Metadata for debugging/analysis
-    metadata = Column(JSON, nullable=True)  # Additional context as needed
+    learning_metadata = Column(JSON, nullable=True)  # Additional context as needed
 
     def __repr__(self) -> str:
         return f"AgentLearningLog(user_id={self.user_id}, agent={self.agent_type}, tools={self.tool_count})"

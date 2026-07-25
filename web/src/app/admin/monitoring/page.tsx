@@ -45,8 +45,6 @@ export default function MonitoringDashboard() {
     const fetchMetrics = async () => {
       try {
         // In production, this would call the actual API
-        // const response = await fetch('/api/v1/admin/metrics');
-        // const data = await response.json();
 
         // Mock data for now
         const mockData: SystemMetrics = {

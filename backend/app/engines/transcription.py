@@ -61,7 +61,6 @@ def _transcribe_openai(audio_bytes: bytes, filename: str, content_type: str) -> 
     except httpx.HTTPError as exc:  # network/timeout
         raise TranscriptionError(f"Transcription request failed: {exc}") from exc
 
-    # response_format=text yields a bare transcript; tolerate JSON too.
     body = resp.text.strip()
     if body.startswith("{"):
         try:

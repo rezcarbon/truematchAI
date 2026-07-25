@@ -122,7 +122,7 @@ class AgentConfigExportService:
         summary_data = [
             [
                 "Safety Check:",
-                "✓ PASSED" if validation["safety_passed"] else "✗ FAILED",
+                " PASSED" if validation["safety_passed"] else " FAILED",
             ],
             ["Fairness Score:", f"{validation['fairness_score']}/100"],
             [
@@ -152,9 +152,9 @@ class AgentConfigExportService:
         items_data = [["Item", "Status", "Details"]]
         for item in checklist["approval_items"]:
             status_symbol = {
-                "passed": "✓",
-                "failed": "✗",
-                "warning": "⚠",
+                "passed": "",
+                "failed": "",
+                "warning": "",
                 "missing": "○",
                 "incomplete": "○",
             }.get(item["status"], "?")

@@ -69,7 +69,7 @@ export default function CapabilityTranslationPage() {
               {status === "uploading" ? "Uploading…" : "Upload resume"}
             </Button>
           )}
-          {resumeId && <p className="text-sm text-success">Resume uploaded ✓</p>}
+          {resumeId && <p className="text-sm text-success">Resume uploaded </p>}
         </CardContent>
       </Card>
 

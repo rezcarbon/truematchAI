@@ -75,7 +75,7 @@ export default function ProgressIndicator({
                       : 'text-gray-600'
                 }`}
               >
-                {isComplete ? '✓ Done' : isCurrent ? 'In Progress' : 'Pending'}
+                {isComplete ? ' Done' : isCurrent ? 'In Progress' : 'Pending'}
               </p>
             </div>
           );

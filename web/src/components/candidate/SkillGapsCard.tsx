@@ -45,10 +45,10 @@ export function SkillGapsCard({ gaps, loading = false }: SkillGapsCardProps) {
   };
 
   const resourceIcons = {
-    Course: '🎓',
-    Tutorial: '📺',
-    Documentation: '📚',
-    Book: '📖',
+    Course: '',
+    Tutorial: '',
+    Documentation: '',
+    Book: '',
   };
 
   if (loading) {
@@ -118,7 +118,7 @@ export function SkillGapsCard({ gaps, loading = false }: SkillGapsCardProps) {
 
             <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2 mb-3">
               <span className="font-medium">
-                ⏱️ {gap.weeksToLearn} week{gap.weeksToLearn !== 1 ? 's' : ''}
+                ⏱ {gap.weeksToLearn} week{gap.weeksToLearn !== 1 ? 's' : ''}
               </span>
             </div>
 

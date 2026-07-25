@@ -106,7 +106,7 @@ export function OfferDetailsCard({
             <ul className="space-y-1">
               {offer.benefits.map((benefit, i) => (
                 <li key={i} className="flex items-start gap-2 text-sm text-foreground">
-                  <span className="text-green-600 font-bold">✓</span>
+                  <span className="text-green-600 font-bold"></span>
                   <span>{benefit}</span>
                 </li>
               ))}

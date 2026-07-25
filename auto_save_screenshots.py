@@ -89,7 +89,7 @@ def setup_driver():
 def login(driver, email, password):
     """Login to the platform"""
     try:
-        print("  📝 Logging in...")
+        logger.info("   Logging in...")
         email_field = WebDriverWait(driver, 10).until(
             EC.presence_of_element_located((By.NAME, "email"))
         )
@@ -105,10 +105,10 @@ def login(driver, email, password):
 
         # Wait for dashboard to load
         time.sleep(3)
-        print("  ✅ Login successful")
+        logger.info("   Login successful")
         return True
     except Exception as e:
-        print(f"  ❌ Login failed: {e}")
+        logger.info(f"   Login failed: {e}")
         return False
 
 def capture_screenshot(driver, screenshot_info):
@@ -118,8 +118,8 @@ def capture_screenshot(driver, screenshot_info):
     description = screenshot_info["description"]
     login_required = screenshot_info.get("login_required", False)
 
-    print(f"\n📸 Capturing: {description}")
-    print(f"   URL: {BASE_URL}{url}")
+    logger.info(f"\n Capturing: {description}")
+    logger.info(f"   URL: {BASE_URL}{url}")
 
     try:
         # Navigate to page
@@ -131,41 +131,41 @@ def capture_screenshot(driver, screenshot_info):
         driver.save_screenshot(str(save_path))
 
         file_size = save_path.stat().st_size
-        print(f"   ✅ Saved: {name} ({file_size:,} bytes)")
+        logger.info(f"    Saved: {name} ({file_size:,} bytes)")
         return True
 
     except Exception as e:
-        print(f"   ❌ Failed to capture: {e}")
+        logger.info(f"    Failed to capture: {e}")
         return False
 
 def main():
     """Main execution"""
-    print("=" * 70)
-    print("TrueMatch Automated Screenshot Capture")
-    print("=" * 70)
+    logger.info("=" * 70)
+    logger.info("TrueMatch Automated Screenshot Capture")
+    logger.info("=" * 70)
 
     # Create screenshots directory
     SCREENSHOTS_DIR.mkdir(parents=True, exist_ok=True)
-    print(f"\n📁 Screenshots directory: {SCREENSHOTS_DIR}")
+    logger.info(f"\n Screenshots directory: {SCREENSHOTS_DIR}")
 
     # Initialize WebDriver
     driver = None
     try:
         driver = setup_driver()
-        print("✅ Chrome WebDriver initialized\n")
+        logger.info(" Chrome WebDriver initialized\n")
 
         # First, capture login page (no login required)
-        print("\n--- PUBLIC PAGES ---")
+        logger.info("\n--- PUBLIC PAGES ---")
         if not capture_screenshot(driver, SCREENSHOTS[0]):
-            print("⚠️  Warning: Login page capture failed")
+            logger.  Warning: Login page capture failed)
 
         # Login once for all authenticated pages
-        print("\n--- AUTHENTICATED PAGES ---")
+        logger.info("\n--- AUTHENTICATED PAGES ---")
         driver.get(f"{BASE_URL}/login")
         time.sleep(2)
 
         if not login(driver, ADMIN_EMAIL, ADMIN_PASSWORD):
-            print("❌ Failed to login. Cannot capture authenticated pages.")
+            logger.info(" Failed to login. Cannot capture authenticated pages.")
             return False
 
         # Capture remaining screenshots
@@ -175,30 +175,30 @@ def main():
                 captured_count += 1
 
         # Verify all files
-        print("\n" + "=" * 70)
-        print("VERIFICATION")
-        print("=" * 70)
+        logger.info("\n" + "=" * 70)
+        logger.info("VERIFICATION")
+        logger.info("=" * 70)
 
         files = sorted(SCREENSHOTS_DIR.glob("*.png"))
-        print(f"\n✅ Total files saved: {len(files)}/8")
+        logger.info(f"\n Total files saved: {len(files)}/8")
 
         if len(files) == 8:
-            print("\n🎉 SUCCESS! All 8 screenshots captured and saved!\n")
+            logger.info("\n SUCCESS! All 8 screenshots captured and saved!\n")
             for file in files:
                 size_kb = file.stat().st_size / 1024
-                print(f"  ✓ {file.name} ({size_kb:.1f} KB)")
+                logger.info(f"   {file.name} ({size_kb:.1f} KB)")
             return True
         else:
-            print(f"\n⚠️  Only {len(files)}/8 files saved")
-            print("\nMissing files:")
+            logger.info(f"\n  Only {len(files)}/8 files saved")
+            logger.info("\nMissing files:")
             saved_names = {f.name for f in files}
             for screenshot in SCREENSHOTS:
                 if screenshot["name"] not in saved_names:
-                    print(f"  ❌ {screenshot['name']}")
+                    logger.info(f"   {screenshot['name']}")
             return False
 
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        logger.info(f"\n Error: {e}")
         import traceback
         traceback.print_exc()
         return False
@@ -206,7 +206,7 @@ def main():
     finally:
         if driver:
             driver.quit()
-            print("\n🔌 Chrome WebDriver closed")
+            logger.info("\n Chrome WebDriver closed")
 
 if __name__ == "__main__":
     success = main()

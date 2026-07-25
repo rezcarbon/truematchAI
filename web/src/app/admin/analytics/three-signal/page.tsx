@@ -99,11 +99,11 @@ export default function ThreeSignalAnalyticsPage() {
             capability: { '80-100': 4, '60-79': 0, '0-59': 0 },
           },
           insights: [
-            '🎯 Capability Assessment shows the strongest signal (87.5 avg), suggesting candidates have genuine skills',
-            '🔍 Semantic matching (86 avg) is ahead of keyword matching (81 avg), indicating candidates understand concepts deeply',
-            '⚠️ Keyword-Capability gap: Sarah has 3pt spread - may need soft skills coaching on communication',
-            '✅ Top performers (Priya): All signals aligned (88+ across board) - highly confident hire',
-            '💡 Consider expanding semantic/capability criteria for sourcing - less keyword-dependent candidates available',
+            ' Capability Assessment shows the strongest signal (87.5 avg), suggesting candidates have genuine skills',
+            ' Semantic matching (86 avg) is ahead of keyword matching (81 avg), indicating candidates understand concepts deeply',
+            ' Keyword-Capability gap: Sarah has 3pt spread - may need soft skills coaching on communication',
+            ' Top performers (Priya): All signals aligned (88+ across board) - highly confident hire',
+            ' Consider expanding semantic/capability criteria for sourcing - less keyword-dependent candidates available',
           ],
         };
 

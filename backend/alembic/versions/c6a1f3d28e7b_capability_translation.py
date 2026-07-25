@@ -18,7 +18,6 @@ TS = sa.DateTime(timezone=True)
 
 
 def upgrade() -> None:
-    # create_type=False: we create the type explicitly below so the table DDL
     # does not also emit a CREATE TYPE (which would 'already exists' on re-run).
     translation_status = postgresql.ENUM(
         "pending", "translating", "completed", "failed",

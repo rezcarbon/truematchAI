@@ -479,7 +479,6 @@ _FENCE_RE = re.compile(r"```(?:json)?\s*(.*?)\s*```", re.DOTALL)
 def _extract_json(text: str) -> dict[str, Any]:
     """Parse a JSON object from a model response, tolerating prose/code fences."""
     candidate = text.strip()
-    # strict=False allows control characters (e.g. literal newlines/tabs) inside
     # string values — LLMs routinely emit multi-line narrative fields that strict
     # JSON rejects, so tolerate them rather than fail the whole assessment.
     # 1) Direct parse.
@@ -592,7 +591,6 @@ def _anthropic_json(
                 data = block.input.get("data")
                 result = data if isinstance(data, dict) else block.input
                 # Only accept a NON-EMPTY result. An empty {} with
-                # stop_reason=="max_tokens" means the model was truncated before
                 # it finished writing the tool arguments — fall through to retry
                 # with a larger budget rather than returning nothing.
                 if result:

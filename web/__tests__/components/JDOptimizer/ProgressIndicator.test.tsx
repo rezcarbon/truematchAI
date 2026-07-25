@@ -37,7 +37,7 @@ describe('ProgressIndicator', () => {
 
   it('marks phases as complete appropriately', () => {
     render(<ProgressIndicator totalIssues={9} fixedIssues={6} />);
-    const completedPhases = screen.getAllByText('✓ Done');
+    const completedPhases = screen.getAllByText(' Done');
     expect(completedPhases.length).toBeGreaterThan(0);
   });
 

@@ -302,7 +302,7 @@ async def process_auto_approve_batch(
         ...     assessment_ids=[id1, id2, id3],
         ...     user_id=recruiter_id,
         ... )
-        >>> print(f"Approved {result['approved']} of {result['total']}")
+        logger.info(f"Approved {result['approved']} of {result['total']}")
     """
     worker = AutoApproveWorker(db)
     results = {

@@ -229,9 +229,9 @@ async def validate_config():
     validator = SecretValidator(settings)
     try:
         validator.validate_all()
-        logger.info("✅ Configuration validation passed")
+        logger.info(" Configuration validation passed")
     except ValueError as e:
-        logger.critical(f"❌ Configuration validation failed: {e}")
+        logger.critical(f" Configuration validation failed: {e}")
         raise
 
 
@@ -264,13 +264,17 @@ async def start_ingestion_workers():
         logger.info("Email ingestion disabled in configuration")
 
     # Start autonomous agent loop for background task processing
+    # Note: Will gracefully handle missing autonomous_settings table (before migrations run)
     try:
         from app.agents.autonomous_loop import start_autonomous_loop
 
         await start_autonomous_loop()
         logger.info("Autonomous agent loop started")
     except Exception as e:
-        logger.error(f"Failed to start autonomous loop: {e}")
+        logger.error(
+            f"Failed to start autonomous loop: {e}",
+            extra={"error_type": type(e).__name__}
+        )
 
 
 @app.on_event("shutdown")

@@ -72,7 +72,7 @@ export default function SettingsPage() {
         );
       }
 
-      addToast('Password changed successfully! 🎉', 'success');
+      addToast('Password changed successfully! ', 'success');
       setFormData({ current_password: '', new_password: '', confirm_password: '' });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An error occurred';

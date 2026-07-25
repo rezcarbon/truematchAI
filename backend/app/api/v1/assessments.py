@@ -139,7 +139,6 @@ async def create_assessment(
     await db.commit()
 
     # Enqueue the async pipeline. Imported lazily so the API process need not
-    # import Celery/worker dependencies at module load time.
     from app.workers.tasks import run_assessment
 
     run_assessment.delay(str(assessment.id))

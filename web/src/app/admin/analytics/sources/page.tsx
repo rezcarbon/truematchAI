@@ -20,14 +20,14 @@ interface Analytics {
 }
 
 const SOURCE_ICONS: Record<string, string> = {
-  linkedin: '💼',
-  referral: '👥',
-  indeed: '📌',
-  glassdoor: '⭐',
-  company_website: '🌐',
-  recruiter_outreach: '📧',
-  university: '🎓',
-  unknown: '❓',
+  linkedin: '',
+  referral: '',
+  indeed: '',
+  glassdoor: '',
+  company_website: '',
+  recruiter_outreach: '',
+  university: '',
+  unknown: '',
 };
 
 export default function SourceAnalyticsPage() {
@@ -242,7 +242,7 @@ export default function SourceAnalyticsPage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div className="flex items-start gap-3">
-            <span className="text-lg">✅</span>
+            <span className="text-lg"></span>
             <div>
               <p className="font-medium">Maximize {topSource.source}</p>
               <p className="text-muted-foreground">
@@ -253,7 +253,7 @@ export default function SourceAnalyticsPage() {
           </div>
 
           <div className="flex items-start gap-3">
-            <span className="text-lg">📊</span>
+            <span className="text-lg"></span>
             <div>
               <p className="font-medium">Optimize {bottomSource.source}</p>
               <p className="text-muted-foreground">
@@ -264,7 +264,7 @@ export default function SourceAnalyticsPage() {
           </div>
 
           <div className="flex items-start gap-3">
-            <span className="text-lg">⚡</span>
+            <span className="text-lg"></span>
             <div>
               <p className="font-medium">Fast-Track Referrals</p>
               <p className="text-muted-foreground">

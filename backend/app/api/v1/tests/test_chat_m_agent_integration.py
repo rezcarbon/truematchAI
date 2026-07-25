@@ -19,8 +19,6 @@ from fastapi.testclient import TestClient
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Assuming FastAPI app structure
-# from app.main import app
-# from app.deps import get_db
 
 
 class TestChatEndpointWithMAgent:

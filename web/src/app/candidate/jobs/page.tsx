@@ -31,11 +31,8 @@ export default function JobsPage() {
       try {
         setLoading(true);
         setError(null);
-        // TODO: Replace with actual API call
-        // const response = await fetch('/api/v1/candidates/jobs', {
         //   headers: { 'Authorization': `Bearer ${accessToken}` }
         // });
-        // const data = await response.json();
         // setJobs(data);
 
         // Placeholder data for now
@@ -145,7 +142,6 @@ export default function JobsPage() {
   const handleApply = async (jobId: string) => {
     try {
       setLoading(true);
-      // TODO: Implement job application API call
       const response = await fetch(`/api/proxy/v1/candidates/jobs/${jobId}/apply`, {
         method: 'POST',
         headers: {

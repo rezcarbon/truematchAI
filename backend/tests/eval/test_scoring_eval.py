@@ -82,22 +82,22 @@ def test_prompt_registry_unchanged():
 def _run_cli() -> int:
     """Lightweight runner that prints a scorecard and returns an exit code."""
     failures = 0
-    print(f"Prompt registry: {PROMPT_REGISTRY_VERSION}")
-    print(f"{'pair':<18} {'traditional':>12} {'semantic':>10}")
+    logger.info(f"Prompt registry: {PROMPT_REGISTRY_VERSION}")
+    logger.info(f"{'pair':<18} {'traditional':>12} {'semantic':>10}")
     scores: dict[str, tuple[int, int]] = {}
     for p in GOLDEN_PAIRS:
         t = _traditional(p["jd"], p["resume"])
         s = _semantic(p["jd"], p["resume"])
         scores[p["id"]] = (t, s)
-        print(f"{p['id']:<18} {t:>12} {s:>10}")
+        logger.info(f"{p['id']:<18} {t:>12} {s:>10}")
     checks = [
         ("traditional strong>weak", scores["backend_strong"][0] > scores["backend_weak"][0]),
         ("semantic strong>weak", scores["backend_strong"][1] > scores["backend_weak"][1]),
         ("prompt registry pinned", PROMPT_REGISTRY_VERSION == EXPECTED_PROMPT_REGISTRY),
     ]
-    print("\nchecks:")
+    logger.info("\nchecks:")
     for name, ok in checks:
-        print(f"  {'PASS' if ok else 'FAIL'}  {name}")
+        logger.info(f"  {'PASS' if ok else 'FAIL'}  {name}")
         failures += (not ok)
     return 1 if failures else 0
 

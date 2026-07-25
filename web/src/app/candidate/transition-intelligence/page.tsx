@@ -66,7 +66,7 @@ export default function TransitionStartPage() {
               {status === "uploading" ? "Uploading…" : "Upload résumé"}
             </Button>
           )}
-          {resumeId && <p className="text-sm text-success">Résumé uploaded ✓</p>}
+          {resumeId && <p className="text-sm text-success">Résumé uploaded </p>}
         </CardContent>
       </Card>
 

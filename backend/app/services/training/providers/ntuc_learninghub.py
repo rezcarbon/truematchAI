@@ -40,7 +40,6 @@ class NTUCLearningHubProvider:
         # A real implementation queries the partner's course API by capability and
         # maps each result into CourseMatch(capability=..., title=..., provider=
         # "NTUC LearningHub", url=..., format=..., duration_weeks=..., level=...,
-        # relevance=...). Guard network errors and return [] on failure so the
         # transition pipeline never breaks on a partner outage.
         # ----------------------------------------------------------------------
         logger.debug("NTUC LearningHub enabled but live lookup not yet implemented; returning []")

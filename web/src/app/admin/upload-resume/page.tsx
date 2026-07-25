@@ -118,12 +118,12 @@ export default function AdminUploadResumePage() {
             {/* Info Box */}
             <div className="rounded-lg bg-blue-50/50 border border-blue-200/50 p-4">
               <p className="text-sm text-blue-900">
-                <span className="font-medium">💡 Tip:</span> After uploading, you can use the resume in:
+                <span className="font-medium"> Tip:</span> After uploading, you can use the resume in:
               </p>
               <ul className="mt-2 ml-4 text-sm text-blue-900 space-y-1">
-                <li>✓ CV Analysis - Test candidate analysis workflow</li>
-                <li>✓ Assessments - Create candidate assessments</li>
-                <li>✓ Job Matching - See matching recommendations</li>
+                <li> CV Analysis - Test candidate analysis workflow</li>
+                <li> Assessments - Create candidate assessments</li>
+                <li> Job Matching - See matching recommendations</li>
               </ul>
             </div>
           </CardContent>

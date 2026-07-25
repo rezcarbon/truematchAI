@@ -169,7 +169,7 @@ def sync_db_session() -> Generator[Session, None, None]:
                 cur.execute(f"DROP DATABASE IF EXISTS {test_db_name}")
     except Exception as e:
         # Log but don't fail - the next test might pass
-        print(f"WARNING: Failed to drop test database {test_db_name}: {e}")
+        logger.info(f"WARNING: Failed to drop test database {test_db_name}: {e}")
 
 
 @pytest.fixture(scope="function")
@@ -296,7 +296,7 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
         await conn.close()
     except Exception as e:
         # Log but don't fail - the next test might pass
-        print(f"WARNING: Failed to drop test database {test_db_name}: {e}")
+        logger.info(f"WARNING: Failed to drop test database {test_db_name}: {e}")
 
 
 @pytest.fixture

@@ -34,7 +34,6 @@ def test_idf_empty_corpus_returns_empty():
 
 
 def test_idf_rare_term_outweighs_common_and_unseen_highest():
-    # N=10 documents; "kubernetes" in 1, "management" in 9, "unseen" in 0.
     db = _FakeDB(10, [("kubernetes", 1), ("management", 9)])
     m = corpus.idf_map(db, {"kubernetes", "management", "unseen"})
     assert m["kubernetes"] > m["management"]  # rarer term weighted higher

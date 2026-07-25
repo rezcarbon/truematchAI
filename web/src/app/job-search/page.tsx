@@ -4,6 +4,8 @@
 
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import React from 'react';
 import { JobBrowser } from '@/components/job-search/JobBrowser';
 import type { Skill } from '@/types/jobs';

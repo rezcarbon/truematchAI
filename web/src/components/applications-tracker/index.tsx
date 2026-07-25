@@ -5,5 +5,3 @@ export { TimelineView } from './TimelineView';
 export { FeedbackSection } from './FeedbackSection';
 export { InterviewPrepWidget } from './InterviewPrepWidget';
 export { OfferDetailsCard } from './OfferDetailsCard';
-
-export type { HorizontalPipeline } from './types';

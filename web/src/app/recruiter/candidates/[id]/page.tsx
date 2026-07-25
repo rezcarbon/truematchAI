@@ -46,7 +46,7 @@ function EvidenceRow({ type, ref, status, summary }: {
   type: string; ref: string; status: string; summary: string;
 }) {
   const color = status === "verified" ? "text-emerald-600" : status === "not_found" ? "text-red-500" : "text-amber-600";
-  const icon = status === "verified" ? "✅" : status === "not_found" ? "❌" : "⚠️";
+  const icon = status === "verified" ? "" : status === "not_found" ? "" : "";
   return (
     <div className="flex items-start gap-2 py-1.5 border-b last:border-0">
       <span className="text-sm shrink-0">{icon}</span>
@@ -205,7 +205,7 @@ export default async function CandidateDetailPage({ params }: { params: { id: st
             </CardHeader>
             <CardContent className="pb-3">
               <AuditRow event="pipeline.completed"  time="14:34" detail="status: completed · governed: true" />
-              <AuditRow event="governance.completed" time="14:34" detail="coherence ✓ consistency ✓ fidelity ✓" />
+              <AuditRow event="governance.completed" time="14:34" detail="coherence  consistency  fidelity " />
               <AuditRow event="reasoning.completed"  time="14:33" detail={`capability ${a.capabilityScore.overall} · delta ${a.delta}`} />
               <AuditRow event="enrichment.completed" time="14:32" detail="9 items · 2 verified" />
               <AuditRow event="intake.completed"     time="14:32" detail={`traditional ${a.traditionalScore} · semantic ${a.semanticScore ?? "—"}`} />

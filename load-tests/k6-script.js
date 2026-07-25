@@ -487,10 +487,10 @@ function textSummary(data, options) {
 
   // Threshold status
   lines.push(indent + 'Performance Thresholds:')
-  lines.push(indent + '  ✓ P99 Latency < 2000ms')
-  lines.push(indent + '  ✓ P95 Latency < 500ms')
-  lines.push(indent + '  ✓ P50 Latency < 100ms')
-  lines.push(indent + '  ✓ Error Rate < 5%')
+  lines.push(indent + '   P99 Latency < 2000ms')
+  lines.push(indent + '   P95 Latency < 500ms')
+  lines.push(indent + '   P50 Latency < 100ms')
+  lines.push(indent + '   Error Rate < 5%')
   lines.push('')
 
   lines.push('═'.repeat(62))

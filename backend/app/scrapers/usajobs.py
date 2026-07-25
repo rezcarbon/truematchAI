@@ -2,10 +2,10 @@
 USAJOBS.gov API scraper - Safe, official API for US federal job postings.
 
 USAJOBS is the official job board for the US federal government. The API is:
-- ✅ Officially supported and documented
-- ✅ No legal restrictions
-- ✅ Free tier available
-- ✅ Stable and reliable
+-  Officially supported and documented
+-  No legal restrictions
+-  Free tier available
+-  Stable and reliable
 
 Legal Status: SAFE - No TOS violations
 """

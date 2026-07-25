@@ -5,12 +5,12 @@
  * Copy this template and adapt it to your component.
  *
  * Testing Checklist:
- * ✓ Component renders without crashing
- * ✓ Props are correctly applied
- * ✓ User interactions trigger callbacks
- * ✓ Conditional rendering works
- * ✓ Loading/error states display correctly
- * ✓ Accessibility features (aria-labels, roles, etc.)
+ *  Component renders without crashing
+ *  Props are correctly applied
+ *  User interactions trigger callbacks
+ *  Conditional rendering works
+ *  Loading/error states display correctly
+ *  Accessibility features (aria-labels, roles, etc.)
  */
 
 import React from 'react';

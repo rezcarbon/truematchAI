@@ -114,7 +114,6 @@ def upgrade() -> None:
         op.execute(f"DROP INDEX IF EXISTS {name}")
 
     # 4. job_deduplication.fingerprint -> single UNIQUE INDEX (model:
-    #    unique=True, index=True). Live has a unique CONSTRAINT + a plain
     #    index; collapse both into the unique index the model expects.
     op.execute(
         "ALTER TABLE job_deduplication "

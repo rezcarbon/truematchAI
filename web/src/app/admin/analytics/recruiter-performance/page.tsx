@@ -217,7 +217,7 @@ export default function RecruiterPerformancePage() {
                     </div>
                   </div>
                   <Badge variant={isAboveAverage ? 'default' : 'secondary'}>
-                    {isAboveAverage ? '📈 Above Average' : '📉 Below Average'}
+                    {isAboveAverage ? ' Above Average' : ' Below Average'}
                   </Badge>
                 </div>
               </CardHeader>
@@ -259,7 +259,7 @@ export default function RecruiterPerformancePage() {
                     <p className="text-xs text-muted-foreground">Avg Time-to-Hire</p>
                     <p className="text-2xl font-bold">{recruiter.metrics.avgTimeToHire} days</p>
                     <p className="text-xs text-muted-foreground">
-                      {recruiter.metrics.avgTimeToHire < analytics.teamAverages.timeToHire ? '🚀 Fast' : '⏱️ Slower'}
+                      {recruiter.metrics.avgTimeToHire < analytics.teamAverages.timeToHire ? ' Fast' : '⏱ Slower'}
                     </p>
                   </div>
                 </div>
@@ -308,7 +308,7 @@ export default function RecruiterPerformancePage() {
                         : ' (needs more screening)'}
                     </li>
                     <li>
-                      • {recruiter.metrics.hireRate < 10 ? '⚠️' : '✅'} Hire rate
+                      • {recruiter.metrics.hireRate < 10 ? '' : ''} Hire rate
                       {isAboveAverage ? ' is above team average' : ' is below team average'}
                     </li>
                     <li>

@@ -246,7 +246,6 @@ export const api = {
   getAssessment: async (id: string): Promise<Assessment> => {
     const a = await get<Assessment>(`/assessments/${id}`, { ...mockAssessment, id });
     // The backend sends source languages snake_cased; surface them as camelCase
-    // for the translation badge regardless of the rest of the mapping state.
     const raw = a as unknown as Record<string, unknown>;
     return {
       ...a,

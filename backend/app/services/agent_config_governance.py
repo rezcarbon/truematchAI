@@ -34,7 +34,6 @@ class AgentConfigGovernance:
         if user.role not in [UserRole.admin, UserRole.recruiter]:
             return False, f"Role {user.role} cannot create agent configs"
 
-        # TODO: Check company membership
         return True, None
 
     async def check_update_permission(
@@ -244,7 +243,7 @@ class AgentConfigGovernance:
                         and validation["version_checks"]["has_tools"]
                         else "incomplete"
                     ),
-                    "details": f"Instructions: {'✓' if validation['version_checks']['has_instructions'] else '✗'}, Tools: {'✓' if validation['version_checks']['has_tools'] else '✗'}",
+                    "details": f"Instructions: {'' if validation['version_checks']['has_instructions'] else ''}, Tools: {'' if validation['version_checks']['has_tools'] else ''}",
                 },
             ],
             "recommendation": "approve"

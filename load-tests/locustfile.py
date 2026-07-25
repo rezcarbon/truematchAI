@@ -75,16 +75,16 @@ def on_quit(environment, **kwargs):
     avg_latency = METRICS["total_latency"] / total_requests
     error_rate = (METRICS["total_errors"] / total_requests) * 100 if total_requests > 0 else 0
 
-    print("\n" + "="*60)
-    print("LOAD TEST SUMMARY STATISTICS")
-    print("="*60)
-    print(f"Total Requests: {total_requests:,}")
-    print(f"Total Errors: {METRICS['total_errors']:,} ({error_rate:.2f}%)")
-    print(f"Average Latency: {avg_latency:.2f}ms")
-    print(f"Min Latency: {METRICS['min_latency']:.2f}ms")
-    print(f"Max Latency: {METRICS['max_latency']:.2f}ms")
-    print(f"Auth Failures: {METRICS['auth_failures']:,}")
-    print("="*60 + "\n")
+    logger.info("\n" + "="*60)
+    logger.info("LOAD TEST SUMMARY STATISTICS")
+    logger.info("="*60)
+    logger.info(f"Total Requests: {total_requests:,}")
+    logger.info(f"Total Errors: {METRICS['total_errors']:,} ({error_rate:.2f}%)")
+    logger.info(f"Average Latency: {avg_latency:.2f}ms")
+    logger.info(f"Min Latency: {METRICS['min_latency']:.2f}ms")
+    logger.info(f"Max Latency: {METRICS['max_latency']:.2f}ms")
+    logger.info(f"Auth Failures: {METRICS['auth_failures']:,}")
+    logger.info("="*60 + "\n")
 
 
 # ===== AUTHENTICATED USER BASE CLASS =====
@@ -124,13 +124,13 @@ class AuthenticatedUser(HttpUser):
                 self.user_id = data.get("user_id")
                 self.headers = {"Authorization": f"Bearer {self.token}"}
                 response.success()
-                logger.info(f"✓ User authenticated: {email}")
+                logger.info(f" User authenticated: {email}")
             else:
                 response.failure(f"Login failed: HTTP {response.status_code}")
                 METRICS["auth_failures"] += 1
-                logger.error(f"✗ Login failed for {email}: {response.status_code}")
+                logger.error(f" Login failed for {email}: {response.status_code}")
         except Exception as e:
-            logger.error(f"✗ Authentication error: {str(e)}")
+            logger.error(f" Authentication error: {str(e)}")
             METRICS["auth_failures"] += 1
 
     def _get_headers(self) -> Dict:
@@ -650,28 +650,19 @@ class SpikeTest(HttpUser):
 # ===== CUSTOM SHAPE (OPTIONAL) =====
 # Uncomment to use custom load profile
 
-# from locust import LoadTestShape
 #
-# class CustomLoadProfile(LoadTestShape):
 #     """
 #     Custom load profile: Ramp up, sustain, spike, ramp down.
 #     """
 #
-#     def tick(self):
-#         run_time = self.get_run_time()
 #
-#         if run_time < 60:
 #             # Ramp up: 0-60 seconds
-#             return (int(run_time / 2), 1)
 #         elif run_time < 300:
 #             # Sustain: 60-300 seconds
-#             return (30, 1)
 #         elif run_time < 360:
 #             # Spike: 300-360 seconds
-#             return (100, 1)
 #         else:
 #             # Ramp down
-#             return None
 
 
 if __name__ == "__main__":

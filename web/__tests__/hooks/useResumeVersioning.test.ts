@@ -127,8 +127,8 @@ describe("useResumeVersioning", () => {
       await act(async () => {
         try {
           await result.current.uploadResume(mockFile, "drag-drop");
-        } catch (error) {
-          // Error expected
+        }         } catch (e) {
+          logger.error(`Exception: ${e.message}`, e);
         }
       });
 
@@ -248,8 +248,8 @@ describe("useResumeVersioning", () => {
       await act(async () => {
         try {
           await result.current.revertToVersion("v1");
-        } catch (error) {
-          // Error expected
+        }         } catch (e) {
+          logger.error(`Exception: ${e.message}`, e);
         }
       });
 
@@ -324,8 +324,8 @@ describe("useResumeVersioning", () => {
       await act(async () => {
         try {
           await result.current.deleteVersion("v1");
-        } catch (error) {
-          // Error expected
+        }         } catch (e) {
+          logger.error(`Exception: ${e.message}`, e);
         }
       });
 
@@ -375,8 +375,8 @@ describe("useResumeVersioning", () => {
       await act(async () => {
         try {
           await result.current.annotateVersion("v1", "Test");
-        } catch (error) {
-          // Error expected
+        }         } catch (e) {
+          logger.error(`Exception: ${e.message}`, e);
         }
       });
 
@@ -433,8 +433,8 @@ describe("useResumeVersioning", () => {
       await act(async () => {
         try {
           await result.current.compareVersions("v1", "v2");
-        } catch (error) {
-          // Error expected
+        }         } catch (e) {
+          logger.error(`Exception: ${e.message}`, e);
         }
       });
 
@@ -460,8 +460,8 @@ describe("useResumeVersioning", () => {
       await act(async () => {
         try {
           await result.current.revertToVersion("v1");
-        } catch (error) {
-          // Expected
+        }         } catch (e) {
+          logger.error(`Exception: ${e.message}`, e);
         }
       });
 
@@ -491,8 +491,8 @@ describe("useResumeVersioning", () => {
         try {
           const file = new File(["content"], "resume.pdf");
           await result.current.uploadResume(file, "drag-drop");
-        } catch (error) {
-          // Expected
+        }         } catch (e) {
+          logger.error(`Exception: ${e.message}`, e);
         }
       });
 
@@ -529,8 +529,8 @@ describe("useResumeVersioning", () => {
         try {
           const file = new File(["content"], "resume.pdf");
           await result.current.uploadResume(file, "drag-drop");
-        } catch (error) {
-          // Expected
+        }         } catch (e) {
+          logger.error(`Exception: ${e.message}`, e);
         }
       });
 

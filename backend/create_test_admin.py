@@ -22,7 +22,7 @@ async def main():
         existing = result.scalar_one_or_none()
         
         if existing:
-            print(f"✅ Admin user already exists: {existing.email}")
+            logger.info(f" Admin user already exists: {existing.email}")
             return
         
         # Create admin user
@@ -37,13 +37,13 @@ async def main():
         session.add(admin)
         await session.commit()
         
-        print("✅ Test admin account created!")
-        print("")
-        print("Credentials:")
-        print("  Email: admin@truematch.local")
-        print("  Password: admin123")
-        print("")
-        print("Use these to log in at: http://localhost:3001/login")
+        logger.info(" Test admin account created!")
+        logger.info("")
+        logger.info("Credentials:")
+        logger.info("  Email: admin@truematch.local")
+        logger.info("  Password: admin123")
+        logger.info("")
+        logger.info("Use these to log in at: http://localhost:3001/login")
 
 if __name__ == "__main__":
     asyncio.run(main())

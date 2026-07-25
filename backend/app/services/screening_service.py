@@ -309,8 +309,6 @@ class ScreeningService:
                 f"(override={was_overridden})"
             )
 
-            # TODO: Trigger learning loop integration
-            # await self._trigger_learning_loop(decision, screening_result)
 
             return decision
 

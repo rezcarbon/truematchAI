@@ -82,7 +82,7 @@ class ScreeningBatch(Base, TimestampMixin):
     # }
 
     # Metadata
-    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
+    batch_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)
 
     __table_args__ = (
         Index("ix_screening_batches_position_id_status", position_id, status),

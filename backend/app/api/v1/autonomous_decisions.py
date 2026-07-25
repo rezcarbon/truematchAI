@@ -351,7 +351,7 @@ async def apply_auto_decisions_batch(
         ...     user=current_user,
         ...     db=session,
         ... )
-        >>> print(f"Approved {response.approved}, Rejected {response.rejected}")
+        logger.info(f"Approved {response.approved}, Rejected {response.rejected}")
     """
     from sqlalchemy import select
 

@@ -98,14 +98,14 @@ export function ActionConfirmation({
 
   const getActionIcon = (type: string) => {
     const icons: Record<string, string> = {
-      delete: '🗑️',
-      email: '📧',
-      schedule: '📅',
-      modify: '✏️',
-      approve: '✅',
-      send: '📤',
+      delete: '',
+      email: '',
+      schedule: '',
+      modify: '',
+      approve: '',
+      send: '',
     };
-    return icons[type] || '⚙️';
+    return icons[type] || '';
   };
 
   const getActionColor = (type: string) => {
@@ -159,7 +159,7 @@ export function ActionConfirmation({
                       }}
                       disabled={isLoading}
                     >
-                      ✓
+                      
                     </Button>
                     <Button
                       size="sm"
@@ -169,7 +169,7 @@ export function ActionConfirmation({
                         handleRejectAction(action.id);
                       }}
                     >
-                      ✕
+                      
                     </Button>
                   </div>
                 </div>

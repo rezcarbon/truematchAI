@@ -40,7 +40,7 @@ function CandidateKanbanCard({ c }: { c: PipelineCandidate }) {
             {priorityIcon(c.delta, c.governanceStatus)}
             <span className="truncate text-xs font-semibold">{c.name}</span>
           </div>
-          <GovernanceBadge status={c.governanceStatus} label={c.governanceStatus === "review" ? "⚠" : "✓"} />
+          <GovernanceBadge status={c.governanceStatus} label={c.governanceStatus === "review" ? "" : ""} />
         </div>
         {/* days in stage */}
         <div className="flex items-center gap-1 mb-2">

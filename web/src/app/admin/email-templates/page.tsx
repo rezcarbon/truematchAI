@@ -383,7 +383,7 @@ export default function EmailTemplatesPage() {
                   onClick={() => setIsPreviewOpen(false)}
                   className="text-muted-foreground hover:text-foreground"
                 >
-                  ✕
+                  
                 </button>
               </div>
             </CardHeader>

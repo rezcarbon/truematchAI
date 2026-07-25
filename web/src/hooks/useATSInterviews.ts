@@ -63,7 +63,7 @@ export function useScheduleInterview() {
         }
 
         const data = await response.json();
-        addToast('Interview scheduled successfully! 🎉', 'success');
+        addToast('Interview scheduled successfully! ', 'success');
         return data;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to schedule interview';
@@ -144,7 +144,7 @@ export function useSubmitScorecard() {
         }
 
         const data = await response.json();
-        addToast('Scorecard submitted successfully! ✅', 'success');
+        addToast('Scorecard submitted successfully! ', 'success');
         return data;
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to submit scorecard';

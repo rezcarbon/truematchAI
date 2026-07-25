@@ -184,7 +184,7 @@ export default function DEIAnalyticsPage() {
             <div className="space-y-2">
               <p className="text-sm text-muted-foreground">Compliance Status</p>
               <Badge variant={compliance.compliance_status === 'compliant' ? 'default' : 'destructive'}>
-                {compliance.compliance_status === 'compliant' ? '✅ Compliant' : '⚠️ At Risk'}
+                {compliance.compliance_status === 'compliant' ? ' Compliant' : ' At Risk'}
               </Badge>
             </div>
           </CardContent>

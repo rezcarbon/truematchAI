@@ -150,7 +150,7 @@ async def create_tables():
         "UPDATE alembic_version SET version_num = '0011'",
     ]
 
-    print("🔧 Creating CV/JD analysis tables...\n")
+    logger.info(" Creating CV/JD analysis tables...\n")
 
     try:
         async with engine.begin() as conn:
@@ -159,22 +159,22 @@ async def create_tables():
                     await conn.execute(text(statement))
                     if "CREATE TABLE" in statement:
                         table_name = statement.split("CREATE TABLE IF NOT EXISTS ")[1].split(" (")[0]
-                        print(f"✅ Created table: {table_name}")
+                        logger.info(f" Created table: {table_name}")
                     elif "CREATE INDEX" in statement:
                         index_name = statement.split("CREATE INDEX IF NOT EXISTS ")[1].split(" ")[0]
-                        print(f"✓ Created index: {index_name}")
+                        logger.info(f" Created index: {index_name}")
                     elif "CREATE TYPE" in statement:
                         enum_name = statement.split("CREATE TYPE ")[1].split(" AS")[0]
-                        print(f"✓ Created enum: {enum_name}")
+                        logger.info(f" Created enum: {enum_name}")
                 except Exception as e:
                     if "already exists" in str(e).lower() or "duplicate" in str(e).lower():
-                        print(f"⚠️  Already exists (skipped): {str(e)[:80]}")
+                        logger.info(f"  Already exists (skipped): {str(e)[:80]}")
                     else:
-                        print(f"⚠️  Statement {i}: {str(e)[:100]}")
+                        logger.info(f"  Statement {i}: {str(e)[:100]}")
 
-        print("\n" + "="*60)
-        print("✅ ALL CV/JD ANALYSIS TABLES CREATED SUCCESSFULLY!")
-        print("="*60)
+        logger.info("\n" + "="*60)
+        logger.info(" ALL CV/JD ANALYSIS TABLES CREATED SUCCESSFULLY!")
+        logger.info("="*60)
 
         # Verify tables were created
         async with engine.begin() as conn:
@@ -187,15 +187,15 @@ async def create_tables():
             """))
             tables = result.fetchall()
 
-            print(f"\n📊 Verification: {len(tables)}/5 tables exist")
+            logger.info(f"\n Verification: {len(tables)}/5 tables exist")
             for (table,) in tables:
-                print(f"   ✓ {table}")
+                logger.info(f"    {table}")
 
-        print("\n✨ Database is now ready for CV/JD analysis features!")
+        logger.info("\n Database is now ready for CV/JD analysis features!")
         return True
 
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        logger.info(f"\n Error: {e}")
         import traceback
         traceback.print_exc()
         return False

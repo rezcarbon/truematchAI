@@ -26,13 +26,13 @@ const STAGES = [
 ];
 
 const SOURCE_OPTIONS = [
-  { id: 'linkedin', label: '💼 LinkedIn' },
-  { id: 'referral', label: '👥 Referral' },
-  { id: 'indeed', label: '📌 Indeed' },
-  { id: 'glassdoor', label: '⭐ Glassdoor' },
-  { id: 'company_website', label: '🌐 Company Website' },
-  { id: 'recruiter_outreach', label: '📧 Recruiter Outreach' },
-  { id: 'university', label: '🎓 University' },
+  { id: 'linkedin', label: ' LinkedIn' },
+  { id: 'referral', label: ' Referral' },
+  { id: 'indeed', label: ' Indeed' },
+  { id: 'glassdoor', label: ' Glassdoor' },
+  { id: 'company_website', label: ' Company Website' },
+  { id: 'recruiter_outreach', label: ' Recruiter Outreach' },
+  { id: 'university', label: ' University' },
 ];
 
 export function FilterPanel({

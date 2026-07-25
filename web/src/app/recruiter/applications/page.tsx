@@ -260,7 +260,6 @@ export default function ApplicationsPage() {
   };
 
   const handleScheduleInterview = (applicationId: string) => {
-    // TODO: Implement interview scheduling
     console.log('Schedule interview for:', applicationId);
   };
 

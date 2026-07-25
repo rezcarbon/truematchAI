@@ -22,13 +22,13 @@ interface Analytics {
 }
 
 const STAGE_LABELS: Record<string, string> = {
-  applied: '📥 Applied',
-  phone_screen: '☎️ Phone Screen',
-  technical: '⚙️ Technical',
-  onsite: '🏢 On-site',
-  offer: '💼 Offer',
-  hired: '✅ Hired',
-  rejected: '❌ Rejected',
+  applied: ' Applied',
+  phone_screen: ' Phone Screen',
+  technical: ' Technical',
+  onsite: ' On-site',
+  offer: ' Offer',
+  hired: ' Hired',
+  rejected: ' Rejected',
 };
 
 const STAGE_COLORS: Record<string, string> = {
@@ -253,7 +253,7 @@ export default function PipelineAnalyticsPage() {
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           <div className="flex items-start gap-3">
-            <span className="text-lg">⚠️</span>
+            <span className="text-lg"></span>
             <div>
               <p className="font-medium">Bottleneck Detected</p>
               <p className="text-muted-foreground">
@@ -264,7 +264,7 @@ export default function PipelineAnalyticsPage() {
           </div>
 
           <div className="flex items-start gap-3">
-            <span className="text-lg">📈</span>
+            <span className="text-lg"></span>
             <div>
               <p className="font-medium">Strong Early Conversion</p>
               <p className="text-muted-foreground">
@@ -275,7 +275,7 @@ export default function PipelineAnalyticsPage() {
           </div>
 
           <div className="flex items-start gap-3">
-            <span className="text-lg">⏱️</span>
+            <span className="text-lg">⏱</span>
             <div>
               <p className="font-medium">Overall Time-to-Hire</p>
               <p className="text-muted-foreground">

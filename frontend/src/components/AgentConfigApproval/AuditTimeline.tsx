@@ -13,15 +13,15 @@ interface AuditTimelineProps {
 const ActionIcon: React.FC<{ action: string }> = ({ action }) => {
   switch (action) {
     case "created":
-      return <span className="text-green-600 text-xl">✓</span>;
+      return <span className="text-green-600 text-xl"></span>;
     case "modified":
-      return <span className="text-blue-600 text-xl">✎</span>;
+      return <span className="text-blue-600 text-xl"></span>;
     case "submitted":
-      return <span className="text-purple-600 text-xl">➤</span>;
+      return <span className="text-purple-600 text-xl"></span>;
     case "approved":
-      return <span className="text-green-600 text-xl">✓</span>;
+      return <span className="text-green-600 text-xl"></span>;
     case "rejected":
-      return <span className="text-red-600 text-xl">✗</span>;
+      return <span className="text-red-600 text-xl"></span>;
     case "activated":
       return <span className="text-blue-600 text-xl">▶</span>;
     case "deprecated":

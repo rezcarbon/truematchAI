@@ -254,7 +254,7 @@ class UploadActionHandler(ActionHandler):
     ) -> dict:
         """Handle file upload (resume, job description, candidate list)."""
         try:
-            # ✅ Validate parameters
+            #  Validate parameters
             try:
                 params = UploadActionParams(**action.get("parameters", {}))
             except Exception as e:
@@ -266,14 +266,13 @@ class UploadActionHandler(ActionHandler):
                 action["result"] = {"error": f"Validation error: {str(e)}"}
                 return action
 
-            # ✅ Idempotency check
+            #  Idempotency check
             idempotency_key = action.get("idempotency_key")
             if idempotency_key:
-                # TODO: Check if this action was already executed
                 pass
 
             if params.file_type == "resume":
-                # ✅ Create resume with ownership
+                #  Create resume with ownership
                 resume = Resume(
                     user_id=user.id,
                     file_id=params.file_id,
@@ -302,7 +301,7 @@ class UploadActionHandler(ActionHandler):
                 )
 
             elif params.file_type == "jd":
-                # ✅ Create position with ownership (company_id from user's company)
+                #  Create position with ownership (company_id from user's company)
                 position = Position(
                     company_id=user.company_id,  # Get from user's company context
                     created_by=user.id,
@@ -332,7 +331,7 @@ class UploadActionHandler(ActionHandler):
                 )
 
             else:
-                # ✅ Generic upload
+                #  Generic upload
                 action["status"] = "completed"
                 action["result"] = {
                     "file_id": params.file_id,
@@ -371,7 +370,7 @@ class AnalyzeActionHandler(ActionHandler):
     ) -> dict:
         """Handle CV analysis request."""
         try:
-            # ✅ Validate parameters
+            #  Validate parameters
             try:
                 params = AnalyzeActionParams(**action.get("parameters", {}))
             except Exception as e:
@@ -383,14 +382,14 @@ class AnalyzeActionHandler(ActionHandler):
                 action["result"] = {"error": f"Validation error: {str(e)}"}
                 return action
 
-            # ✅ Verify resume exists and user owns it
+            #  Verify resume exists and user owns it
             resume = await db.get(Resume, uuid.UUID(params.resume_id))
             if not resume:
                 raise ValueError(f"Resume {params.resume_id} not found")
 
             ActionHandler._validate_ownership(resume.user_id, user.id, "resume", params.resume_id)
 
-            # ✅ Verify position exists if provided
+            #  Verify position exists if provided
             position = None
             if params.position_id:
                 position = await db.get(Position, uuid.UUID(params.position_id))
@@ -474,7 +473,7 @@ class RankActionHandler(ActionHandler):
     ) -> dict:
         """Handle candidate ranking."""
         try:
-            # ✅ Validate parameters
+            #  Validate parameters
             try:
                 params = RankActionParams(**action.get("parameters", {}))
             except Exception as e:
@@ -486,7 +485,7 @@ class RankActionHandler(ActionHandler):
                 action["result"] = {"error": f"Validation error: {str(e)}"}
                 return action
 
-            # ✅ Verify position exists
+            #  Verify position exists
             position = await db.get(Position, uuid.UUID(params.position_id))
             if not position:
                 raise ValueError(f"Position {params.position_id} not found")
@@ -621,7 +620,7 @@ class ScheduleActionHandler(ActionHandler):
     ) -> dict:
         """Handle interview scheduling."""
         try:
-            # ✅ Validate parameters
+            #  Validate parameters
             try:
                 params = ScheduleActionParams(**action.get("parameters", {}))
             except Exception as e:
@@ -633,7 +632,7 @@ class ScheduleActionHandler(ActionHandler):
                 action["result"] = {"error": f"Validation error: {str(e)}"}
                 return action
 
-            # ✅ Verify application exists
+            #  Verify application exists
             application = await db.get(Application, uuid.UUID(params.application_id))
             if not application:
                 raise ValueError(f"Application {params.application_id} not found")
@@ -715,7 +714,7 @@ class ApproveActionHandler(ActionHandler):
     ) -> dict:
         """Handle candidate approval/decision."""
         try:
-            # ✅ Validate parameters
+            #  Validate parameters
             try:
                 params = ApproveActionParams(**action.get("parameters", {}))
             except Exception as e:
@@ -727,7 +726,7 @@ class ApproveActionHandler(ActionHandler):
                 action["result"] = {"error": f"Validation error: {str(e)}"}
                 return action
 
-            # ✅ Verify all resources exist
+            #  Verify all resources exist
             application = await db.get(Application, uuid.UUID(params.application_id))
             if not application:
                 raise ValueError(f"Application {params.application_id} not found")
@@ -831,7 +830,7 @@ class SendActionHandler(ActionHandler):
     ) -> dict:
         """Handle notification send."""
         try:
-            # ✅ Validate parameters
+            #  Validate parameters
             try:
                 params = SendActionParams(**action.get("parameters", {}))
             except Exception as e:
@@ -843,7 +842,7 @@ class SendActionHandler(ActionHandler):
                 action["result"] = {"error": f"Validation error: {str(e)}"}
                 return action
 
-            # ✅ Verify recipient exists
+            #  Verify recipient exists
             recipient = await db.get(User, uuid.UUID(params.recipient_id))
             if not recipient:
                 raise ValueError(f"Recipient {params.recipient_id} not found")

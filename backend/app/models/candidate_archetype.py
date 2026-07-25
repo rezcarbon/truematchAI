@@ -36,7 +36,6 @@ class CandidateArchetype(Base, TimestampMixin):
 
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
 
-    # True = TrueMatch pre-built, False = company-created
     is_system: Mapped[bool] = mapped_column(default=True, nullable=False)
 
     __table_args__ = (

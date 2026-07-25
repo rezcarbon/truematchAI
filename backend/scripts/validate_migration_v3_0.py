@@ -204,7 +204,7 @@ class MigrationValidator:
                 self.warnings.append(f"Missing FK: {fk}")
                 fk_valid = False
             else:
-                logger.info(f"    ✓ FK {fk}")
+                logger.info(f"     FK {fk}")
 
         return schema_valid and fk_valid
 
@@ -227,9 +227,9 @@ class MigrationValidator:
                 # Verify table is not empty
                 with self.engine.connect() as conn:
                     count = conn.execute(text(f"SELECT COUNT(*) FROM {table}")).scalar()
-                    logger.info(f"    ✓ {table} ({count} rows)")
+                    logger.info(f"     {table} ({count} rows)")
             else:
-                logger.error(f"    ✗ Missing backup table: {table}")
+                logger.error(f"     Missing backup table: {table}")
                 self.errors.append(f"Missing backup table: {table}")
                 all_valid = False
 
@@ -248,9 +248,9 @@ class MigrationValidator:
 
             count_backup = conn.execute(text("SELECT COUNT(*) FROM resume_versions_backup_0024")).scalar()
             if count == count_backup:
-                logger.info(f"    ✓ resume_versions data preserved ({count} rows)")
+                logger.info(f"     resume_versions data preserved ({count} rows)")
             else:
-                logger.error(f"    ✗ Data mismatch: current={count}, backup={count_backup}")
+                logger.error(f"     Data mismatch: current={count}, backup={count_backup}")
                 self.errors.append(f"Data mismatch in resume_versions")
                 all_valid = False
 
@@ -261,9 +261,9 @@ class MigrationValidator:
 
             count_backup = conn.execute(text("SELECT COUNT(*) FROM saved_jobs_backup_0025")).scalar()
             if count == count_backup:
-                logger.info(f"    ✓ saved_jobs data preserved ({count} rows)")
+                logger.info(f"     saved_jobs data preserved ({count} rows)")
             else:
-                logger.error(f"    ✗ Data mismatch in saved_jobs")
+                logger.error(f"     Data mismatch in saved_jobs")
                 self.errors.append("Data mismatch in saved_jobs")
                 all_valid = False
 
@@ -274,9 +274,9 @@ class MigrationValidator:
 
             count_backup = conn.execute(text("SELECT COUNT(*) FROM assessments_backup_0026")).scalar()
             if count == count_backup:
-                logger.info(f"    ✓ assessments data preserved ({count} rows)")
+                logger.info(f"     assessments data preserved ({count} rows)")
             else:
-                logger.error(f"    ✗ Data mismatch in assessments")
+                logger.error(f"     Data mismatch in assessments")
                 self.errors.append("Data mismatch in assessments")
                 all_valid = False
 
@@ -296,9 +296,9 @@ class MigrationValidator:
             """)).scalar()
 
             if orphaned == 0:
-                logger.info("    ✓ resume_versions.resume_id - no orphaned records")
+                logger.info("     resume_versions.resume_id - no orphaned records")
             else:
-                logger.error(f"    ✗ resume_versions has {orphaned} orphaned resume_id records")
+                logger.error(f"     resume_versions has {orphaned} orphaned resume_id records")
                 self.errors.append(f"Orphaned resume_versions.resume_id: {orphaned}")
                 all_valid = False
 
@@ -310,9 +310,9 @@ class MigrationValidator:
             """)).scalar()
 
             if orphaned == 0:
-                logger.info("    ✓ saved_jobs.user_id - no orphaned records")
+                logger.info("     saved_jobs.user_id - no orphaned records")
             else:
-                logger.error(f"    ✗ saved_jobs has {orphaned} orphaned user_id records")
+                logger.error(f"     saved_jobs has {orphaned} orphaned user_id records")
                 self.errors.append(f"Orphaned saved_jobs.user_id: {orphaned}")
                 all_valid = False
 
@@ -325,9 +325,9 @@ class MigrationValidator:
             """)).scalar()
 
             if orphaned == 0:
-                logger.info("    ✓ assessments.reviewer_id - no orphaned records")
+                logger.info("     assessments.reviewer_id - no orphaned records")
             else:
-                logger.error(f"    ✗ assessments has {orphaned} orphaned reviewer_id records")
+                logger.error(f"     assessments has {orphaned} orphaned reviewer_id records")
                 all_valid = False
 
         return all_valid
@@ -338,7 +338,7 @@ class MigrationValidator:
 
         # Check table exists
         if table_name not in self.inspector.get_table_names():
-            logger.error(f"    ✗ Table {table_name} does not exist")
+            logger.error(f"     Table {table_name} does not exist")
             self.errors.append(f"Missing table: {table_name}")
             return False
 
@@ -347,22 +347,22 @@ class MigrationValidator:
         missing_columns = columns - existing_columns
 
         if missing_columns:
-            logger.error(f"    ✗ Missing columns: {missing_columns}")
+            logger.error(f"     Missing columns: {missing_columns}")
             self.errors.append(f"{table_name}: missing columns {missing_columns}")
             all_valid = False
         else:
-            logger.info(f"    ✓ All {len(columns)} required columns present")
+            logger.info(f"     All {len(columns)} required columns present")
 
         # Check indices
         existing_indices = {idx['name'] for idx in self.inspector.get_indexes(table_name)}
         missing_indices = indices - existing_indices
 
         if missing_indices:
-            logger.error(f"    ✗ Missing indices: {missing_indices}")
+            logger.error(f"     Missing indices: {missing_indices}")
             self.errors.append(f"{table_name}: missing indices {missing_indices}")
             all_valid = False
         else:
-            logger.info(f"    ✓ All {len(indices)} required indices present")
+            logger.info(f"     All {len(indices)} required indices present")
 
         return all_valid
 
@@ -376,7 +376,7 @@ class MigrationValidator:
         total = len(results)
 
         for check_name, result in results.items():
-            status = "✓ PASS" if result else "✗ FAIL"
+            status = " PASS" if result else " FAIL"
             logger.info(f"{status}: {check_name}")
 
         logger.info("="*70)
