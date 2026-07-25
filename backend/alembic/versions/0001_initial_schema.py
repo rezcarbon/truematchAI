@@ -17,12 +17,52 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    # Create enums if they don't exist (idempotent)
-    op.execute("CREATE TYPE IF NOT EXISTS user_role AS ENUM ('candidate', 'recruiter', 'admin')")
-    op.execute("CREATE TYPE IF NOT EXISTS position_status AS ENUM ('draft', 'open', 'closed', 'archived')")
-    op.execute("CREATE TYPE IF NOT EXISTS assessment_status AS ENUM ('pending', 'running', 'completed', 'failed')")
-    op.execute("CREATE TYPE IF NOT EXISTS decision_outcome AS ENUM ('advance', 'reject', 'hold', 'interview', 'hire')")
-    op.execute("CREATE TYPE IF NOT EXISTS profile_visibility AS ENUM ('private', 'link', 'public')")
+    # Create enums if they don't exist (using DO block for idempotency)
+    op.execute("""
+    DO $$
+    BEGIN
+        CREATE TYPE user_role AS ENUM ('candidate', 'recruiter', 'admin');
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END
+    $$;
+    """)
+    op.execute("""
+    DO $$
+    BEGIN
+        CREATE TYPE position_status AS ENUM ('draft', 'open', 'closed', 'archived');
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END
+    $$;
+    """)
+    op.execute("""
+    DO $$
+    BEGIN
+        CREATE TYPE assessment_status AS ENUM ('pending', 'running', 'completed', 'failed');
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END
+    $$;
+    """)
+    op.execute("""
+    DO $$
+    BEGIN
+        CREATE TYPE decision_outcome AS ENUM ('advance', 'reject', 'hold', 'interview', 'hire');
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END
+    $$;
+    """)
+    op.execute("""
+    DO $$
+    BEGIN
+        CREATE TYPE profile_visibility AS ENUM ('private', 'link', 'public');
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END
+    $$;
+    """)
 
     # Reference the enums (no longer creating them)
     user_role = postgresql.ENUM("candidate", "recruiter", "admin", name="user_role", create_type=False)
