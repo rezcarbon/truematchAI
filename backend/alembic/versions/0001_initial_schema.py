@@ -17,22 +17,19 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    user_role = postgresql.ENUM(
-        "candidate", "recruiter", "admin", name="user_role", create_type=True
-    )
-    position_status = postgresql.ENUM(
-        "draft", "open", "closed", "archived", name="position_status", create_type=True
-    )
-    assessment_status = postgresql.ENUM(
-        "pending", "running", "completed", "failed", name="assessment_status", create_type=True
-    )
-    decision_outcome = postgresql.ENUM(
-        "advance", "reject", "hold", "interview", "hire", name="decision_outcome",
-        create_type=True,
-    )
-    profile_visibility = postgresql.ENUM(
-        "private", "link", "public", name="profile_visibility", create_type=True
-    )
+    # Create enums if they don't exist (idempotent)
+    op.execute("CREATE TYPE IF NOT EXISTS user_role AS ENUM ('candidate', 'recruiter', 'admin')")
+    op.execute("CREATE TYPE IF NOT EXISTS position_status AS ENUM ('draft', 'open', 'closed', 'archived')")
+    op.execute("CREATE TYPE IF NOT EXISTS assessment_status AS ENUM ('pending', 'running', 'completed', 'failed')")
+    op.execute("CREATE TYPE IF NOT EXISTS decision_outcome AS ENUM ('advance', 'reject', 'hold', 'interview', 'hire')")
+    op.execute("CREATE TYPE IF NOT EXISTS profile_visibility AS ENUM ('private', 'link', 'public')")
+
+    # Reference the enums (no longer creating them)
+    user_role = postgresql.ENUM("candidate", "recruiter", "admin", name="user_role", create_type=False)
+    position_status = postgresql.ENUM("draft", "open", "closed", "archived", name="position_status", create_type=False)
+    assessment_status = postgresql.ENUM("pending", "running", "completed", "failed", name="assessment_status", create_type=False)
+    decision_outcome = postgresql.ENUM("advance", "reject", "hold", "interview", "hire", name="decision_outcome", create_type=False)
+    profile_visibility = postgresql.ENUM("private", "link", "public", name="profile_visibility", create_type=False)
 
     # --- companies ---------------------------------------------------------
     op.create_table(
