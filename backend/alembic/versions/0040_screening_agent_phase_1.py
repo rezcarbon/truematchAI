@@ -1,14 +1,14 @@
 """Phase 1: Screening agent - create screening_batches and screening_results tables
 
 Revision ID: 0040
-Revises: 0039
+Revises: 0029
 """
 from alembic import op
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision = "0040"
-down_revision = "0039"
+down_revision = "0029"
 branch_labels = None
 depends_on = None
 
