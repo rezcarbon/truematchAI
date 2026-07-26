@@ -404,6 +404,74 @@ enum AgentEvent: Decodable {
     }
 }
 
+// MARK: - Learning & Feedback (Phase 1)
+
+struct RecordOutcomeRequest: Codable {
+    let outcome: String  // "hired" | "rejected" | "counter"
+    let outcomeReason: String?
+    let performanceData: PerformanceDataRequest?
+    let hiringManagerRating: Int?
+    let counterRecDetails: CounterRecDetails?
+
+    init(
+        outcome: String,
+        outcomeReason: String? = nil,
+        performanceData: PerformanceDataRequest? = nil,
+        hiringManagerRating: Int? = nil,
+        counterRecDetails: CounterRecDetails? = nil
+    ) {
+        self.outcome = outcome
+        self.outcomeReason = outcomeReason
+        self.performanceData = performanceData
+        self.hiringManagerRating = hiringManagerRating
+        self.counterRecDetails = counterRecDetails
+    }
+}
+
+struct PerformanceDataRequest: Codable {
+    let timeToHire: Int?           // days
+    let timeToProductivity: Int?   // days
+    let retentionMonths: Int?
+    let performanceRating: Double?
+    let notes: String?
+}
+
+struct CounterRecDetails: Codable {
+    let hired: Bool
+    let reason: String?
+}
+
+struct FeedbackStatusResponse: Codable {
+    let assessmentId: String
+    let hasOutcome: Bool
+    let lastOutcomeAt: String?
+}
+
+struct LearningMetricsResponse: Codable {
+    let metricDate: String
+    let modelVersion: String
+    let totalAssessments: Int
+    let totalOutcomes: Int
+    let accuracy: Double?
+    let precision: Double?
+    let recall: Double?
+    let f1Score: Double?
+    let expectedCalibrationError: Double?
+    let avgConfidence: Double?
+    let falsePositiveRate: Double?
+    let falseNegativeRate: Double?
+    let metricsByRole: [String: RoleMetrics]?
+}
+
+struct RoleMetrics: Codable {
+    let accuracy: Double?
+    let precision: Double?
+    let recall: Double?
+    let f1Score: Double?
+    let totalAssessments: Int
+    let totalOutcomes: Int
+}
+
 // MARK: - Generic Response
 
 struct PaginatedResponse<T: Codable>: Codable {

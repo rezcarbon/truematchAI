@@ -468,4 +468,21 @@ extension APIEndpoint {
     static func candidateDeclineOffer(applicationId: String) -> APIEndpoint {
         APIEndpoint(path: "applications/\(applicationId)/offer/decline", method: .POST)
     }
+
+    // MARK: Learning & Feedback (Phase 1)
+
+    /// Record hiring outcome for an assessment (drives the learning loop).
+    static func recordAssessmentOutcome(assessmentId: String, _ request: RecordOutcomeRequest) -> APIEndpoint {
+        APIEndpoint(path: "learning/assessment/\(assessmentId)/outcome", method: .POST, body: request)
+    }
+
+    /// Check if an outcome has been recorded for an assessment.
+    static func assessmentFeedbackStatus(assessmentId: String) -> APIEndpoint {
+        APIEndpoint(path: "learning/assessment/\(assessmentId)/feedback-status", method: .GET)
+    }
+
+    /// Fetch today's learning metrics (accuracy, precision, recall, calibration).
+    static var learningMetricsToday: APIEndpoint {
+        APIEndpoint(path: "learning/metrics/today", method: .GET)
+    }
 }
