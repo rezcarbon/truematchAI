@@ -45,11 +45,26 @@ struct LoginView: View {
                 TMButton(title: "Log in with Singpass", variant: .secondary, size: .large, isFullWidth: true) {
                     SingpassAuthManager.shared.startAuthentication()
                 }
+
+                HStack(spacing: 4) {
+                    Text("Don't have an account?")
+                        .font(theme.typography.caption)
+                    NavigationLink("Sign up", value: "signup")
+                        .font(theme.typography.caption.weight(.semibold))
+                        .foregroundStyle(theme.colors.primary)
+                }
+                .frame(maxWidth: .infinity, alignment: .center)
+                .padding(.top, theme.spacing.sm)
             }
             .padding(theme.spacing.lg)
         }
         .navigationTitle("Log in")
         .navigationBarTitleDisplayMode(.inline)
+        .navigationDestination(for: String.self) { value in
+            if value == "signup" {
+                SignUpView(onBack: onBack)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
                 Button("Back", action: onBack)
