@@ -34,6 +34,7 @@ from app.api.v1 import (
     jd_simulation,
     jobs_management,
     # job_search,  # Temporarily disabled due to schema import issues
+    learning_feedback,
     metrics,
     notifications,
     notifications_api,
@@ -59,6 +60,7 @@ api_router.include_router(jobs_management.router, tags=["jobs"])  # Job manageme
 api_router.include_router(assessment_results.router, tags=["assessment-results"])  # Assessment results
 api_router.include_router(assessments.router, prefix="/assessments", tags=["assessments"])
 api_router.include_router(assessment_designs.router, tags=["assessment_designs"])  # Phase 2: Assessment designer
+api_router.include_router(learning_feedback.router, tags=["learning"])  # Phase 1: Learning feedback & metrics
 api_router.include_router(analysis_evolution.router, tags=["analysis_evolution"])  # Phase 3-5: Analysis, Matching, Evolution
 api_router.include_router(positions.router, prefix="/positions", tags=["positions"])
 api_router.include_router(decisions.router, prefix="/decisions", tags=["decisions"])

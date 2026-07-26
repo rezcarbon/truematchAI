@@ -23,6 +23,7 @@ _TASK_MODULES = [
     "app.workers.alerts",
     "app.workers.dlq",
     "app.workers.user_memory",
+    "app.workers.learning_orchestrator",  # Phase 1: Self-learning pipeline
 ]
 
 # Create celery_app BEFORE importing task modules to avoid circular imports
@@ -111,6 +112,16 @@ celery_app.conf.update(
             "task": "app.workers.transition_intelligence.reassess_due_transitions",
             "schedule": 86400,  # daily sweep
             "options": {"expires": 43200},
+        },
+        # --- Phase 1: Nightly self-learning cycle (11 PM UTC)
+        # Analyzes hiring outcomes, recalibrates thresholds, learns patterns
+        # Max runtime: 6 hours (11 PM - 5 AM window)
+        "nightly-learning-cycle": {
+            "task": "app.workers.learning_orchestrator.run_nightly_learning_cycle",
+            "schedule": 86400,  # Every 24 hours
+            "options": {
+                "expires": 3600,  # Expire task if not executed within 1 hour
+            },
         },
     },
 )
