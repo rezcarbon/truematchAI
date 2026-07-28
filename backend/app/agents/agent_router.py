@@ -1,4 +1,5 @@
 """Routes users to appropriate agents based on role and intent."""
+import logging
 from typing import Optional
 from uuid import UUID
 
@@ -6,6 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.base_agent import BaseAgent
 from app.agents.agent_factory import AgentFactory
+
+logger = logging.getLogger(__name__)
 
 
 async def get_agent_for_user(
@@ -57,19 +60,20 @@ async def get_agent_for_user(
 
     except Exception as e:
         # If factory fails, fall back to hardcoded agents
-        logger.info(f"Warning: Agent factory failed, using hardcoded defaults: {e}")
+        # ✨ UPDATED: Pass required parameters to enable persona system
+        logger.warning(f"Agent factory failed, using hardcoded defaults: {e}")
         if user_role == "admin":
             from app.agents.admin_agent import AdminAgent
             return AdminAgent()
         elif user_role == "recruiter":
-            from app.agents.m_agent_wrapper import MAgentRecruiterWrapper
-            return MAgentRecruiterWrapper()
+            from app.agents.recruiter_agent import RecruiterAgent
+            return RecruiterAgent(db=db, company_id=str(company_id))
         elif user_role == "candidate":
             from app.agents.candidate_agent import CandidateAgent
-            return CandidateAgent()
+            return CandidateAgent(db=db)
         else:
             from app.agents.candidate_agent import CandidateAgent
-            return CandidateAgent()
+            return CandidateAgent(db=db)
 
 
 async def route_to_agent(

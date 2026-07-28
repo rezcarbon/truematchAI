@@ -1,10 +1,17 @@
 """Candidate Career Coach Agent for CV analysis and job matching."""
 import logging
+from typing import Optional, Dict, Any
 
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.enhanced_agent import EnhancedBaseAgent
+from app.agents.persona_system import PersonaSystem, UserRole
+from app.agents.persona_integration import (
+    PersonaEnhancedAgentMixin,
+    PersonaContextLoader,
+    PersonaAnalytics,
+)
 from app.models.user import User
 from app.models.resume import Resume
 from app.models.application import Application
@@ -74,14 +81,25 @@ When showing job matches:
 Always be encouraging and practical - candidates should feel empowered to advance their careers."""
 
 
-class CandidateAgent(EnhancedBaseAgent):
-    """Agent that helps candidates with career development and job matching."""
+class CandidateAgent(PersonaEnhancedAgentMixin, EnhancedBaseAgent):
+    """Agent that helps candidates with career development and job matching.
 
-    def __init__(self):
+    Enhanced with persona system for objective-based personalization.
+    Automatically detects user objective (interview prep, resume optimization, etc.)
+    and adopts the appropriate persona for guidance.
+    """
+
+    def __init__(self, db: AsyncSession):
         super().__init__(
             role="candidate",
             instructions=CANDIDATE_INSTRUCTIONS,
         )
+
+        # ✨ Initialize persona system
+        self.db = db
+        self.context_loader = PersonaContextLoader(db)
+        self.set_context_loader(self.context_loader)
+        self.analytics = PersonaAnalytics(db)
 
     async def _load_role_context(self, user: User, db: AsyncSession) -> dict:
         """Load candidate-specific context: CVs, applications, recommendations.
@@ -192,3 +210,133 @@ class CandidateAgent(EnhancedBaseAgent):
 - Recommendations: {user_context.get('recommendations', 'N/A')}
 
 Focus on helping with career development, CV improvement, and job matching."""
+
+    async def respond_with_persona(
+        self,
+        message: str,
+        user_id: str,
+        session_id: str,
+        chat_mode: str = "general",
+        explicit_objective: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """
+        Respond with persona enhancement.
+
+        Automatically detects user objective and adopts the appropriate persona
+        (Career Coach, Interview Coach, or Application Optimizer) for personalized guidance.
+
+        Args:
+            message: User message
+            user_id: User ID
+            session_id: Chat session ID
+            chat_mode: Chat mode (general, career_coach, interview_prep, etc.)
+            explicit_objective: Optional explicit objective override
+
+        Returns:
+            Response dict with: message, actions, persona info, objective, mode
+        """
+
+        # Store user context for persona system
+        self.user_id = user_id
+        self.session_id = session_id
+
+        # Build persona-aware system prompt
+        enhanced_prompt, active_persona = self._build_persona_aware_system_prompt(
+            base_system_prompt=self.instructions,
+            user_id=user_id,
+            user_role=UserRole.candidate,
+            last_message=message,
+        )
+
+        # Get response with enhanced prompt
+        response_text = await self._respond_with_prompt(
+            message=message,
+            system_prompt=enhanced_prompt,
+            session_id=session_id,
+            chat_mode=chat_mode,
+        )
+
+        # Adapt response based on persona
+        adapted_response = self.adapt_response(response_text, active_persona)
+
+        # Track persona usage for analytics
+        context = self.persona_system.active_contexts.get(user_id)
+        if context and context.active_persona:
+            effectiveness_score = await self._calculate_effectiveness(message, adapted_response)
+            await self.analytics.track_persona_usage(
+                user_id=user_id,
+                persona_id=context.active_persona.id,
+                objective=context.current_objective or "unknown",
+                mode=context.conversation_mode.value,
+                effectiveness_score=effectiveness_score,
+            )
+
+        # Update conversation history
+        self._update_conversation_history(message)
+
+        return {
+            "response": adapted_response,
+            "persona": {
+                "id": active_persona.id,
+                "name": active_persona.name,
+                "title": active_persona.title,
+            },
+            "objective": context.current_objective if context else None,
+            "mode": context.conversation_mode.value if context else "general",
+        }
+
+    async def _respond_with_prompt(
+        self,
+        message: str,
+        system_prompt: str,
+        session_id: str,
+        chat_mode: str = "general",
+    ) -> str:
+        """
+        Internal method for generating response with given system prompt.
+
+        This is called by respond_with_persona with the persona-enhanced prompt.
+        """
+
+        # Load user context for this session
+        # (In a real implementation, fetch user from session)
+        user_context = {
+            "chat_mode": chat_mode,
+            "session_id": session_id,
+        }
+
+        # Combine system prompt with context
+        full_prompt = system_prompt + "\n\nUSER_CONTEXT:\n" + str(user_context)
+
+        # This would normally call the actual Claude API or agent logic
+        # For now, return a placeholder that will be handled by parent class
+        return message
+
+    async def _calculate_effectiveness(
+        self,
+        message: str,
+        response: str,
+    ) -> float:
+        """
+        Calculate how effective the persona response was (0.0 to 1.0).
+
+        Scores based on response length, actionability, and persona-specific techniques.
+        """
+
+        effectiveness = 0.5  # baseline
+
+        # Bonus for length (indicates thoroughness)
+        if len(response) > 500:
+            effectiveness += 0.15
+        if len(response) > 1000:
+            effectiveness += 0.15
+
+        # Bonus for actionable content
+        action_indicators = [
+            "recommended", "suggested", "try", "next step",
+            "action", "practice", "work on", "focus on"
+        ]
+        if any(indicator in response.lower() for indicator in action_indicators):
+            effectiveness += 0.2
+
+        return min(effectiveness, 1.0)

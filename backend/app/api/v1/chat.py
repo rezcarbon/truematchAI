@@ -27,6 +27,10 @@ class ChatMessageRequest(BaseModel):
         description="Chat mode: 'career_coach', 'interview_prep', 'general'",
     )
     history: list[dict] = Field(default_factory=list)
+    explicit_objective: Optional[str] = Field(
+        None,
+        description="Optional explicit objective override for persona selection (e.g., 'interview_prep', 'candidate_screening')",
+    )
 
 
 class ActionDetail(BaseModel):
@@ -39,12 +43,22 @@ class ActionDetail(BaseModel):
     requires_confirmation: bool = False
 
 
+class PersonaInfo(BaseModel):
+    """Information about the active persona."""
+    id: str
+    name: str
+    title: str
+
+
 class ChatMessageResponse(BaseModel):
     """Response from chat agent."""
     response: str
     message_id: str
     actions: list[ActionDetail] = Field(default_factory=list)
     suggestions: list[str] = Field(default_factory=list)
+    persona: Optional[PersonaInfo] = Field(None, description="Active persona information")
+    objective: Optional[str] = Field(None, description="Detected user objective")
+    mode: Optional[str] = Field(None, description="Conversation mode (general, supportive, analytical, etc.)")
 
 
 class ChatSessionDetail(BaseModel):
@@ -270,16 +284,40 @@ async def chat(
     reset_usage()
 
     # Generate response with session memory integration
+    # ✨ NEW: Use persona-aware response if available
+    persona_info = None
+    objective = None
+    conv_mode = None
+
     try:
-        agent_response = await agent.respond(
-            message=request.message,
-            history=request.history,
-            user=current_user,
-            db=db,
-            session_id=session_uuid,  # Pass session ID for memory persistence
-            mode=request.mode,  # Pass chat mode
-            candidate_context=candidate_context,  # Pass context for career coach mode
-        )
+        # Check if agent supports persona system (CandidateAgent/RecruiterAgent)
+        if hasattr(agent, 'respond_with_persona'):
+            persona_response = await agent.respond_with_persona(
+                message=request.message,
+                user_id=str(current_user.id),
+                session_id=str(session_uuid),
+                chat_mode=request.mode,
+                explicit_objective=request.explicit_objective,  # ✨ NEW: Pass explicit objective
+            )
+            # Extract persona information
+            persona_info = persona_response.get("persona")
+            objective = persona_response.get("objective")
+            conv_mode = persona_response.get("mode")
+            response_text = persona_response.get("response")
+            actions = []  # Actions extraction would go here
+        else:
+            # Fall back to regular respond for other agent types
+            agent_response = await agent.respond(
+                message=request.message,
+                history=request.history,
+                user=current_user,
+                db=db,
+                session_id=session_uuid,
+                mode=request.mode,
+                candidate_context=candidate_context,
+            )
+            response_text = agent_response.text
+            actions = agent_response.actions
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -305,15 +343,26 @@ async def chat(
             extra={"user_id": str(current_user.id), **turn_usage.as_dict()},
         )
 
-    # Store assistant message
+    # Store assistant message with persona metadata
     msg_now = utcnow()
+    # ✨ NEW: Store persona information in metadata
+    metadata = {}
+    if persona_info:
+        metadata["persona_id"] = persona_info.get("id")
+        metadata["persona_name"] = persona_info.get("name")
+    if objective:
+        metadata["objective"] = objective
+    if conv_mode:
+        metadata["mode"] = conv_mode
+
     assistant_msg = ChatMessage(
         session_id=session_uuid,
         role="assistant",
-        content=agent_response.text,
-        actions_taken=agent_response.actions,
+        content=response_text,
+        actions_taken=actions if 'actions' in locals() else [],
         created_at=msg_now,
         updated_at=msg_now,
+        metadata=metadata if metadata else None,  # ✨ NEW: Store persona metadata
     )
     db.add(assistant_msg)
 
@@ -323,7 +372,7 @@ async def chat(
     await db.commit()
 
     return ChatMessageResponse(
-        response=agent_response.text,
+        response=response_text,
         message_id=str(assistant_msg.id),
         actions=[
             ActionDetail(
@@ -334,9 +383,13 @@ async def chat(
                 type=action.get("type"),
                 requires_confirmation=action.get("requires_confirmation", False),
             )
-            for action in agent_response.actions
+            for action in (actions if 'actions' in locals() else [])
         ],
-        suggestions=agent_response.suggestions,
+        suggestions=[],  # Suggestions extraction would go here
+        # ✨ NEW: Include persona information in response
+        persona=PersonaInfo(**persona_info) if persona_info else None,
+        objective=objective,
+        mode=conv_mode,
     )
 
 

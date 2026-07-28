@@ -11,6 +11,7 @@ Falls back gracefully to hardcoded defaults if no config exists.
 """
 from __future__ import annotations
 
+import logging
 import uuid
 from typing import Optional
 
@@ -21,6 +22,8 @@ from app.agents.candidate_agent import CandidateAgent
 from app.agents.recruiter_agent import RecruiterAgent
 from app.models import AgentConfig, AgentConfigStatus
 from app.services.agent_config_service import AgentConfigService
+
+logger = logging.getLogger(__name__)
 
 
 class AgentFactory:
@@ -59,8 +62,8 @@ class AgentFactory:
         # Load custom config from database
         config = await self._load_active_config(company_id, agent_type_to_use)
 
-        # Instantiate base agent
-        agent = self._instantiate_base_agent(user_role)
+        # ✨ NEW: Pass db and company_id to enable persona system
+        agent = self._instantiate_base_agent(user_role, self.db, company_id)
 
         # If we have a custom config, inject it
         if config:
@@ -83,17 +86,32 @@ class AgentFactory:
             logger.info(f"Warning: Failed to load agent config from database: {e}")
             return None
 
-    def _instantiate_base_agent(self, user_role: str) -> AdminAgent | RecruiterAgent | CandidateAgent:
-        """Instantiate a base agent for the given role."""
+    def _instantiate_base_agent(
+        self,
+        user_role: str,
+        db: AsyncSession,
+        company_id: uuid.UUID,
+    ) -> AdminAgent | RecruiterAgent | CandidateAgent:
+        """Instantiate a base agent for the given role.
+
+        Args:
+            user_role: Role of the user (admin, recruiter, candidate)
+            db: Database session for persona system
+            company_id: Company ID for recruiter context
+
+        Returns:
+            Instantiated agent with required dependencies injected
+        """
+        # ✨ UPDATED: Pass db and company_id to agents for persona system
         if user_role == "admin":
             return AdminAgent()
         elif user_role == "recruiter":
-            return RecruiterAgent()
+            return RecruiterAgent(db=db, company_id=str(company_id))
         elif user_role == "candidate":
-            return CandidateAgent()
+            return CandidateAgent(db=db)
         else:
             # Default to candidate for unknown roles
-            return CandidateAgent()
+            return CandidateAgent(db=db)
 
     def _apply_config_to_agent(
         self,
