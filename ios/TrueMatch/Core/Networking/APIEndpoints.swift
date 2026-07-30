@@ -485,4 +485,63 @@ extension APIEndpoint {
     static var learningMetricsToday: APIEndpoint {
         APIEndpoint(path: "learning/metrics/today", method: .GET)
     }
+
+    // MARK: - Match Notifications (Transparency Feature)
+
+    /// Get notification timeline for a specific match.
+    static func matchNotifications(matchId: String) -> APIEndpoint {
+        APIEndpoint(path: "candidate/matches/notifications/\(matchId)", method: .GET)
+    }
+
+    /// Get match details including persona info.
+    static func candidateMatch(matchId: String) -> APIEndpoint {
+        APIEndpoint(path: "candidate/matches/\(matchId)", method: .GET)
+    }
+
+    // MARK: - Privacy Preferences
+
+    /// Get current privacy preferences.
+    static var getPrivacyPreferences: APIEndpoint {
+        APIEndpoint(path: "candidate/privacy-preferences", method: .GET)
+    }
+
+    /// Update privacy preferences (privacy level, blocked companies).
+    static func updatePrivacyPreferences(_ request: UpdatePrivacyPreferencesRequest) -> APIEndpoint {
+        APIEndpoint(path: "candidate/privacy-preferences", method: .PUT, body: request)
+    }
+
+    // MARK: - Job Filtering with Quality Thresholds
+
+    /// Get job recommendations with filtering (quality threshold, work types).
+    static func getJobsWithFilters(_ request: JobFilterRequest) -> APIEndpoint {
+        var queryItems: [URLQueryItem] = []
+
+        if let locations = request.locations {
+            queryItems.append(URLQueryItem(name: "locations", value: locations.joined(separator: ",")))
+        }
+        if let matchScoreMin = request.matchScoreMin {
+            queryItems.append(URLQueryItem(name: "matchScoreMin", value: String(matchScoreMin)))
+        }
+        if let workTypes = request.workTypes {
+            queryItems.append(URLQueryItem(name: "workTypes", value: workTypes.joined(separator: ",")))
+        }
+        if let salaryMin = request.salaryMin {
+            queryItems.append(URLQueryItem(name: "salaryMin", value: String(salaryMin)))
+        }
+        if let salaryMax = request.salaryMax {
+            queryItems.append(URLQueryItem(name: "salaryMax", value: String(salaryMax)))
+        }
+        if let sortBy = request.sortBy {
+            queryItems.append(URLQueryItem(name: "sortBy", value: sortBy))
+        }
+        if let sortOrder = request.sortOrder {
+            queryItems.append(URLQueryItem(name: "sortOrder", value: sortOrder))
+        }
+
+        return APIEndpoint(
+            path: "candidate/jobs/filtered",
+            method: .GET,
+            queryItems: queryItems.isEmpty ? nil : queryItems
+        )
+    }
 }

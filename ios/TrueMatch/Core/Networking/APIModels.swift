@@ -479,3 +479,136 @@ struct PaginatedResponse<T: Codable>: Codable {
     let cursor: String?
     let hasMore: Bool
 }
+
+// MARK: - Match Notifications (Transparency Feature)
+
+enum NotificationStatus: String, Codable {
+    case profileSent = "profile_sent"
+    case profileViewed = "profile_viewed"
+    case interviewScheduled = "interview_scheduled"
+    case interviewCompleted = "interview_completed"
+    case offerReceived = "offer_received"
+    case rejected = "rejected"
+}
+
+struct MatchNotification: Codable, Identifiable {
+    let id: String
+    let matchId: String
+    let status: NotificationStatus
+    let message: String?
+    let timestamp: Date
+    let emailSent: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case id, status, message, emailSent
+        case matchId = "matchId"
+        case timestamp = "statusTimestamp"
+    }
+}
+
+struct MatchNotificationResponse: Codable {
+    let matchId: String
+    let events: [MatchNotification]
+}
+
+// MARK: - Candidate Match with Persona Info
+
+struct CandidateMatch: Codable, Identifiable {
+    let id: String
+    let positionId: String
+    let overallScore: Int
+    let fitLevel: String
+    let matchedByPersona: String?
+    let personaConfidence: Int
+    let personaReasoning: String?
+    let concerns: [String]?
+    let opportunities: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case id, concerns, opportunities
+        case positionId = "positionId"
+        case overallScore = "overallScore"
+        case fitLevel = "fitLevel"
+        case matchedByPersona = "matchedByPersona"
+        case personaConfidence = "personaConfidence"
+        case personaReasoning = "personaReasoning"
+    }
+}
+
+// MARK: - Privacy Preferences
+
+enum PrivacyLevel: String, Codable {
+    case hidden = "hidden"
+    case passive = "passive"
+    case active = "active"
+}
+
+struct PrivacyPreferences: Codable {
+    let privacyLevel: PrivacyLevel
+    let currentEmployer: String?
+    let blockedCompanies: [String]?
+
+    enum CodingKeys: String, CodingKey {
+        case privacyLevel = "privacyLevel"
+        case currentEmployer = "currentEmployer"
+        case blockedCompanies = "blockedCompanies"
+    }
+}
+
+struct UpdatePrivacyPreferencesRequest: Codable {
+    let privacyLevel: PrivacyLevel
+    let blockedCompanies: [String]?
+}
+
+// MARK: - Job Filtering with Quality Thresholds
+
+struct JobFilterRequest: Codable {
+    let locations: [String]?
+    let jobTypes: [String]?
+    let matchScoreMin: Int?
+    let workTypes: [String]?  // "full-time", "fractional", "advisory"
+    let salaryMin: Int?
+    let salaryMax: Int?
+    let industries: [String]?
+    let sortBy: String?  // "match", "salary", "recency"
+    let sortOrder: String?  // "asc", "desc"
+
+    init(
+        locations: [String]? = nil,
+        jobTypes: [String]? = nil,
+        matchScoreMin: Int? = nil,
+        workTypes: [String]? = nil,
+        salaryMin: Int? = nil,
+        salaryMax: Int? = nil,
+        industries: [String]? = nil,
+        sortBy: String? = "match",
+        sortOrder: String? = "desc"
+    ) {
+        self.locations = locations
+        self.jobTypes = jobTypes
+        self.matchScoreMin = matchScoreMin
+        self.workTypes = workTypes
+        self.salaryMin = salaryMin
+        self.salaryMax = salaryMax
+        self.industries = industries
+        self.sortBy = sortBy
+        self.sortOrder = sortOrder
+    }
+}
+
+struct JobWithPersona: Codable, Identifiable {
+    let id: String
+    let title: String
+    let company: String
+    let location: String
+    let matchScore: Double
+    let jobType: String
+    let remote: String  // "fully", "hybrid", "onsite"
+    let salaryMin: Int?
+    let salaryMax: Int?
+    let salary_currency: String?
+    let level: String
+    let matchedByPersona: String?
+    let personaIcon: String?
+    let isHiddenGem: Bool?
+}

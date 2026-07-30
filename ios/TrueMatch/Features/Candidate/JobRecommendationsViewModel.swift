@@ -20,6 +20,11 @@ final class JobRecommendationsViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var lastSwipeDirection: SwipeDirection?
 
+    // Filtering & preferences
+    @Published var qualityThreshold: Int = 80  // Default to top matches
+    @Published var selectedWorkTypes: Set<String> = ["full-time"]  // full-time, fractional, advisory
+    @Published var privacyLevel: String = "passive"  // hidden, passive, active
+
     enum SwipeDirection {
         case left  // reject
         case right // save
@@ -33,6 +38,7 @@ final class JobRecommendationsViewModel: ObservableObject {
 
     init(candidateId: String) {
         self.candidateId = candidateId
+        loadPrivacyPreferences()
     }
 
     var currentJob: JobRecommendation? {
@@ -72,6 +78,78 @@ final class JobRecommendationsViewModel: ObservableObject {
             }
         } catch {
             TrueMatchLogger.log(.error, "JobRecommendations: load failed: \(error)")
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    // MARK: - Filtering with Quality Thresholds
+
+    func loadJobsWithFilters() async {
+        isLoading = true
+        defer { isLoading = false }
+
+        do {
+            let filterRequest = JobFilterRequest(
+                matchScoreMin: qualityThreshold,
+                workTypes: Array(selectedWorkTypes),
+                sortBy: "match",
+                sortOrder: "desc"
+            )
+
+            let response = try await api.request(
+                endpoint: .getJobsWithFilters(filterRequest),
+                type: [JobRecommendation].self
+            )
+
+            jobs = response
+            currentOffset = 0
+            hasMoreJobs = response.count >= pageSize
+        } catch {
+            TrueMatchLogger.log(.error, "JobRecommendations: filter failed: \(error)")
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func setQualityThreshold(_ threshold: Int) async {
+        qualityThreshold = threshold
+        await loadJobsWithFilters()
+    }
+
+    func toggleWorkType(_ type: String) async {
+        if selectedWorkTypes.contains(type) {
+            selectedWorkTypes.remove(type)
+        } else {
+            selectedWorkTypes.insert(type)
+        }
+        await loadJobsWithFilters()
+    }
+
+    // MARK: - Privacy Preferences
+
+    func loadPrivacyPreferences() {
+        Task {
+            do {
+                let preferences = try await api.request(
+                    endpoint: .getPrivacyPreferences,
+                    type: PrivacyPreference.self
+                )
+                privacyLevel = preferences.privacyLevel
+            } catch {
+                TrueMatchLogger.log(.error, "JobRecommendations: load privacy preferences failed: \(error)")
+                privacyLevel = "passive"  // Default
+            }
+        }
+    }
+
+    func updatePrivacyLevel(_ level: String) async {
+        privacyLevel = level
+        let request = UpdatePrivacyPreferencesRequest(privacyLevel: level)
+
+        do {
+            try await api.requestVoid(endpoint: .updatePrivacyPreferences(request))
+            TrueMatchLogger.log(.info, "JobRecommendations: updated privacy level to \(level)")
+        } catch {
+            TrueMatchLogger.log(.error, "JobRecommendations: update privacy failed: \(error)")
             errorMessage = error.localizedDescription
         }
     }

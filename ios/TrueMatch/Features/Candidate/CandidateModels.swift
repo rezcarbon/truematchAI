@@ -78,6 +78,10 @@ struct JobRecommendation: Codable, Identifiable {
     let postedDate: String
     let applicationDeadline: String?
     let url: String
+    let isHiddenGem: Bool?
+    let matchedByPersona: String?  // New: Persona that matched this job
+    let personaIcon: String?       // New: Icon representation of persona
+    let personaConfidence: Int?    // New: 0-100 confidence score
 }
 
 struct SkillMatch: Codable, Identifiable {
@@ -179,6 +183,70 @@ struct OfferDetails: Codable {
     let offerLetterUrl: String?
     let responseDeadline: String?
     let status: String // "pending", "accepted", "declined"
+}
+
+// MARK: - Match Notifications
+
+struct MatchTimelineEvent: Codable, Identifiable {
+    let id: String
+    let status: String  // "profile_sent", "profile_viewed", etc.
+    let message: String?
+    let timestamp: String
+    let emailSent: Bool
+
+    var statusIcon: String {
+        switch status {
+        case "profile_sent": return "📤"
+        case "profile_viewed": return "👁️"
+        case "interview_scheduled": return "📅"
+        case "interview_completed": return "✅"
+        case "offer_received": return "🎉"
+        case "rejected": return "📋"
+        default: return "⏳"
+        }
+    }
+
+    var statusLabel: String {
+        switch status {
+        case "profile_sent": return "Profile Sent"
+        case "profile_viewed": return "Profile Viewed"
+        case "interview_scheduled": return "Interview Scheduled"
+        case "interview_completed": return "Interview Completed"
+        case "offer_received": return "Offer Received"
+        case "rejected": return "Position Filled"
+        default: return "Status Update"
+        }
+    }
+}
+
+// MARK: - Privacy Preferences
+
+struct PrivacyPreference: Codable {
+    let privacyLevel: String  // "hidden", "passive", "active"
+    let currentEmployer: String?
+    let blockedCompanies: [String]?
+
+    var privacyIcon: String {
+        switch privacyLevel {
+        case "hidden": return "🔐"
+        case "passive": return "👁️"
+        case "active": return "🟢"
+        default: return "🔒"
+        }
+    }
+
+    var privacyDescription: String {
+        switch privacyLevel {
+        case "hidden":
+            return "Your profile is never shared. No recruiter spam."
+        case "passive":
+            return "Only exceptional matches see your profile."
+        case "active":
+            return "Open to matches. Your profile is visible to all recruiters."
+        default:
+            return "Privacy mode"
+        }
+    }
 }
 
 // MARK: - Request Models
