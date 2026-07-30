@@ -19,9 +19,14 @@ interface JobCardProps {
   job: Job & { capabilityMatch?: CapabilityMatch };
   onApply?: (jobId: string) => void;
   isLoading?: boolean;
+  personaInfo?: {
+    persona: string;
+    icon: string;
+    confidence: number;
+  };
 }
 
-export function JobCard({ job, onApply, isLoading = false }: JobCardProps) {
+export function JobCard({ job, onApply, isLoading = false, personaInfo }: JobCardProps) {
   const matchScore = job.capabilityMatch?.score ?? 0;
   const matchType = job.capabilityMatch?.matchType ?? 'partial';
   const isHiddenGem = job.isHiddenGem ?? false;
@@ -82,6 +87,11 @@ export function JobCard({ job, onApply, isLoading = false }: JobCardProps) {
 
         {/* Badges */}
         <div className="flex flex-wrap gap-2 mt-3">
+          {personaInfo && (
+            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-xs">
+              {personaInfo.icon} {personaInfo.persona}
+            </Badge>
+          )}
           {isHiddenGem && (
             <Badge variant="outline" className="bg-purple-50 text-purple-700 border-purple-200">
               <Zap className="h-3 w-3 mr-1" />
@@ -124,28 +134,7 @@ export function JobCard({ job, onApply, isLoading = false }: JobCardProps) {
           </div>
         )}
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-2 gap-2 text-xs bg-muted/50 rounded-lg p-2">
-          <div>
-            <p className="text-muted-foreground">Experience</p>
-            <p className="font-medium">
-              {job.yearsOfExperienceRequired} year{job.yearsOfExperienceRequired !== 1 ? 's' : ''}
-            </p>
-          </div>
-          <div>
-            <p className="text-muted-foreground">Industry</p>
-            <p className="font-medium truncate">{job.industry}</p>
-          </div>
-        </div>
-
-        {/* Match Reasoning */}
-        {job.capabilityMatch?.reasoning && job.capabilityMatch.reasoning.length > 0 && (
-          <div className="bg-blue-50/50 border border-blue-200/50 rounded p-2">
-            <p className="text-xs text-blue-900">
-              <span className="font-semibold">Why it matches:</span> {job.capabilityMatch.reasoning[0]}
-            </p>
-          </div>
-        )}
+        {/* Simplified: Show only job type badge, removed Experience and Industry details */}
 
         {/* Actions */}
         <div className="flex gap-2 pt-2">

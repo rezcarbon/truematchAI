@@ -98,6 +98,25 @@ export function JobFilters({
     }));
   };
 
+  const toggleWorkType = (type: 'full-time' | 'fractional' | 'advisory') => {
+    setLocalCriteria((prev) => {
+      const workTypes = (prev.workTypes ?? []) as string[];
+      return {
+        ...prev,
+        workTypes: workTypes.includes(type)
+          ? workTypes.filter((t) => t !== type)
+          : [...workTypes, type],
+      };
+    });
+  };
+
+  const setQualityThreshold = (threshold: number) => {
+    setLocalCriteria((prev) => ({
+      ...prev,
+      matchScoreMin: threshold,
+    }));
+  };
+
   const activeFilterCount =
     localCriteria.locations.length +
     localCriteria.industries.length +
@@ -138,40 +157,55 @@ export function JobFilters({
           />
         </div>
 
-        {/* Match Score Range */}
+        {/* Quality Threshold - Quick Presets */}
         <div>
-          <label className="block text-sm font-medium mb-2">
-            Match Score: {localCriteria.matchScoreMin ?? 0}% - {localCriteria.matchScoreMax ?? 100}%
-          </label>
-          <div className="space-y-2">
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={localCriteria.matchScoreMin ?? 0}
-              onChange={(e) =>
-                setLocalCriteria((prev) => ({
-                  ...prev,
-                  matchScoreMin: parseInt(e.target.value),
-                }))
-              }
-              className="w-full"
-              aria-label="Minimum match score"
-            />
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={localCriteria.matchScoreMax ?? 100}
-              onChange={(e) =>
-                setLocalCriteria((prev) => ({
-                  ...prev,
-                  matchScoreMax: parseInt(e.target.value),
-                }))
-              }
-              className="w-full"
-              aria-label="Maximum match score"
-            />
+          <label className="block text-sm font-medium mb-2">🔒 Match Quality</label>
+          <div className="flex flex-col gap-2">
+            <Button
+              variant={localCriteria.matchScoreMin === 80 ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setQualityThreshold(80)}
+              className="w-full text-xs"
+            >
+              Top Matches (80%+)
+            </Button>
+            <Button
+              variant={localCriteria.matchScoreMin === 60 && localCriteria.matchScoreMin !== 80 ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setQualityThreshold(60)}
+              className="w-full text-xs"
+            >
+              Good Matches (60%+)
+            </Button>
+            <Button
+              variant={localCriteria.matchScoreMin === 40 && localCriteria.matchScoreMin !== 60 ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setQualityThreshold(40)}
+              className="w-full text-xs"
+            >
+              All Matches (40%+)
+            </Button>
+          </div>
+        </div>
+
+        {/* Work Type Preferences */}
+        <div>
+          <label className="block text-sm font-medium mb-2">💼 Work Type</label>
+          <div className="flex flex-col gap-2">
+            {(['full-time', 'fractional', 'advisory'] as const).map((type) => (
+              <label key={type} className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={(localCriteria.workTypes ?? []).includes(type)}
+                  onChange={() => toggleWorkType(type)}
+                  className="w-4 h-4 rounded"
+                  aria-label={`${type} work`}
+                />
+                <span className="text-sm capitalize">
+                  {type === 'full-time' ? 'Full-Time' : type === 'fractional' ? 'Fractional (10-15 hrs)' : 'Advisory'}
+                </span>
+              </label>
+            ))}
           </div>
         </div>
 

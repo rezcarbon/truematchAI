@@ -88,6 +88,7 @@ export interface JobFilterCriteria {
   jobTypes: Array<'full-time' | 'contract' | 'part-time' | 'temporary'>;
   levels: Array<'entry' | 'mid' | 'senior' | 'lead' | 'executive'>;
   industries: string[];
+  workTypes?: Array<'full-time' | 'fractional' | 'advisory'>;
   includeHiddenGems: boolean;
   sortBy: 'match' | 'salary' | 'recency' | 'company';
   sortOrder: 'asc' | 'desc';

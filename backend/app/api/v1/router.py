@@ -18,6 +18,7 @@ from app.api.v1 import (
     auth,
     billing,
     bulk_actions,
+    candidate_matching,
     career_coach,
     chat,
     chat_actions,
@@ -114,4 +115,5 @@ api_router.include_router(realtime_progress_api.router)
 api_router.include_router(resume_versioning.router)
 # api_router.include_router(job_search.router)  # Temporarily disabled due to schema import issues
 api_router.include_router(applications.router)
+api_router.include_router(candidate_matching.router)
 api_router.include_router(career_coach.router)

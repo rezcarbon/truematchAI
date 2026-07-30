@@ -25,6 +25,15 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 from app.models._mixins import TimestampMixin
 
+# Persona-aware matching - integrates AI agent personas for intelligent candidate matching
+PERSONA_ICONS = {
+    'career_coach': '👤',
+    'interview_coach': '📝',
+    'application_optimizer': '✍️',
+    'talent_scout': '🔍',
+    'pipeline_manager': '📈',
+}
+
 
 class MatchStatus(str, Enum):
     """Status of candidate match analysis."""
@@ -170,6 +179,17 @@ class CandidateMatch(Base, TimestampMixin):
         DateTime, nullable=True, comment="When matching pipeline completed"
     )
 
+    # Persona-aware matching fields
+    matched_by_persona: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="Persona ID that generated this match (career_coach, interview_coach, etc.)"
+    )
+    persona_confidence: Mapped[int] = mapped_column(
+        Integer, default=0, comment="0-100 confidence in persona-based match"
+    )
+    persona_reasoning: Mapped[str | None] = mapped_column(
+        Text, nullable=True, comment="Explanation of why this persona matched candidate to role"
+    )
+
     # Recruiter review
     recruiter_reviewed: Mapped[bool] = mapped_column(
         Boolean, default=False, comment="Recruiter has reviewed match"
@@ -186,6 +206,7 @@ class CandidateMatch(Base, TimestampMixin):
     hiring_outcome = relationship("HiringOutcome", back_populates="candidate_match", uselist=False)
     position = relationship("Position", foreign_keys=[position_id])
     candidate = relationship("User", foreign_keys=[candidate_id])
+    notifications = relationship("MatchNotification", back_populates="candidate_match", cascade="all, delete-orphan")
 
     __table_args__ = (
         Index("ix_candidate_matches_analysis_result_id", "analysis_result_id"),
