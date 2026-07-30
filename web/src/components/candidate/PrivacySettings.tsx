@@ -2,7 +2,7 @@
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/badge';
+import { Badge } from '@/components/ui/badge';
 import { Lock, Eye, EyeOff } from 'lucide-react';
 
 interface PrivacySettingsProps {
