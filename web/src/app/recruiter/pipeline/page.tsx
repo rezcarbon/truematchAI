@@ -102,7 +102,8 @@ export default function PipelinePage() {
     try {
       await updateStage(candidateId, newStage);
     } catch (e) {
-      console.error(`Exception: ${e.message}`, e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      console.error(`Exception: ${error.message}`, error);
     }
   };
 

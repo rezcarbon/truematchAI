@@ -97,7 +97,7 @@ from app.models.career_coach import (
     CoachQuestion,
     CoachingProgressReport,
 )
-from app.models.candidate_match import CandidateMatch, MatchStatus, FitLevel
+from app.models.candidate_match import CandidateMatch, MatchStatus, FitLevel, PERSONA_ICONS
 from app.models.match_notification import MatchNotification, NotificationStatus
 
 __all__ = [
@@ -206,6 +206,7 @@ __all__ = [
     "CandidateMatch",
     "MatchStatus",
     "FitLevel",
+    "PERSONA_ICONS",
     "MatchNotification",
     "NotificationStatus",
 ]

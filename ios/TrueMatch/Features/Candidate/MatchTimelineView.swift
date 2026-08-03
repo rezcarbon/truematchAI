@@ -47,6 +47,14 @@ struct MatchTimelineView: View {
     }
 }
 
+struct MatchTimelineEvent: Identifiable {
+    let id: String
+    let status: String
+    let message: String?
+    let timestamp: String
+    let emailSent: Bool
+}
+
 struct TimelineEventRow: View {
     let event: MatchTimelineEvent
     let isFirst: Bool
@@ -71,10 +79,34 @@ struct TimelineEventRow: View {
         }
     }
 
+    var statusIcon: String {
+        switch event.status {
+        case "profile_sent": return "📤"
+        case "profile_viewed": return "👁️"
+        case "interview_scheduled": return "📅"
+        case "interview_completed": return "✅"
+        case "offer_received": return "🎉"
+        case "rejected": return "📋"
+        default: return "⏳"
+        }
+    }
+
+    var statusLabel: String {
+        switch event.status {
+        case "profile_sent": return "Profile Sent"
+        case "profile_viewed": return "Profile Viewed"
+        case "interview_scheduled": return "Interview Scheduled"
+        case "interview_completed": return "Interview Completed"
+        case "offer_received": return "Offer Received"
+        case "rejected": return "Position Filled"
+        default: return "Status Update"
+        }
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .center, spacing: 8) {
-                Text(event.statusIcon)
+                Text(statusIcon)
                     .font(.title2)
                     .frame(width: 32, height: 32)
                     .background(isFirst ? Color.blue.opacity(0.2) : Color(.systemGray6))
@@ -96,7 +128,7 @@ struct TimelineEventRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(event.statusLabel)
+                        Text(statusLabel)
                             .font(.subheadline)
                             .fontWeight(.semibold)
 

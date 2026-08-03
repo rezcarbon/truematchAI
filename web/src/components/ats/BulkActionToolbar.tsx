@@ -51,7 +51,8 @@ export function BulkActionToolbar({
       setShowStageMenu(false);
       onStageSelect?.(stage);
     } catch (e) {
-      console.error(`Exception: ${e.message}`, e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      console.error(`Exception: ${error.message}`, error);
     }
   };
 
@@ -70,7 +71,8 @@ export function BulkActionToolbar({
       setNewTag('');
       setShowTagMenu(false);
     } catch (e) {
-      console.error(`Exception: ${e.message}`, e);
+      const error = e instanceof Error ? e : new Error(String(e));
+      console.error(`Exception: ${error.message}`, error);
     }
   };
 

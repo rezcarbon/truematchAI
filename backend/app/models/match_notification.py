@@ -27,12 +27,12 @@ from app.models._mixins import TimestampMixin
 class NotificationStatus(str, Enum):
     """Status of match in the pipeline."""
 
-    profile_sent = "profile_sent"  # Candidate profile sent to recruiter
-    profile_viewed = "profile_viewed"  # Recruiter viewed profile
-    interview_scheduled = "interview_scheduled"  # Interview scheduled
-    interview_completed = "interview_completed"  # Interview happened
-    offer_received = "offer_received"  # Offer extended
-    rejected = "rejected"  # Candidate rejected or position filled
+    profile_sent = "profile_sent"
+    profile_viewed = "profile_viewed"
+    interview_scheduled = "interview_scheduled"
+    interview_completed = "interview_completed"
+    offer_received = "offer_received"
+    rejected = "rejected"
 
 
 class MatchNotification(Base, TimestampMixin):

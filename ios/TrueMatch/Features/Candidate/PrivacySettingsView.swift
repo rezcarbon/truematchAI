@@ -200,7 +200,6 @@ struct FlowLayout: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: spacing) {
-            // Placeholder - will be replaced with actual flow layout
             HStack(spacing: spacing) {
                 ForEach(content, id: \.self) { item in
                     Text(item)
