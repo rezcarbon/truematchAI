@@ -29,122 +29,98 @@ def upgrade() -> None:
     Safety: Creates backup before any ALTER operations.
     Pattern: AsyncAlchemy compatible (psycopg3 driver)
     """
-    # SAFETY: Backup the existing resume_versions table before modifications
+    # SAFETY: Backup the existing resume_versions table before modifications (if it exists)
     op.execute("""
-        CREATE TABLE IF NOT EXISTS resume_versions_backup_0024 AS
-        SELECT * FROM resume_versions;
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'resume_versions') THEN
+                CREATE TABLE IF NOT EXISTS resume_versions_backup_0024 AS
+                SELECT * FROM resume_versions;
+            END IF;
+        END $$;
     """)
 
-    # Add differential storage for efficient version comparison
-    op.add_column('resume_versions', sa.Column(
-        'content_diff',
-        sa.Text(),
-        nullable=True,
-        comment='JSON diff from previous version for efficient comparison'
-    ))
+    # Only add columns if the table exists (fresh databases may skip this)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'resume_versions') THEN
+                -- Add differential storage for efficient version comparison
+                IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name='resume_versions' AND column_name='content_diff') THEN
+                    ALTER TABLE resume_versions ADD COLUMN content_diff TEXT;
+                END IF;
 
-    # Add version metadata and visibility controls
-    op.add_column('resume_versions', sa.Column(
-        'is_visible',
-        sa.Boolean(),
-        nullable=False,
-        server_default=sa.true(),
-        comment='Whether version is visible to user (soft-delete)'
-    ))
+                -- Add version metadata and visibility controls
+                IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name='resume_versions' AND column_name='is_visible') THEN
+                    ALTER TABLE resume_versions ADD COLUMN is_visible BOOLEAN NOT NULL DEFAULT true;
+                END IF;
 
-    op.add_column('resume_versions', sa.Column(
-        'is_pinned',
-        sa.Boolean(),
-        nullable=False,
-        server_default=sa.false(),
-        comment='Whether version is pinned for quick access'
-    ))
+                IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name='resume_versions' AND column_name='is_pinned') THEN
+                    ALTER TABLE resume_versions ADD COLUMN is_pinned BOOLEAN NOT NULL DEFAULT false;
+                END IF;
 
-    # Add version tagging and annotations
-    op.add_column('resume_versions', sa.Column(
-        'tag',
-        sa.String(100),
-        nullable=True,
-        comment='User-provided tag/label for version (e.g., "Final", "Archive")'
-    ))
+                -- Add version tagging and annotations
+                IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name='resume_versions' AND column_name='tag') THEN
+                    ALTER TABLE resume_versions ADD COLUMN tag VARCHAR(100);
+                END IF;
 
-    op.add_column('resume_versions', sa.Column(
-        'annotation',
-        sa.String(500),
-        nullable=True,
-        comment='User-provided notes about why this version was created'
-    ))
+                IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name='resume_versions' AND column_name='annotation') THEN
+                    ALTER TABLE resume_versions ADD COLUMN annotation VARCHAR(500);
+                END IF;
 
-    # Add comparison support fields
-    op.add_column('resume_versions', sa.Column(
-        'sections_changed',
-        postgresql.JSONB(),
-        nullable=True,
-        comment='Track which resume sections changed from previous version'
-    ))
+                -- Add comparison support fields
+                IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name='resume_versions' AND column_name='sections_changed') THEN
+                    ALTER TABLE resume_versions ADD COLUMN sections_changed JSONB;
+                END IF;
 
-    op.add_column('resume_versions', sa.Column(
-        'similarity_to_current',
-        sa.Float(),
-        nullable=True,
-        comment='Cached similarity score to current version (0.0-1.0)'
-    ))
+                IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name='resume_versions' AND column_name='similarity_to_current') THEN
+                    ALTER TABLE resume_versions ADD COLUMN similarity_to_current REAL;
+                END IF;
 
-    # Add AI feedback and improvement tracking
-    op.add_column('resume_versions', sa.Column(
-        'ai_feedback',
-        sa.Text(),
-        nullable=True,
-        comment='AI-generated feedback on this version (encrypted at rest)'
-    ))
+                -- Add AI feedback and improvement tracking
+                IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name='resume_versions' AND column_name='ai_feedback') THEN
+                    ALTER TABLE resume_versions ADD COLUMN ai_feedback TEXT;
+                END IF;
 
-    op.add_column('resume_versions', sa.Column(
-        'improvement_areas',
-        postgresql.JSONB(),
-        nullable=True,
-        comment='Structured list of improvement suggestions'
-    ))
+                IF NOT EXISTS (SELECT FROM information_schema.columns WHERE table_name='resume_versions' AND column_name='improvement_areas') THEN
+                    ALTER TABLE resume_versions ADD COLUMN improvement_areas JSONB;
+                END IF;
+            END IF;
+        END $$;
+    """)
 
-    # Performance indices for v3.0 query patterns
-    # Query: "Get all visible versions for a user, ordered by creation"
-    op.create_index(
-        'ix_resume_versions_user_visible_created',
-        'resume_versions',
-        ['user_id', 'is_visible', 'created_at'],
-        postgresql_where=sa.text('is_visible = true')
-    )
+    # Performance indices for v3.0 query patterns (only if table exists)
+    op.execute("""
+        DO $$
+        BEGIN
+            IF EXISTS (SELECT FROM information_schema.tables WHERE table_name = 'resume_versions') THEN
+                -- Query: "Get all visible versions for a user, ordered by creation"
+                IF NOT EXISTS (SELECT FROM information_schema.statistics WHERE tablename = 'resume_versions' AND indexname = 'ix_resume_versions_user_visible_created') THEN
+                    CREATE INDEX ix_resume_versions_user_visible_created ON resume_versions (user_id, is_visible, created_at) WHERE is_visible = true;
+                END IF;
 
-    # Query: "Get pinned versions for quick access"
-    op.create_index(
-        'ix_resume_versions_user_pinned',
-        'resume_versions',
-        ['user_id', 'is_pinned'],
-        postgresql_where=sa.text('is_pinned = true')
-    )
+                -- Query: "Get pinned versions for quick access"
+                IF NOT EXISTS (SELECT FROM information_schema.statistics WHERE tablename = 'resume_versions' AND indexname = 'ix_resume_versions_user_pinned') THEN
+                    CREATE INDEX ix_resume_versions_user_pinned ON resume_versions (user_id, is_pinned) WHERE is_pinned = true;
+                END IF;
 
-    # Query: "Find versions by tag"
-    op.create_index(
-        'ix_resume_versions_tag',
-        'resume_versions',
-        ['user_id', 'tag'],
-        postgresql_where=sa.text('tag IS NOT NULL')
-    )
+                -- Query: "Find versions by tag"
+                IF NOT EXISTS (SELECT FROM information_schema.statistics WHERE tablename = 'resume_versions' AND indexname = 'ix_resume_versions_tag') THEN
+                    CREATE INDEX ix_resume_versions_tag ON resume_versions (user_id, tag) WHERE tag IS NOT NULL;
+                END IF;
 
-    # Query: "Get versions needing comparison/analysis"
-    op.create_index(
-        'ix_resume_versions_content_diff',
-        'resume_versions',
-        ['resume_id', 'version_number'],
-        postgresql_where=sa.text('content_diff IS NOT NULL')
-    )
+                -- Query: "Get versions needing comparison/analysis"
+                IF NOT EXISTS (SELECT FROM information_schema.statistics WHERE tablename = 'resume_versions' AND indexname = 'ix_resume_versions_content_diff') THEN
+                    CREATE INDEX ix_resume_versions_content_diff ON resume_versions (resume_id, version_number) WHERE content_diff IS NOT NULL;
+                END IF;
 
-    # Query: "Get recent versions with AI feedback"
-    op.create_index(
-        'ix_resume_versions_ai_feedback_recent',
-        'resume_versions',
-        ['user_id', 'created_at'],
-        postgresql_where=sa.text('ai_feedback IS NOT NULL')
-    )
+                -- Query: "Get recent versions with AI feedback"
+                IF NOT EXISTS (SELECT FROM information_schema.statistics WHERE tablename = 'resume_versions' AND indexname = 'ix_resume_versions_ai_feedback_recent') THEN
+                    CREATE INDEX ix_resume_versions_ai_feedback_recent ON resume_versions (user_id, created_at) WHERE ai_feedback IS NOT NULL;
+                END IF;
+            END IF;
+        END $$;
+    """)
 
 
 def downgrade() -> None:
