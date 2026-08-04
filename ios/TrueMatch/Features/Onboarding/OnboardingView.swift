@@ -9,24 +9,19 @@ struct OnboardingView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.trueMatchTheme) private var theme
 
-    @State private var route: Route = .welcome
-
-    enum Route {
-        case welcome
-        case signUp
-        case login
-    }
-
     var body: some View {
         NavigationStack {
-            switch route {
-            case .welcome:
-                welcome
-            case .signUp:
-                SignUpView(onBack: { route = .welcome })
-            case .login:
-                LoginView(onBack: { route = .welcome })
-            }
+            welcome
+                .navigationDestination(for: String.self) { destination in
+                    switch destination {
+                    case "signup":
+                        SignUpView(onBack: {})
+                    case "login":
+                        LoginView(onBack: {})
+                    default:
+                        welcome
+                    }
+                }
         }
     }
 
@@ -51,11 +46,11 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: theme.spacing.xs) {
-                TMButton(title: "Create account", variant: .primary, size: .large, isFullWidth: true) {
-                    route = .signUp
+                NavigationLink(value: "signup") {
+                    TMButton(title: "Create account", variant: .primary, size: .large, isFullWidth: true) {}
                 }
-                TMButton(title: "Log in", variant: .secondary, size: .large, isFullWidth: true) {
-                    route = .login
+                NavigationLink(value: "login") {
+                    TMButton(title: "Log in", variant: .secondary, size: .large, isFullWidth: true) {}
                 }
             }
             .padding(.horizontal, theme.spacing.lg)
