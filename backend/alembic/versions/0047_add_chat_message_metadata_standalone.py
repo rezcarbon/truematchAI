@@ -1,7 +1,7 @@
 """Add chat message metadata - standalone migration bypassing broken chain
 
 Revision ID: 0047
-Revises: 0020
+Revises: 0001
 Create Date: 2026-08-04 16:00:00.000000
 
 This migration adds metadata persistence for chat messages.
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 revision = '0047'
-down_revision = '0020'
+down_revision = '0001'
 branch_labels = None
 depends_on = None
 
