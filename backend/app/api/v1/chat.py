@@ -345,15 +345,15 @@ async def chat(
 
     # Store assistant message with persona metadata
     msg_now = utcnow()
-    # ✨ NEW: Store persona information in metadata
-    metadata = {}
+    # ✨ NEW: Store persona information in message_metadata
+    message_metadata = {}
     if persona_info:
-        metadata["persona_id"] = persona_info.get("id")
-        metadata["persona_name"] = persona_info.get("name")
+        message_metadata["persona_id"] = persona_info.get("id")
+        message_metadata["persona_name"] = persona_info.get("name")
     if objective:
-        metadata["objective"] = objective
+        message_metadata["objective"] = objective
     if conv_mode:
-        metadata["mode"] = conv_mode
+        message_metadata["mode"] = conv_mode
 
     assistant_msg = ChatMessage(
         session_id=session_uuid,
@@ -362,7 +362,7 @@ async def chat(
         actions_taken=actions if 'actions' in locals() else [],
         created_at=msg_now,
         updated_at=msg_now,
-        metadata=metadata if metadata else None,  # ✨ NEW: Store persona metadata
+        message_metadata=message_metadata if message_metadata else None,  # ✨ NEW: Store persona metadata
     )
     db.add(assistant_msg)
 

@@ -18,12 +18,12 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Add metadata column to chat_messages table
+    # Add message_metadata column to chat_messages table
     # Stores persona info, objective, and conversation mode
     op.add_column(
         "chat_messages",
         sa.Column(
-            "metadata",
+            "message_metadata",
             postgresql.JSONB(astext_type=sa.Text()),
             nullable=True,
             comment="Persona info, objective, and conversation mode"
@@ -32,5 +32,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Remove metadata column
-    op.drop_column("chat_messages", "metadata")
+    # Remove message_metadata column
+    op.drop_column("chat_messages", "message_metadata")
