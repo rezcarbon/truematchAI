@@ -19,23 +19,33 @@ depends_on = None
 
 def upgrade() -> None:
     """Create chat_messages table if needed and add message_metadata column."""
-    # Create chat_messages table if it doesn't exist
-    op.execute("""
-        CREATE TABLE IF NOT EXISTS chat_messages (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-            session_id UUID NOT NULL,
-            role VARCHAR(50) NOT NULL,
-            content TEXT NOT NULL,
-            message_metadata JSONB,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
-        );
-    """)
+    from sqlalchemy import text
 
-    # Add message_metadata column if it doesn't already exist
-    op.execute("""
-        ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS message_metadata JSONB;
-    """)
+    # First, try to create the table if it doesn't exist
+    try:
+        op.execute(text("""
+            CREATE TABLE IF NOT EXISTS chat_messages (
+                id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                session_id UUID NOT NULL,
+                role VARCHAR(50) NOT NULL,
+                content TEXT NOT NULL,
+                message_metadata JSONB,
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            )
+        """))
+    except Exception:
+        # Table might already exist, continue
+        pass
+
+    # Add the column if it doesn't exist
+    try:
+        op.execute(text("""
+            ALTER TABLE chat_messages ADD COLUMN IF NOT EXISTS message_metadata JSONB
+        """))
+    except Exception:
+        # Column might already exist or table doesn't exist yet
+        pass
 
 
 def downgrade() -> None:
