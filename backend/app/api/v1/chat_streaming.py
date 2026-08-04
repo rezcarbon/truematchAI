@@ -70,6 +70,7 @@ async def stream_chat_message(
 
         full_text_parts: list[str] = []
         tool_calls: list[dict] = []
+        failover_used = False
 
         if not is_live():
             # Mock fallback: stream a context-aware reply in word chunks.
@@ -85,13 +86,14 @@ async def stream_chat_message(
             tools = tools_for_role(user.role)
 
             def worker() -> None:
+                nonlocal failover_used
+                primary_failed = False
                 try:
+                    # Try primary LLM (Anthropic)
                     with get_client().messages.stream(
                         model=settings.anthropic_model,
                         max_tokens=1024,
                         temperature=0.2,
-                        # Reuse the shared system-block builder so the large,
-                        # stable prompt is prompt-cached (matches non-streaming).
                         system=_build_system(system_prompt, True),
                         tools=tools,
                         messages=[{"role": "user", "content": message}],
@@ -110,8 +112,44 @@ async def stream_chat_message(
                             if getattr(b, "type", None) == "tool_use"
                         ]
                         loop.call_soon_threadsafe(queue.put_nowait, ("tools", calls))
-                except Exception as exc:  # noqa: BLE001 — surfaced as SSE error
-                    loop.call_soon_threadsafe(queue.put_nowait, ("error", str(exc)))
+                except Exception as exc:  # noqa: BLE001
+                    primary_failed = True
+                    logger.warning(f"Anthropic streaming failed, attempting MiniMax fallback: {exc}")
+
+                    # Attempt fallback to MiniMax if configured
+                    if settings.llm_fallback_enabled and settings.minimax_api_key:
+                        try:
+                            from app.engines.providers.minimax import MiniMaxProvider
+                            fallover_used = True
+                            provider = MiniMaxProvider(settings.minimax_api_key, settings.minimax_base_url)
+
+                            # Use non-streaming response from MiniMax and emit as tokens
+                            response = provider.complete(
+                                messages=[{"role": "user", "content": message}],
+                                system=_build_system(system_prompt, True),
+                                max_tokens=1024,
+                                temperature=0.2,
+                            )
+
+                            # Stream response text as tokens for consistency
+                            for chunk in response.content.split(" "):
+                                loop.call_soon_threadsafe(queue.put_nowait, ("token", chunk + " "))
+
+                            # Record MiniMax usage
+                            try:
+                                from app.core.llm_usage import record_usage
+                                record_usage(settings.minimax_model, getattr(response, "usage", None))
+                                logger.info(f"Fallover to MiniMax successful for user {user.id}")
+                            except Exception:  # noqa: BLE001
+                                pass
+
+                            loop.call_soon_threadsafe(queue.put_nowait, ("tools", []))
+                        except Exception as fallback_exc:  # noqa: BLE001
+                            logger.error(f"MiniMax fallback also failed: {fallback_exc}")
+                            loop.call_soon_threadsafe(queue.put_nowait, ("error", str(fallback_exc)))
+                    else:
+                        # No fallback configured, surface error
+                        loop.call_soon_threadsafe(queue.put_nowait, ("error", str(exc)))
                 finally:
                     loop.call_soon_threadsafe(queue.put_nowait, ("end", None))
 
@@ -187,6 +225,7 @@ async def stream_chat_message(
                 "message_id": message_id,
                 "actions": actions,
                 "suggestions": agent._generate_suggestions(user_context, actions),
+                "failover_used": failover_used,
             },
         )
 

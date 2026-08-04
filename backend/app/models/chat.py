@@ -44,6 +44,7 @@ class ChatMessage(Base, TimestampMixin):
     role: Mapped[str] = mapped_column(nullable=False)  # "user" or "assistant"
     content: Mapped[str] = mapped_column(Text, nullable=False)
     actions_taken: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
+    metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # persona_id, persona_name, objective, mode
 
     __table_args__ = (
         Index("ix_chat_messages_session_id", "session_id"),
