@@ -49,7 +49,7 @@ enum AppConfiguration {
     enum Features {
         static let singpassEnabled = true
         static let offlineModeEnabled = true
-        static let pushNotificationsEnabled = false
+        static let pushNotificationsEnabled = true
         static let jobMatchingEnabled = true
     }
 
