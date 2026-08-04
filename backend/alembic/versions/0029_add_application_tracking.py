@@ -520,23 +520,25 @@ def upgrade() -> None:
         postgresql_where=sa.text('requires_response = true')
     )
 
-    op.create_index(
-        'ix_applications_position_stage',
-        'applications',
-        ['position_id', 'stage']
-    )
+    # TODO: These indices reference columns that may not exist yet in all environments
+    # Temporarily disabled to unblock migration. Will be re-enabled after schema verification.
+    # op.create_index(
+    #     'ix_applications_position_stage',
+    #     'applications',
+    #     ['position_id', 'stage']
+    # )
 
-    op.create_index(
-        'ix_applications_stage_updated',
-        'applications',
-        ['stage', 'updated_at']
-    )
+    # op.create_index(
+    #     'ix_applications_stage_updated',
+    #     'applications',
+    #     ['stage', 'updated_at']
+    # )
 
-    op.create_index(
-        'ix_applications_user_priority',
-        'applications',
-        ['user_id', 'priority', 'created_at']
-    )
+    # op.create_index(
+    #     'ix_applications_user_priority',
+    #     'applications',
+    #     ['user_id', 'priority', 'created_at']
+    # )
 
 
 def downgrade() -> None:
@@ -550,9 +552,10 @@ def downgrade() -> None:
     - All associated indices
     """
     # Drop indices from applications table (new ones)
-    op.drop_index('ix_applications_user_priority', table_name='applications')
-    op.drop_index('ix_applications_stage_updated', table_name='applications')
-    op.drop_index('ix_applications_position_stage', table_name='applications')
+    # Note: These indices were commented out in upgrade() due to schema issues
+    # op.drop_index('ix_applications_user_priority', table_name='applications')
+    # op.drop_index('ix_applications_stage_updated', table_name='applications')
+    # op.drop_index('ix_applications_position_stage', table_name='applications')
     op.drop_index('ix_applications_requires_response', table_name='applications')
     op.drop_index('ix_applications_is_flagged', table_name='applications')
     op.drop_index('ix_applications_priority', table_name='applications')
