@@ -612,3 +612,42 @@ struct JobWithPersona: Codable, Identifiable {
     let personaIcon: String?
     let isHiddenGem: Bool?
 }
+
+// MARK: - Recruiter Search & Decision Models
+
+struct SearchCandidatesRequest: Codable {
+    let query: String?
+    let skills: [String]?
+    let experience: String?
+    let location: String?
+    let availabilityMin: String?
+}
+
+struct RecordDecisionRequest: Codable {
+    let decision: String  // "interested", "rejected", "hold"
+    let notes: String?
+}
+
+// MARK: - Candidate Job Recommendations Models
+
+struct GetJobRecommendationsRequest: Codable {
+    let qualityThreshold: String?  // "80%+", "60%+", "40%+"
+    let limit: Int?
+    let offset: Int?
+}
+
+struct SaveJobRequest: Codable {
+    let jobId: String
+    let personalization: String?
+}
+
+struct RejectJobRequest: Codable {
+    let jobId: String
+    let reason: String?
+}
+
+struct GetApplicationsRequest: Codable {
+    let status: String?  // "draft", "submitted", "reviewed", "accepted", "rejected"
+    let limit: Int?
+    let offset: Int?
+}

@@ -436,27 +436,30 @@ extension APIEndpoint {
     }
 
     /// Fetch personalized job recommendations for the candidate.
-    static func candidateJobRecommendations(request: GetJobRecommendationsRequest) -> APIEndpoint {
-        let queryItems = [
-            URLQueryItem(name: "limit", value: String(request.limit)),
-            URLQueryItem(name: "offset", value: String(request.offset))
-        ]
-        return APIEndpoint(path: "candidates/\(request.candidateId)/jobs/recommendations", queryItems: queryItems)
+    static func candidateJobRecommendations(candidateId: String, request: GetJobRecommendationsRequest) -> APIEndpoint {
+        var queryItems: [URLQueryItem] = []
+        if let limit = request.limit {
+            queryItems.append(URLQueryItem(name: "limit", value: String(limit)))
+        }
+        if let offset = request.offset {
+            queryItems.append(URLQueryItem(name: "offset", value: String(offset)))
+        }
+        return APIEndpoint(path: "candidates/\(candidateId)/jobs/recommendations", queryItems: queryItems)
     }
 
     /// Save a job recommendation.
-    static func saveCandidateJob(request: SaveJobRequest) -> APIEndpoint {
-        APIEndpoint(path: "candidates/\(request.candidateId)/jobs/\(request.jobId)/save", method: .POST, body: request)
+    static func saveCandidateJob(candidateId: String, jobId: String, request: SaveJobRequest) -> APIEndpoint {
+        APIEndpoint(path: "candidates/\(candidateId)/jobs/\(jobId)/save", method: .POST, body: request)
     }
 
     /// Reject a job recommendation.
-    static func rejectCandidateJob(request: RejectJobRequest) -> APIEndpoint {
-        APIEndpoint(path: "candidates/\(request.candidateId)/jobs/\(request.jobId)/reject", method: .POST, body: request)
+    static func rejectCandidateJob(candidateId: String, jobId: String, request: RejectJobRequest) -> APIEndpoint {
+        APIEndpoint(path: "candidates/\(candidateId)/jobs/\(jobId)/reject", method: .POST, body: request)
     }
 
     /// Fetch the candidate's applications and their statuses.
-    static func candidateApplications(request: GetApplicationsRequest) -> APIEndpoint {
-        APIEndpoint(path: "candidates/\(request.candidateId)/applications", method: .GET)
+    static func candidateApplications(candidateId: String, request: GetApplicationsRequest) -> APIEndpoint {
+        APIEndpoint(path: "candidates/\(candidateId)/applications", method: .GET)
     }
 
     /// Accept a job offer.
