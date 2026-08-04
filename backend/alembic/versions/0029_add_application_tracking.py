@@ -523,13 +523,13 @@ def upgrade() -> None:
     op.create_index(
         'ix_applications_position_stage',
         'applications',
-        ['position_id', 'status']
+        ['position_id', 'stage']
     )
 
     op.create_index(
         'ix_applications_stage_updated',
         'applications',
-        ['status', 'updated_at']
+        ['stage', 'updated_at']
     )
 
     op.create_index(
