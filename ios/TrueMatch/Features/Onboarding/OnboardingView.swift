@@ -8,20 +8,16 @@ import SwiftUI
 struct OnboardingView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.trueMatchTheme) private var theme
+    @State private var showLogin = false
+    @State private var showSignUp = false
 
     var body: some View {
-        NavigationStack {
+        if showLogin {
+            LoginView(onBack: { showLogin = false })
+        } else if showSignUp {
+            SignUpView(onBack: { showSignUp = false })
+        } else {
             welcome
-                .navigationDestination(for: String.self) { destination in
-                    switch destination {
-                    case "signup":
-                        SignUpView(onBack: {})
-                    case "login":
-                        LoginView(onBack: {})
-                    default:
-                        welcome
-                    }
-                }
         }
     }
 
@@ -46,11 +42,33 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: theme.spacing.xs) {
-                NavigationLink(value: "signup") {
-                    TMButton(title: "Create account", variant: .primary, size: .large, isFullWidth: true) {}
+                HStack(spacing: theme.spacing.xxs) {
+                    Text("Create account")
+                        .font(.system(size: 17, weight: .semibold))
                 }
-                NavigationLink(value: "login") {
-                    TMButton(title: "Log in", variant: .secondary, size: .large, isFullWidth: true) {}
+                .foregroundStyle(.white)
+                .frame(height: 56)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 28)
+                .background(theme.colors.primary)
+                .clipShape(RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous))
+                .onTapGesture {
+                    showSignUp = true
+                }
+
+                HStack(spacing: theme.spacing.xxs) {
+                    Text("Log in")
+                        .font(.system(size: 17, weight: .semibold))
+                }
+                .foregroundStyle(theme.colors.primary)
+                .frame(height: 56)
+                .frame(maxWidth: .infinity)
+                .padding(.horizontal, 28)
+                .background(Color.clear)
+                .border(theme.colors.primary, width: 2)
+                .clipShape(RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous))
+                .onTapGesture {
+                    showLogin = true
                 }
             }
             .padding(.horizontal, theme.spacing.lg)

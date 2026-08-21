@@ -17,7 +17,7 @@ enum AppConfiguration {
         // For network testing on iPhone, change 192.168.1.15 to your laptop IP.
         static let baseURL: URL = {
             #if DEBUG
-            return URL(string: "http://192.168.1.15:8000/api")!
+            return URL(string: "http://54.157.212.33:8000/api")!
             #else
             return URL(string: "https://api.truematch.ai/api")!
             #endif
@@ -26,7 +26,7 @@ enum AppConfiguration {
         /// Base URL for WebSocket connections (ws:// in debug, wss:// in production).
         static let wsBase: URL? = {
             #if DEBUG
-            return URL(string: "ws://192.168.1.15:8000/api/v1")
+            return URL(string: "ws://54.157.212.33:8000/api/v1")
             #else
             return URL(string: "wss://api.truematch.ai/api/v1")
             #endif
@@ -34,7 +34,7 @@ enum AppConfiguration {
 
         static let webSocketURL: URL = {
             #if DEBUG
-            return URL(string: "ws://192.168.1.15:8000/api/v1")!
+            return URL(string: "ws://54.157.212.33:8000/api/v1")!
             #else
             return URL(string: "wss://api.truematch.ai/api/v1")!
             #endif
@@ -49,7 +49,7 @@ enum AppConfiguration {
     enum Features {
         static let singpassEnabled = true
         static let offlineModeEnabled = true
-        static let pushNotificationsEnabled = true
+        static let pushNotificationsEnabled = false
         static let jobMatchingEnabled = true
     }
 

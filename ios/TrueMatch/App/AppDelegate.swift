@@ -14,7 +14,8 @@ class AppDelegate: NSObject, UIApplicationDelegate {
         didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil
     ) -> Bool {
         registerBackgroundTasks()
-        requestNotificationPermissions()
+        // Temporarily disabled for testing
+        // requestNotificationPermissions()
         _ = NotificationHandler.shared
         return true
     }
