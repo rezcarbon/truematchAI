@@ -19,7 +19,7 @@ enum AppConfiguration {
             #if DEBUG
             return URL(string: "http://54.157.212.33:8000/api")!
             #else
-            return URL(string: "https://api.truematch.ai/api")!
+            return URL(string: "http://54.157.212.33:8000/api")!
             #endif
         }()
 
@@ -28,7 +28,7 @@ enum AppConfiguration {
             #if DEBUG
             return URL(string: "ws://54.157.212.33:8000/api/v1")
             #else
-            return URL(string: "wss://api.truematch.ai/api/v1")
+            return URL(string: "ws://54.157.212.33:8000/api/v1")
             #endif
         }()
 
@@ -36,7 +36,7 @@ enum AppConfiguration {
             #if DEBUG
             return URL(string: "ws://54.157.212.33:8000/api/v1")!
             #else
-            return URL(string: "wss://api.truematch.ai/api/v1")!
+            return URL(string: "ws://54.157.212.33:8000/api/v1")!
             #endif
         }()
 
