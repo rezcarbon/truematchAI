@@ -66,168 +66,177 @@ async def stream_chat_message(
     message = payload.message
 
     async def event_generator() -> AsyncGenerator[str, None]:
-        yield _sse("connected", {"session_id": session_id})
+        try:
+            logger.info(f"Starting chat stream for session {session_id}, message: {payload.message}")
+            yield _sse("connected", {"session_id": session_id})
 
-        full_text_parts: list[str] = []
-        tool_calls: list[dict] = []
-        failover_used = False
+            full_text_parts: list[str] = []
+            tool_calls: list[dict] = []
+            failover_used = False
 
-        if not is_live():
-            # Mock fallback: stream a context-aware reply in word chunks.
-            reply = agent._mock_reply(message, user_context)
-            for word in reply.split(" "):
-                full_text_parts.append(word + " ")
-                yield _sse("token", {"text": word + " "})
-                await asyncio.sleep(0.01)
-        else:
-            # Bridge the synchronous SDK stream into async SSE via a queue.
-            queue: asyncio.Queue = asyncio.Queue()
-            loop = asyncio.get_running_loop()
-            tools = tools_for_role(user.role)
+            logger.info(f"is_live()={is_live()}, starting stream...")
+            if not is_live():
+                # Mock fallback: stream a context-aware reply in word chunks.
+                reply = agent._mock_reply(message, user_context)
+                for word in reply.split(" "):
+                    full_text_parts.append(word + " ")
+                    yield _sse("token", {"text": word + " "})
+                    await asyncio.sleep(0.01)
+            else:
+                # Bridge the synchronous SDK stream into async SSE via a queue.
+                queue: asyncio.Queue = asyncio.Queue()
+                loop = asyncio.get_running_loop()
+                tools = tools_for_role(user.role)
 
-            def worker() -> None:
-                nonlocal failover_used
-                primary_failed = False
-                try:
-                    # Try primary LLM (Anthropic)
-                    with get_client().messages.stream(
-                        model=settings.anthropic_model,
-                        max_tokens=1024,
-                        temperature=0.2,
-                        system=_build_system(system_prompt, True),
-                        tools=tools,
-                        messages=[{"role": "user", "content": message}],
-                    ) as stream:
-                        for text in stream.text_stream:
-                            loop.call_soon_threadsafe(queue.put_nowait, ("token", text))
-                        final = stream.get_final_message()
-                        try:
-                            from app.core.llm_usage import record_usage
-                            record_usage(settings.anthropic_model, getattr(final, "usage", None))
-                        except Exception:  # noqa: BLE001
-                            pass
-                        calls = [
-                            {"id": b.id, "name": b.name, "input": b.input}
-                            for b in final.content
-                            if getattr(b, "type", None) == "tool_use"
-                        ]
-                        loop.call_soon_threadsafe(queue.put_nowait, ("tools", calls))
-                except Exception as exc:  # noqa: BLE001
-                    primary_failed = True
-                    logger.warning(f"Anthropic streaming failed, attempting MiniMax fallback: {exc}")
-
-                    # Attempt fallback to MiniMax if configured
-                    if settings.llm_fallback_enabled and settings.minimax_api_key:
-                        try:
-                            from app.engines.providers.minimax import MiniMaxProvider
-                            fallover_used = True
-                            provider = MiniMaxProvider(settings.minimax_api_key, settings.minimax_base_url)
-
-                            # Use non-streaming response from MiniMax and emit as tokens
-                            response = provider.complete(
-                                messages=[{"role": "user", "content": message}],
-                                system=_build_system(system_prompt, True),
-                                max_tokens=1024,
-                                temperature=0.2,
-                            )
-
-                            # Stream response text as tokens for consistency
-                            for chunk in response.content.split(" "):
-                                loop.call_soon_threadsafe(queue.put_nowait, ("token", chunk + " "))
-
-                            # Record MiniMax usage
+                def worker() -> None:
+                    nonlocal failover_used
+                    primary_failed = False
+                    try:
+                        # Try primary LLM (Anthropic)
+                        with get_client().messages.stream(
+                            model=settings.anthropic_model,
+                            max_tokens=1024,
+                            temperature=0.2,
+                            system=_build_system(system_prompt, True),
+                            tools=tools,
+                            messages=[{"role": "user", "content": message}],
+                        ) as stream:
+                            for text in stream.text_stream:
+                                loop.call_soon_threadsafe(queue.put_nowait, ("token", text))
+                            final = stream.get_final_message()
                             try:
                                 from app.core.llm_usage import record_usage
-                                record_usage(settings.minimax_model, getattr(response, "usage", None))
-                                logger.info(f"Fallover to MiniMax successful for user {user.id}")
+                                record_usage(settings.anthropic_model, getattr(final, "usage", None))
                             except Exception:  # noqa: BLE001
                                 pass
+                            calls = [
+                                {"id": b.id, "name": b.name, "input": b.input}
+                                for b in final.content
+                                if getattr(b, "type", None) == "tool_use"
+                            ]
+                            loop.call_soon_threadsafe(queue.put_nowait, ("tools", calls))
+                    except Exception as exc:  # noqa: BLE001
+                        primary_failed = True
+                        logger.warning(f"Anthropic streaming failed, attempting MiniMax fallback: {exc}")
 
-                            loop.call_soon_threadsafe(queue.put_nowait, ("tools", []))
-                        except Exception as fallback_exc:  # noqa: BLE001
-                            logger.error(f"MiniMax fallback also failed: {fallback_exc}")
-                            loop.call_soon_threadsafe(queue.put_nowait, ("error", str(fallback_exc)))
+                        # Attempt fallback to MiniMax if configured
+                        if settings.llm_fallback_enabled and settings.minimax_api_key:
+                            try:
+                                from app.engines.providers.minimax import MiniMaxProvider
+                                failover_used = True
+                                provider = MiniMaxProvider(settings.minimax_api_key, settings.minimax_base_url)
+
+                                # Use non-streaming response from MiniMax and emit as tokens
+                                response = provider.complete(
+                                    messages=[{"role": "user", "content": message}],
+                                    system=_build_system(system_prompt, True),
+                                    max_tokens=1024,
+                                    temperature=0.2,
+                                )
+
+                                # Stream response text as tokens for consistency
+                                for chunk in response.content.split(" "):
+                                    loop.call_soon_threadsafe(queue.put_nowait, ("token", chunk + " "))
+
+                                # Record MiniMax usage
+                                try:
+                                    from app.core.llm_usage import record_usage
+                                    record_usage(settings.minimax_model, getattr(response, "usage", None))
+                                    logger.info(f"Failover to MiniMax successful for user {user.id}")
+                                except Exception:  # noqa: BLE001
+                                    pass
+
+                                loop.call_soon_threadsafe(queue.put_nowait, ("tools", []))
+                            except Exception as fallback_exc:  # noqa: BLE001
+                                logger.error(f"MiniMax fallback also failed: {fallback_exc}")
+                                loop.call_soon_threadsafe(queue.put_nowait, ("error", str(fallback_exc)))
+                        else:
+                            # No fallback configured, surface error
+                            loop.call_soon_threadsafe(queue.put_nowait, ("error", str(exc)))
+                    finally:
+                        loop.call_soon_threadsafe(queue.put_nowait, ("end", None))
+
+                threading.Thread(target=worker, daemon=True).start()
+
+                stream_errored = False
+                try:
+                    while True:
+                        kind, data = await queue.get()
+                        if kind == "end":
+                            break
+                        if kind == "token":
+                            full_text_parts.append(data)
+                            yield _sse("token", {"text": data})
+                        elif kind == "tools":
+                            tool_calls = data or []
+                        elif kind == "error":
+                            stream_errored = True
+                except (asyncio.CancelledError, GeneratorExit):
+                    # Client disconnected mid-stream — stop forwarding. The worker
+                    # thread is a daemon over a context-managed SDK stream, so it
+                    # unwinds on its own; we simply stop draining the queue.
+                    raise
+
+                if stream_errored:
+                    if not full_text_parts:
+                        # Total failure before any text (e.g. exhausted credit
+                        # balance): degrade to a chunked context-aware mock reply so
+                        # the chat stays usable instead of showing a raw error.
+                        reply = agent._mock_reply(message, user_context)
+                        for word in reply.split(" "):
+                            full_text_parts.append(word + " ")
+                            yield _sse("token", {"text": word + " "})
+                            await asyncio.sleep(0.01)
                     else:
-                        # No fallback configured, surface error
-                        loop.call_soon_threadsafe(queue.put_nowait, ("error", str(exc)))
-                finally:
-                    loop.call_soon_threadsafe(queue.put_nowait, ("end", None))
+                        # Partial reply then failure: signal the truncation rather
+                        # than presenting it as a complete answer.
+                        yield _sse("error", {"error": "The response was cut off. Please retry."})
 
-            threading.Thread(target=worker, daemon=True).start()
+            text = "".join(full_text_parts).strip()
+            actions = tool_calls_to_actions(tool_calls)
+            if not text and actions:
+                text = "I've prepared the following action(s) for your review:"
+            elif not text:
+                text = "Done."
 
-            stream_errored = False
+            logger.info(f"Stream complete: generated {len(text)} chars, {len(tool_calls)} tool calls")
+
+            # Persist the assistant message (with any pending actions) and update
+            # the session, using a fresh DB session — the request-scoped one may be
+            # mid-stream. Import lazily to avoid a cycle.
+            from app.database import AsyncSessionLocal
+
+            message_id = ""
             try:
-                while True:
-                    kind, data = await queue.get()
-                    if kind == "end":
-                        break
-                    if kind == "token":
-                        full_text_parts.append(data)
-                        yield _sse("token", {"text": data})
-                    elif kind == "tools":
-                        tool_calls = data or []
-                    elif kind == "error":
-                        stream_errored = True
-            except (asyncio.CancelledError, GeneratorExit):
-                # Client disconnected mid-stream — stop forwarding. The worker
-                # thread is a daemon over a context-managed SDK stream, so it
-                # unwinds on its own; we simply stop draining the queue.
-                raise
+                async with AsyncSessionLocal() as wdb:
+                    assistant = ChatMessage(
+                        session_id=session_uuid,
+                        role="assistant",
+                        content=text,
+                        actions_taken=actions or None,
+                    )
+                    wdb.add(assistant)
+                    s = await wdb.get(ChatSession, session_uuid)
+                    if s:
+                        s.last_message_at = utcnow()
+                    await wdb.commit()
+                    message_id = str(assistant.id)
+                    logger.info(f"Persisted assistant message {message_id}")
+            except Exception as exc:  # noqa: BLE001
+                logger.error("Failed to persist streamed assistant message: %s", exc)
 
-            if stream_errored:
-                if not full_text_parts:
-                    # Total failure before any text (e.g. exhausted credit
-                    # balance): degrade to a chunked context-aware mock reply so
-                    # the chat stays usable instead of showing a raw error.
-                    reply = agent._mock_reply(message, user_context)
-                    for word in reply.split(" "):
-                        full_text_parts.append(word + " ")
-                        yield _sse("token", {"text": word + " "})
-                        await asyncio.sleep(0.01)
-                else:
-                    # Partial reply then failure: signal the truncation rather
-                    # than presenting it as a complete answer.
-                    yield _sse("error", {"error": "The response was cut off. Please retry."})
-
-        text = "".join(full_text_parts).strip()
-        actions = tool_calls_to_actions(tool_calls)
-        if not text and actions:
-            text = "I've prepared the following action(s) for your review:"
-        elif not text:
-            text = "Done."
-
-        # Persist the assistant message (with any pending actions) and update
-        # the session, using a fresh DB session — the request-scoped one may be
-        # mid-stream. Import lazily to avoid a cycle.
-        from app.database import AsyncSessionLocal
-
-        message_id = ""
-        try:
-            async with AsyncSessionLocal() as wdb:
-                assistant = ChatMessage(
-                    session_id=session_uuid,
-                    role="assistant",
-                    content=text,
-                    actions_taken=actions or None,
-                )
-                wdb.add(assistant)
-                s = await wdb.get(ChatSession, session_uuid)
-                if s:
-                    s.last_message_at = utcnow()
-                await wdb.commit()
-                message_id = str(assistant.id)
-        except Exception as exc:  # noqa: BLE001
-            logger.error("Failed to persist streamed assistant message: %s", exc)
-
-        yield _sse(
-            "done",
-            {
-                "message_id": message_id,
-                "actions": actions,
-                "suggestions": agent._generate_suggestions(user_context, actions),
-                "failover_used": failover_used,
-            },
-        )
+            yield _sse(
+                "done",
+                {
+                    "message_id": message_id,
+                    "actions": actions,
+                    "suggestions": agent._generate_suggestions(user_context, actions),
+                    "failover_used": failover_used,
+                },
+            )
+        except Exception as outer_exc:
+            logger.error(f"Error in event_generator: {outer_exc}", exc_info=True)
+            yield _sse("error", {"error": f"Stream error: {str(outer_exc)}"})
 
     return StreamingResponse(
         event_generator(),
