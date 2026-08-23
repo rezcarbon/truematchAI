@@ -42,34 +42,30 @@ struct OnboardingView: View {
             Spacer()
 
             VStack(spacing: theme.spacing.xs) {
-                HStack(spacing: theme.spacing.xxs) {
+                Button(action: { showSignUp = true }) {
                     Text("Create account")
                         .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(height: 56)
+                        .frame(maxWidth: .infinity)
+                        .background(theme.colors.primary)
+                        .cornerRadius(theme.radii.sm)
                 }
-                .foregroundStyle(.white)
-                .frame(height: 56)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 28)
-                .background(theme.colors.primary)
-                .clipShape(RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous))
-                .onTapGesture {
-                    showSignUp = true
-                }
+                .buttonStyle(.plain)
 
-                HStack(spacing: theme.spacing.xxs) {
+                Button(action: { showLogin = true }) {
                     Text("Log in")
                         .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(theme.colors.primary)
+                        .frame(height: 56)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous)
+                                .stroke(theme.colors.primary, lineWidth: 2)
+                        )
                 }
-                .foregroundStyle(theme.colors.primary)
-                .frame(height: 56)
-                .frame(maxWidth: .infinity)
-                .padding(.horizontal, 28)
-                .background(Color.clear)
-                .border(theme.colors.primary, width: 2)
-                .clipShape(RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous))
-                .onTapGesture {
-                    showLogin = true
-                }
+                .buttonStyle(.plain)
+                .contentShape(Rectangle())
             }
             .padding(.horizontal, theme.spacing.lg)
             .padding(.bottom, theme.spacing.xl)
