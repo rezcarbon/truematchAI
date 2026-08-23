@@ -20,6 +20,9 @@ struct ChatView: View {
         NavigationStack {
             VStack(spacing: 0) {
                 transcript
+                    .onTapGesture {
+                        inputFocused = false
+                    }
                 Divider()
                 suggestionRow
                 composer
