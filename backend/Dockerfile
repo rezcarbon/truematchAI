@@ -16,7 +16,7 @@ WORKDIR /app
 # Install dependencies first for better layer caching.
 COPY pyproject.toml ./
 COPY app ./app
-RUN pip install --upgrade pip && pip install .
+RUN pip install --upgrade pip && pip install -e .
 
 COPY alembic.ini ./
 COPY alembic ./alembic
