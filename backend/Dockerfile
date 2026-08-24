@@ -17,7 +17,7 @@ WORKDIR /app
 COPY app ./app
 COPY pyproject.toml ./
 
-# Install dependencies only (skip package install to avoid import issues)
+# Install dependencies from requirements, not package installation
 RUN pip install --upgrade pip && \
     pip install \
     'fastapi>=0.111' \
@@ -49,10 +49,12 @@ RUN pip install --upgrade pip && \
     'aiosmtplib>=5.0' \
     'aiofiles>=23.0' \
     'watchdog>=4.0' \
-    'reportlab>=4.0'
+    'reportlab>=4.0' && \
+    # Remove any installed app/truematch packages to avoid conflicts
+    pip uninstall -y truematch-backend app 2>/dev/null || true
 
-# Ensure Python imports from the source directory
-ENV PYTHONPATH=/app:$PYTHONPATH
+# Ensure Python imports from the source directory (prepend to path)
+ENV PYTHONPATH=/app:${PYTHONPATH}
 
 COPY alembic.ini ./
 COPY alembic ./alembic
