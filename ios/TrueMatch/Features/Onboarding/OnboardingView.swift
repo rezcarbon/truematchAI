@@ -10,7 +10,6 @@ struct OnboardingView: View {
     @Environment(\.trueMatchTheme) private var theme
     @State private var showLogin = false
     @State private var showSignUp = false
-    @State private var testCounter = 0
 
     var body: some View {
         if showLogin {
