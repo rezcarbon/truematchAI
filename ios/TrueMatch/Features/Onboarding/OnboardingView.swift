@@ -41,29 +41,29 @@ struct OnboardingView: View {
                     Spacer()
 
                     VStack(spacing: theme.spacing.xs) {
-                        Button("Create account") {
-                            showSignUp = true
-                        }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(theme.colors.primary)
-                        .cornerRadius(theme.radii.sm)
-                        .contentShape(Rectangle())
+                        Text("Create account")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .background(theme.colors.primary)
+                            .cornerRadius(theme.radii.sm)
+                            .onTapGesture {
+                                showSignUp = true
+                            }
 
-                        Button("Log in") {
-                            showLogin = true
-                        }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(theme.colors.primary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous)
-                                .stroke(theme.colors.primary, lineWidth: 2)
-                        )
-                        .contentShape(Rectangle())
+                        Text("Log in")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundStyle(theme.colors.primary)
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 56)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous)
+                                    .stroke(theme.colors.primary, lineWidth: 2)
+                            )
+                            .onTapGesture {
+                                showLogin = true
+                            }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, theme.spacing.lg)
