@@ -50,6 +50,7 @@ struct OnboardingView: View {
                                 .background(theme.colors.primary)
                                 .cornerRadius(theme.radii.sm)
                         }
+                        .buttonStyle(.plain)
 
                         Button(action: { showLogin = true }) {
                             Text("Log in")
@@ -62,6 +63,7 @@ struct OnboardingView: View {
                                         .stroke(theme.colors.primary, lineWidth: 2)
                                 )
                         }
+                        .buttonStyle(.plain)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, theme.spacing.lg)
