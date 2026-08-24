@@ -18,6 +18,9 @@ COPY pyproject.toml ./
 COPY app ./app
 RUN pip install --upgrade pip && pip install -e .
 
+# Ensure Python imports from the source directory
+ENV PYTHONPATH=/app:$PYTHONPATH
+
 COPY alembic.ini ./
 COPY alembic ./alembic
 COPY governance ./governance
