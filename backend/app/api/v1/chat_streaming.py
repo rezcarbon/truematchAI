@@ -56,13 +56,26 @@ async def stream_chat_message(
     db.add(ChatMessage(session_id=session_uuid, role="user", content=payload.message))
     await db.commit()
 
+    # Refresh the session after commit to ensure clean state for subsequent queries
+    await db.expunge_all()
+    logger.info(f"Message committed for session {session_id}, session refreshed")
+
     # Build the same role-aware context the non-streaming path uses.
     from app.agents.agent_router import get_agent_for_user
     from app.agents.agent_tools import tools_for_role, tool_calls_to_actions
     from app.engines.client import _build_system, get_client, is_live
 
-    agent = await get_agent_for_user(user.id, user.role, db, company_id=None)
-    system_prompt, user_context = await agent.prepare_turn(payload.message, user, db)
+    try:
+        agent = await get_agent_for_user(user.id, user.role, db, company_id=None)
+        logger.info(f"Agent loaded: {type(agent).__name__}")
+        system_prompt, user_context = await agent.prepare_turn(payload.message, user, db)
+        logger.info(f"Context prepared for user {user.id}")
+    except Exception as e:
+        logger.error(f"Failed to prepare agent context: {type(e).__name__}: {str(e)}", exc_info=True)
+        # Fallback to basic context if context loading fails
+        system_prompt = "You are a helpful assistant. Provide concise, practical advice."
+        user_context = {"role": user.role, "email": user.email}
+
     message = payload.message
 
     async def event_generator() -> AsyncGenerator[str, None]:

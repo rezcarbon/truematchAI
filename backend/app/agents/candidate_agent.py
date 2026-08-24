@@ -126,56 +126,65 @@ class CandidateAgent(PersonaEnhancedAgentMixin, EnhancedBaseAgent):
 
         try:
             # Load uploaded CVs for this candidate
-            logger.debug(f"Loading CVs for user {user.id}")
-            cvs_stmt = select(Resume).where(Resume.user_id == user.id)
-            result = await db.execute(cvs_stmt)
-            cvs = result.scalars().all()
-            logger.debug(f"Loaded {len(cvs)} CVs")
+            uploaded_cvs = []
+            try:
+                logger.debug(f"Loading CVs for user {user.id}")
+                cvs_stmt = select(Resume).where(Resume.user_id == user.id)
+                result = await db.execute(cvs_stmt)
+                cvs = result.scalars().all()
+                logger.debug(f"Loaded {len(cvs) if cvs else 0} CVs")
 
-            uploaded_cvs = [
-                {
-                    "id": str(cv.id),
-                    "file_type": cv.file_type or "unknown",
-                    "created_at": cv.created_at.isoformat() if cv.created_at else None,
-                    "has_parsed_data": bool(cv.parsed_data),
-                }
-                for cv in cvs
-            ]
+                uploaded_cvs = [
+                    {
+                        "id": str(cv.id),
+                        "file_type": cv.file_type or "unknown",
+                        "created_at": cv.created_at.isoformat() if cv.created_at else None,
+                        "has_parsed_data": bool(cv.parsed_data),
+                    }
+                    for cv in (cvs or [])
+                ]
+            except Exception as e:
+                logger.warning(f"Failed to load CVs: {type(e).__name__}: {str(e)}")
 
             # Load applied jobs (applications)
-            applications_stmt = (
-                select(Application, Position)
-                .join(Position)
-                .where(Application.user_id == user.id)
-                .order_by(Application.applied_at.desc())
-                .limit(5)
-            )
-            result = await db.execute(applications_stmt)
-            applications = result.all()
+            applied_jobs = []
+            try:
+                logger.debug(f"Loading applications for user {user.id}")
+                applications_stmt = (
+                    select(Application, Position)
+                    .join(Position)
+                    .where(Application.user_id == user.id)
+                    .order_by(Application.applied_at.desc())
+                    .limit(5)
+                )
+                result = await db.execute(applications_stmt)
+                applications = result.all()
 
-            applied_jobs = [
-                {
-                    "position_title": pos.title,
-                    "stage": app.stage.value,
-                    "applied_at": app.applied_at.isoformat() if app.applied_at else None,
-                }
-                for app, pos in applications
-            ]
+                applied_jobs = [
+                    {
+                        "position_title": pos.title,
+                        "stage": app.stage.value,
+                        "applied_at": app.applied_at.isoformat() if app.applied_at else None,
+                    }
+                    for app, pos in (applications or [])
+                ]
+            except Exception as e:
+                logger.warning(f"Failed to load applications: {type(e).__name__}: {str(e)}")
 
             # Get pipeline breakdown
-            pipeline_stmt = (
-                select(
-                    Application.stage,
-                    select(func.count(Application.id))
+            stages = {}
+            try:
+                logger.debug(f"Loading pipeline breakdown for user {user.id}")
+                pipeline_stmt = (
+                    select(Application.stage)
                     .where(Application.user_id == user.id)
-                    .correlate(None)
-                    .scalar_subquery(),
+                    .distinct()
                 )
-                .where(Application.user_id == user.id)
-                .distinct()
-            )
-            result = await db.execute(pipeline_stmt)
-            stages = {stage.value: count for stage, count in result.all()}
+                result = await db.execute(pipeline_stmt)
+                pipeline_stages = result.scalars().all()
+                stages = {str(stage.value) if stage else "unknown": 1 for stage in (pipeline_stages or [])}
+            except Exception as e:
+                logger.warning(f"Failed to load pipeline breakdown: {type(e).__name__}: {str(e)}")
 
             context.update({
                 "cv_count": len(uploaded_cvs),
@@ -195,11 +204,15 @@ class CandidateAgent(PersonaEnhancedAgentMixin, EnhancedBaseAgent):
             )
 
         except Exception as e:
-            logger.error(f"Failed to load candidate context: {e}")
+            logger.error(f"Failed to load candidate context: {type(e).__name__}: {str(e)}", exc_info=True)
+            # Don't re-raise - provide graceful fallback with empty context
+            # This prevents transaction abort from propagating
             context.update({
                 "uploaded_cvs": [],
                 "applied_jobs": [],
                 "pipeline_breakdown": {},
+                "cv_count": 0,
+                "applications_count": 0,
             })
 
         return context
