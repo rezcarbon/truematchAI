@@ -17,60 +17,60 @@ struct OnboardingView: View {
         } else if showSignUp {
             SignUpView(onBack: { showSignUp = false })
         } else {
-            welcome
-        }
-    }
+            ZStack {
+                TrueMatchTheme.Colors.backgroundAdaptive(for: .light)
+                    .ignoresSafeArea()
 
-    private var welcome: some View {
-        NavigationStack {
-            VStack(spacing: theme.spacing.lg) {
-                Spacer()
+                VStack(spacing: theme.spacing.lg) {
+                    Spacer()
 
-                Image(systemName: "person.text.rectangle")
-                    .font(.system(size: 72))
-                    .foregroundStyle(theme.colors.brandGradient)
+                    Image(systemName: "person.text.rectangle")
+                        .font(.system(size: 72))
+                        .foregroundStyle(theme.colors.brandGradient)
 
-                VStack(spacing: theme.spacing.xxs) {
-                    Text("TrueMatch")
-                        .font(theme.typography.display)
-                    Text("See the candidate the keywords miss.")
-                        .font(theme.typography.headline)
-                        .foregroundStyle(Color.tmTextSecondary)
-                        .multilineTextAlignment(.center)
-                }
-                .padding(.horizontal, theme.spacing.xl)
+                    VStack(spacing: theme.spacing.xxs) {
+                        Text("TrueMatch")
+                            .font(theme.typography.display)
+                        Text("See the candidate the keywords miss.")
+                            .font(theme.typography.headline)
+                            .foregroundStyle(Color.tmTextSecondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, theme.spacing.xl)
 
-                Spacer()
+                    Spacer()
 
-                VStack(spacing: theme.spacing.xs) {
-                    NavigationLink(destination: SignUpView(onBack: { showSignUp = false })) {
-                        Text("Create account")
+                    VStack(spacing: theme.spacing.xs) {
+                        ZStack {
+                            theme.colors.primary
+                                .cornerRadius(theme.radii.sm)
+
+                            Button("Create account") {
+                                showSignUp = true
+                            }
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(.white)
-                            .frame(height: 56)
-                            .frame(maxWidth: .infinity)
-                            .background(theme.colors.primary)
-                            .cornerRadius(theme.radii.sm)
-                    }
+                        }
+                        .frame(height: 56)
 
-                    NavigationLink(destination: LoginView(onBack: { showLogin = false })) {
-                        Text("Log in")
+                        ZStack {
+                            RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous)
+                                .stroke(theme.colors.primary, lineWidth: 2)
+
+                            Button("Log in") {
+                                showLogin = true
+                            }
                             .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(theme.colors.primary)
-                            .frame(height: 56)
-                            .frame(maxWidth: .infinity)
-                            .background(
-                                RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous)
-                                    .stroke(theme.colors.primary, lineWidth: 2)
-                            )
+                        }
+                        .frame(height: 56)
                     }
+                    .frame(maxWidth: .infinity)
+                    .padding(.horizontal, theme.spacing.lg)
+                    .padding(.bottom, theme.spacing.xl)
                 }
-                .padding(.horizontal, theme.spacing.lg)
-                .padding(.bottom, theme.spacing.xl)
             }
         }
-        .background(TrueMatchTheme.Colors.backgroundAdaptive(for: .light))
-        .ignoresSafeArea()
     }
 }
 
