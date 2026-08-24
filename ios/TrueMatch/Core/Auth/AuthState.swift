@@ -42,7 +42,7 @@ final class AuthStateManager: ObservableObject {
             )
             persist(response)
         } catch {
-            self.error = AuthError.invalidCredentials.errorDescription
+            self.error = error.localizedDescription
             TrueMatchLogger.log(.warning, "Login failed: \(error.localizedDescription)")
         }
         isLoading = false
@@ -57,6 +57,9 @@ final class AuthStateManager: ObservableObject {
                 type: AuthTokenResponse.self
             )
             persist(response)
+        } catch let error as APIError {
+            self.error = error.errorDescription ?? "Sign up failed"
+            TrueMatchLogger.log(.warning, "Sign up failed: \(error.errorDescription ?? error.localizedDescription)")
         } catch {
             self.error = error.localizedDescription
             TrueMatchLogger.log(.warning, "Sign up failed: \(error.localizedDescription)")

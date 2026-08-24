@@ -13,7 +13,7 @@ enum APIError: LocalizedError {
     case httpError(statusCode: Int, message: String?)
     case decodingError(Error)
     case networkUnavailable
-    case unauthorized
+    case unauthorized(reason: String = "Unauthorized")
     case serverError(String)
 
     var errorDescription: String? {
@@ -23,7 +23,7 @@ enum APIError: LocalizedError {
         case .httpError(let code, let msg): return "HTTP \(code): \(msg ?? "Unknown error")"
         case .decodingError(let error): return "Decoding error: \(error.localizedDescription)"
         case .networkUnavailable: return "Network unavailable"
-        case .unauthorized: return "Session expired. Please sign in again."
+        case .unauthorized(let reason): return reason
         case .serverError(let msg): return "Server error: \(msg)"
         }
     }
@@ -74,7 +74,8 @@ actor APIClient {
                 throw APIError.decodingError(error)
             }
         case 401:
-            throw APIError.unauthorized
+            let reason = extractDetailFromResponse(data) ?? "Invalid email or password"
+            throw APIError.unauthorized(reason: reason)
         default:
             let message = String(data: data, encoding: .utf8)
             throw APIError.httpError(statusCode: httpResponse.statusCode, message: message)
@@ -111,7 +112,7 @@ actor APIClient {
         case 200...299:
             return bytes
         case 401:
-            throw APIError.unauthorized
+            throw APIError.unauthorized(reason: "Session expired. Please sign in again.")
         default:
             throw APIError.httpError(statusCode: httpResponse.statusCode, message: nil)
         }
@@ -161,11 +162,27 @@ actor APIClient {
                 throw APIError.decodingError(error)
             }
         case 401:
-            throw APIError.unauthorized
+            let reason = extractDetailFromResponse(data) ?? "Session expired. Please sign in again."
+            throw APIError.unauthorized(reason: reason)
         default:
             let message = String(data: data, encoding: .utf8)
             throw APIError.httpError(statusCode: httpResponse.statusCode, message: message)
         }
+    }
+
+    // MARK: - Helpers
+
+    private func extractDetailFromResponse(_ data: Data) -> String? {
+        guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return nil
+        }
+        if let detail = json["detail"] as? String {
+            return detail
+        }
+        if let message = json["message"] as? String {
+            return message
+        }
+        return nil
     }
 
     // MARK: - Build Request
