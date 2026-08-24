@@ -41,29 +41,29 @@ struct OnboardingView: View {
                     Spacer()
 
                     VStack(spacing: theme.spacing.xs) {
-                        ZStack {
-                            theme.colors.primary
-                                .cornerRadius(theme.radii.sm)
-
-                            Button("Create account") {
-                                showSignUp = true
-                            }
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(.white)
+                        Button("Create account") {
+                            showSignUp = true
                         }
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
                         .frame(height: 56)
+                        .background(theme.colors.primary)
+                        .cornerRadius(theme.radii.sm)
+                        .contentShape(Rectangle())
 
-                        ZStack {
+                        Button("Log in") {
+                            showLogin = true
+                        }
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(theme.colors.primary)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .overlay(
                             RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous)
                                 .stroke(theme.colors.primary, lineWidth: 2)
-
-                            Button("Log in") {
-                                showLogin = true
-                            }
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(theme.colors.primary)
-                        }
-                        .frame(height: 56)
+                        )
+                        .contentShape(Rectangle())
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, theme.spacing.lg)
