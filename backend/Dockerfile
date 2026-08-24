@@ -56,6 +56,9 @@ RUN pip install --upgrade pip && \
 # Ensure Python imports from the source directory (prepend to path)
 ENV PYTHONPATH=/app:${PYTHONPATH}
 
+# Make app directory readable by all users (appuser needs to read Python modules)
+RUN chmod -R go+rx /app/app
+
 COPY alembic.ini ./
 COPY alembic ./alembic
 COPY governance ./governance
