@@ -11,89 +11,93 @@ enum OnboardingScreen {
     case signup
 }
 
-struct OnboardingView: View {
-    @EnvironmentObject var appState: AppState
-    @Environment(\.trueMatchTheme) private var theme
-    @State private var currentScreen: OnboardingScreen = .home
+@MainActor
+final class OnboardingFlowState: ObservableObject {
+    @Published var currentScreen: OnboardingScreen = .home
 
-    @ViewBuilder
-    var currentView: some View {
-        switch currentScreen {
-        case .login:
-            LoginView(onBack: {
-                print("[DEBUG] LoginView onBack called")
-                currentScreen = .home
-            })
-        case .signup:
-            SignUpView(onBack: {
-                print("[DEBUG] SignUpView onBack called")
-                currentScreen = .home
-            })
-        case .home:
-            ZStack {
-                TrueMatchTheme.Colors.backgroundAdaptive(for: .light)
-                    .ignoresSafeArea()
-
-                VStack(spacing: theme.spacing.lg) {
-                    Spacer()
-
-                    Image(systemName: "person.text.rectangle")
-                        .font(.system(size: 72))
-                        .foregroundStyle(theme.colors.brandGradient)
-
-                    VStack(spacing: theme.spacing.xxs) {
-                        Text("TrueMatch")
-                            .font(theme.typography.display)
-                        Text("See the candidate the keywords miss.")
-                            .font(theme.typography.headline)
-                            .foregroundStyle(Color.tmTextSecondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.horizontal, theme.spacing.xl)
-
-                    Spacer()
-
-                    VStack(spacing: theme.spacing.xs) {
-                        Button("Create account") {
-                            print("[DEBUG] Create account button tapped")
-                            currentScreen = .signup
-                        }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .background(theme.colors.primary)
-                        .cornerRadius(theme.radii.sm)
-
-                        Button("Log in") {
-                            print("[DEBUG] Log in button tapped")
-                            currentScreen = .login
-                        }
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(theme.colors.primary)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 56)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous)
-                                .stroke(theme.colors.primary, lineWidth: 2)
-                        )
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.horizontal, theme.spacing.lg)
-                    .padding(.bottom, theme.spacing.xl)
-                }
-            }
-        }
+    func goToLogin() {
+        currentScreen = .login
     }
 
+    func goToSignUp() {
+        currentScreen = .signup
+    }
+
+    func goHome() {
+        currentScreen = .home
+    }
+}
+
+struct OnboardingView: View {
+    @StateObject private var flowState = OnboardingFlowState()
+
     var body: some View {
-        NavigationStack {
-            currentView
+        if flowState.currentScreen == .login {
+            LoginView(onBack: {
+                flowState.goHome()
+            })
+        } else if flowState.currentScreen == .signup {
+            SignUpView(onBack: {
+                flowState.goHome()
+            })
+        } else {
+            ZStack {
+                Color.white.ignoresSafeArea()
+
+                VStack(spacing: 40) {
+                    Spacer()
+
+                    VStack(spacing: 16) {
+                        Image(systemName: "person.text.rectangle")
+                            .font(.system(size: 64))
+                            .foregroundStyle(.blue)
+
+                        VStack(spacing: 8) {
+                            Text("TrueMatch")
+                                .font(.system(size: 40, weight: .bold))
+                            Text("See the candidate the keywords miss.")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(.gray)
+                                .multilineTextAlignment(.center)
+                        }
+                    }
+
+                    Spacer()
+
+                    VStack(spacing: 12) {
+                        Button(action: {
+                            flowState.goToSignUp()
+                        }) {
+                            Text("Create account")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .foregroundColor(.white)
+                                .cornerRadius(8)
+                        }
+
+                        Button(action: {
+                            flowState.goToLogin()
+                        }) {
+                            Text("Log in")
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.clear)
+                                .foregroundColor(.blue)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(Color.blue, lineWidth: 1)
+                                )
+                        }
+                    }
+                    .padding()
+                }
+                .padding()
+            }
         }
     }
 }
 
 #Preview {
     OnboardingView()
-        .environmentObject(AppState())
 }

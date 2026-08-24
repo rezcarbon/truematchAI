@@ -50,17 +50,11 @@ struct RootView: View {
     @EnvironmentObject var appState: AppState
 
     var body: some View {
-        Group {
-            switch appState.authState {
-            case .authenticated:
-                MainTabView()
-            case .onboarding:
-                OnboardingView()
-            case .unauthenticated:
-                OnboardingView()
-            }
+        if appState.authState == .authenticated {
+            MainTabView()
+        } else {
+            OnboardingView()
         }
-        .animation(.easeInOut, value: appState.authState)
     }
 }
 
