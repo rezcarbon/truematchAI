@@ -11,19 +11,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from app.api.v1 import dsar
-from app.api.v1.router import api_router
-from app.config import settings
-from app.core import health
-from app.core.config_validator import SecretValidator
-from app.core.exceptions import (
+from .api.v1 import dsar
+from .api.v1.router import api_router
+from .config import settings
+from .core import health
+from .core.config_validator import SecretValidator
+from .core.exceptions import (
     ProblemDetail,
     TrueMatchError,
     problem_detail_from_exception,
 )
-from app.core.logging import RequestContextMiddleware, SecurityHeadersMiddleware, configure_logging, get_request_id
-from app.core.observability import init_sentry, setup_metrics
-from app.core.ratelimit import RateLimitMiddleware
+from .core.logging import RequestContextMiddleware, SecurityHeadersMiddleware, configure_logging, get_request_id
+from .core.observability import init_sentry, setup_metrics
+from .core.ratelimit import RateLimitMiddleware
 
 logger = logging.getLogger(__name__)
 
