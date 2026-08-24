@@ -8,15 +8,29 @@ import SwiftUI
 struct OnboardingView: View {
     @EnvironmentObject var appState: AppState
     @Environment(\.trueMatchTheme) private var theme
-    @State private var showLogin = false
-    @State private var showSignUp = false
+    @State private var showLogin = false {
+        didSet {
+            print("[DEBUG] showLogin changed: \(showLogin)")
+        }
+    }
+    @State private var showSignUp = false {
+        didSet {
+            print("[DEBUG] showSignUp changed: \(showSignUp)")
+        }
+    }
 
     var body: some View {
         NavigationStack {
             if showLogin {
-                LoginView(onBack: { showLogin = false })
+                LoginView(onBack: {
+                    print("[DEBUG] LoginView onBack called")
+                    showLogin = false
+                })
             } else if showSignUp {
-                SignUpView(onBack: { showSignUp = false })
+                SignUpView(onBack: {
+                    print("[DEBUG] SignUpView onBack called")
+                    showSignUp = false
+                })
             } else {
                 ZStack {
                     TrueMatchTheme.Colors.backgroundAdaptive(for: .light)
@@ -42,7 +56,11 @@ struct OnboardingView: View {
                         Spacer()
 
                         VStack(spacing: theme.spacing.xs) {
-                            Button(action: { showSignUp = true }) {
+                            Button(action: {
+                                print("[DEBUG] Create account button tapped")
+                                debugButtonTap("Create account")
+                                showSignUp = true
+                            }) {
                                 Text("Create account")
                                     .font(.system(size: 17, weight: .semibold))
                                     .foregroundStyle(.white)
@@ -51,9 +69,12 @@ struct OnboardingView: View {
                                     .background(theme.colors.primary)
                                     .cornerRadius(theme.radii.sm)
                             }
-                            .buttonStyle(.plain)
 
-                            Button(action: { showLogin = true }) {
+                            Button(action: {
+                                print("[DEBUG] Log in button tapped")
+                                debugButtonTap("Log in")
+                                showLogin = true
+                            }) {
                                 Text("Log in")
                                     .font(.system(size: 17, weight: .semibold))
                                     .foregroundStyle(theme.colors.primary)
@@ -64,7 +85,6 @@ struct OnboardingView: View {
                                             .stroke(theme.colors.primary, lineWidth: 2)
                                     )
                             }
-                            .buttonStyle(.plain)
                         }
                         .frame(maxWidth: .infinity)
                         .padding(.horizontal, theme.spacing.lg)
@@ -73,6 +93,10 @@ struct OnboardingView: View {
                 }
             }
         }
+    }
+
+    private func debugButtonTap(_ action: String) {
+        print("[DEBUG] Button tapped: \(action)")
     }
 }
 
