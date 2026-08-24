@@ -10,6 +10,7 @@ struct OnboardingView: View {
     @Environment(\.trueMatchTheme) private var theme
     @State private var showLogin = false
     @State private var showSignUp = false
+    @State private var testCounter = 0
 
     var body: some View {
         if showLogin {
@@ -41,29 +42,27 @@ struct OnboardingView: View {
                     Spacer()
 
                     VStack(spacing: theme.spacing.xs) {
-                        Text("Create account")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .background(theme.colors.primary)
-                            .cornerRadius(theme.radii.sm)
-                            .onTapGesture {
-                                showSignUp = true
-                            }
+                        Button(action: { showSignUp = true }) {
+                            Text("Create account")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(.white)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .background(theme.colors.primary)
+                                .cornerRadius(theme.radii.sm)
+                        }
 
-                        Text("Log in")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(theme.colors.primary)
-                            .frame(maxWidth: .infinity)
-                            .frame(height: 56)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous)
-                                    .stroke(theme.colors.primary, lineWidth: 2)
-                            )
-                            .onTapGesture {
-                                showLogin = true
-                            }
+                        Button(action: { showLogin = true }) {
+                            Text("Log in")
+                                .font(.system(size: 17, weight: .semibold))
+                                .foregroundStyle(theme.colors.primary)
+                                .frame(maxWidth: .infinity)
+                                .frame(height: 56)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: theme.radii.sm, style: .continuous)
+                                        .stroke(theme.colors.primary, lineWidth: 2)
+                                )
+                        }
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, theme.spacing.lg)
