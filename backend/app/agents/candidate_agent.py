@@ -111,6 +111,8 @@ class CandidateAgent(PersonaEnhancedAgentMixin, EnhancedBaseAgent):
         Returns:
             Dict with candidate context
         """
+        import logging
+        logger = logging.getLogger(__name__)
 
         context = {
             "capabilities": [
@@ -124,9 +126,11 @@ class CandidateAgent(PersonaEnhancedAgentMixin, EnhancedBaseAgent):
 
         try:
             # Load uploaded CVs for this candidate
+            logger.debug(f"Loading CVs for user {user.id}")
             cvs_stmt = select(Resume).where(Resume.user_id == user.id)
             result = await db.execute(cvs_stmt)
             cvs = result.scalars().all()
+            logger.debug(f"Loaded {len(cvs)} CVs")
 
             uploaded_cvs = [
                 {

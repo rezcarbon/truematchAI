@@ -46,6 +46,9 @@ async def get_current_user(
     token: Annotated[str, Depends(oauth2_scheme)],
     db: DBSession,
 ) -> User:
+    import logging
+    logger = logging.getLogger(__name__)
+
     credentials_exc = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
@@ -53,22 +56,30 @@ async def get_current_user(
     )
     try:
         payload = decode_token(token)
-    except JWTError:
+        logger.info(f"JWT decoded successfully: sub={payload.get('sub')}, type={payload.get('type')}")
+    except JWTError as e:
+        logger.error(f"JWT decode failed: {e}")
         raise credentials_exc
 
     if payload.get("type") != ACCESS_TOKEN_TYPE:
+        logger.error(f"Token type mismatch: expected {ACCESS_TOKEN_TYPE}, got {payload.get('type')}")
         raise credentials_exc
     sub = payload.get("sub")
     if not sub:
+        logger.error("No 'sub' claim in token")
         raise credentials_exc
     try:
         user_id = uuid.UUID(sub)
-    except (ValueError, TypeError):
+        logger.info(f"Converted sub to UUID: {user_id}")
+    except (ValueError, TypeError) as e:
+        logger.error(f"Failed to parse UUID from sub: {e}")
         raise credentials_exc
 
     user = await db.get(User, user_id)
     if user is None:
+        logger.error(f"User not found in database: {user_id}")
         raise credentials_exc
+    logger.info(f"User authenticated: {user.email}")
     return user
 
 
