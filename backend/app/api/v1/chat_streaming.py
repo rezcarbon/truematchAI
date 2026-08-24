@@ -57,7 +57,7 @@ async def stream_chat_message(
     await db.commit()
 
     # Refresh the session after commit to ensure clean state for subsequent queries
-    await db.expunge_all()
+    db.expunge_all()
     logger.info(f"Message committed for session {session_id}, session refreshed")
 
     # Build the same role-aware context the non-streaming path uses.
