@@ -50,6 +50,10 @@ async def upload_resume(
     logger.info(f"User object: {user}, DB session: {db}")
 
     try:
+        logger.info(f"Attempting to read file: {file.filename}")
+        content = await file.read()
+        logger.info(f"File read successfully: {len(content)} bytes")
+
         if not file.filename:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -63,25 +67,15 @@ async def upload_resume(
                 detail="File must be a PDF",
             )
 
-        try:
-            content = await file.read()
-            if len(content) == 0:
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="File is empty",
-                )
-            if len(content) > 50 * 1024 * 1024:  # 50MB limit
-                raise HTTPException(
-                    status_code=status.HTTP_413_PAYLOAD_TOO_LARGE,
-                    detail="File too large (max 50MB)",
-                )
-        except HTTPException:
-            raise
-        except Exception as e:
-            logger.error(f"Failed to read file: {str(e)}")
+        if len(content) == 0:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Failed to read file",
+                detail="File is empty",
+            )
+        if len(content) > 50 * 1024 * 1024:  # 50MB limit
+            raise HTTPException(
+                status_code=status.HTTP_413_PAYLOAD_TOO_LARGE,
+                detail="File too large (max 50MB)",
             )
 
         # Extract text from PDF
