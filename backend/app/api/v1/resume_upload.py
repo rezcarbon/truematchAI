@@ -38,8 +38,8 @@ def _extract_text_from_pdf(pdf_content: bytes) -> str:
 @router.post("/upload", response_model=ResumeResponse, status_code=status.HTTP_201_CREATED)
 async def upload_resume(
     file: UploadFile = File(..., description="Resume PDF file"),
-    user: CurrentUser = None,
-    db: DBSession = None,
+    user: CurrentUser,
+    db: DBSession,
 ) -> Resume:
     """Upload a new resume file.
 
@@ -119,8 +119,8 @@ async def upload_resume(
 
 @router.get("", response_model=ResumeListResponse)
 async def list_resumes(
-    user: CurrentUser = None,
-    db: DBSession = None,
+    user: CurrentUser,
+    db: DBSession,
 ) -> ResumeListResponse:
     """List all resumes for the current user."""
     stmt = select(Resume).where(Resume.user_id == user.id).order_by(Resume.created_at.desc())
@@ -134,8 +134,8 @@ async def list_resumes(
 @router.get("/{resume_id}", response_model=ResumeResponse)
 async def get_resume(
     resume_id: uuid.UUID,
-    user: CurrentUser = None,
-    db: DBSession = None,
+    user: CurrentUser,
+    db: DBSession,
 ) -> Resume:
     """Get a specific resume."""
     resume = await db.get(Resume, resume_id)
@@ -149,8 +149,8 @@ async def get_resume(
 @router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_resume(
     resume_id: uuid.UUID,
-    user: CurrentUser = None,
-    db: DBSession = None,
+    user: CurrentUser,
+    db: DBSession,
 ) -> None:
     """Delete a resume."""
     resume = await db.get(Resume, resume_id)
