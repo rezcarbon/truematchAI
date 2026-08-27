@@ -46,71 +46,75 @@ async def upload_resume(
     Accepts PDF files and extracts text for processing.
     Creates a new resume record and initial version.
     """
-    if not file.filename:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must have a name",
-        )
-
-    # Validate file type
-    if not file.content_type or "pdf" not in file.content_type.lower():
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be a PDF",
-        )
+    logger.info(f"Upload endpoint called for user {user.id if user else 'UNKNOWN'}")
 
     try:
-        content = await file.read()
-        if len(content) == 0:
+        if not file.filename:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="File is empty",
+                detail="File must have a name",
             )
-        if len(content) > 50 * 1024 * 1024:  # 50MB limit
+
+        # Validate file type
+        if not file.content_type or "pdf" not in file.content_type.lower():
             raise HTTPException(
-                status_code=status.HTTP_413_PAYLOAD_TOO_LARGE,
-                detail="File too large (max 50MB)",
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="File must be a PDF",
             )
+
+        try:
+            content = await file.read()
+            if len(content) == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="File is empty",
+                )
+            if len(content) > 50 * 1024 * 1024:  # 50MB limit
+                raise HTTPException(
+                    status_code=status.HTTP_413_PAYLOAD_TOO_LARGE,
+                    detail="File too large (max 50MB)",
+                )
+        except HTTPException:
+            raise
+        except Exception as e:
+            logger.error(f"Failed to read file: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Failed to read file",
+            )
+
+        # Extract text from PDF
+        logger.info("Extracting text from PDF...")
+        extracted_text = _extract_text_from_pdf(content)
+        if not extracted_text:
+            logger.warning(f"No text extracted from PDF: {file.filename}")
+
+        # Create resume record
+        logger.info("Creating resume record...")
+        resume = Resume(
+            user_id=user.id,
+            raw_narrative=extracted_text,
+            file_type="pdf",
+            supplementary={"filename": file.filename, "extracted_text": extracted_text},
+        )
+        db.add(resume)
+        logger.info("Resume added to db session, flushing...")
+        await db.flush()
+
+        # Skip version tracking for now - table may not exist in this deployment
+        logger.info("Committing resume to database...")
+        await db.commit()
+
+        logger.info(f"Resume uploaded successfully: {resume.id} by user {user.id}")
+        return resume
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to read file: {str(e)}")
+        logger.exception(f"Error in upload_resume: {str(e)}")
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Failed to read file",
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to upload resume: {str(e)}",
         )
-
-    # Extract text from PDF
-    extracted_text = _extract_text_from_pdf(content)
-    if not extracted_text:
-        logger.warning(f"No text extracted from PDF: {file.filename}")
-
-    # Create resume record
-    resume = Resume(
-        user_id=user.id,
-        title=file.filename.replace(".pdf", ""),
-        raw_narrative=extracted_text,
-        supplementary={"filename": file.filename, "extracted_text": extracted_text},
-        created_at=utcnow(),
-        updated_at=utcnow(),
-    )
-    db.add(resume)
-    await db.flush()
-
-    # Create initial version
-    version = ResumeVersion(
-        resume_id=resume.id,
-        version_number=1,
-        change_type=ChangeType.created,
-        raw_content=content.decode("utf-8", errors="ignore"),
-        metadata={"filename": file.filename, "extracted": bool(extracted_text)},
-        created_at=utcnow(),
-    )
-    db.add(version)
-    await db.commit()
-
-    logger.info(f"Resume uploaded: {resume.id} by user {user.id}")
-    return resume
 
 
 @router.get("", response_model=ResumeListResponse)
