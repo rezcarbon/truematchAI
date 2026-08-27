@@ -32,7 +32,7 @@ RUN pip install --upgrade pip && \
     'pydantic-settings>=2.3' \
     'python-jose[cryptography]>=3.3' \
     'bcrypt>=4.1' \
-    'python-multipart>=0.0.9' \
+    'python-multipart>=0.0.14' \
     'boto3>=1.34' \
     'aioboto3>=1.14' \
     'google-cloud-aiplatform>=1.0' \

@@ -5,16 +5,17 @@ limit is shared across API instances) and falls back to an in-process counter
 when Redis is unavailable. Probe/metrics endpoints are exempt.
 
 Returns HTTP 429 with a `Retry-After` header when the limit is exceeded.
+
+This is implemented as pure ASGI middleware (not BaseHTTPMiddleware) to avoid
+interfering with multipart request streaming.
 """
 from __future__ import annotations
 
+import json
 import logging
 import time
 
-from starlette.middleware.base import BaseHTTPMiddleware
-from starlette.requests import Request
-from starlette.responses import JSONResponse
-from starlette.types import ASGIApp
+from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.config import settings
 
@@ -59,27 +60,61 @@ async def _incr(key: str, limit: int) -> tuple[int, int]:
     return count, _WINDOW - (now % _WINDOW)
 
 
-class RateLimitMiddleware(BaseHTTPMiddleware):
+class RateLimitMiddleware:
+    """Pure ASGI middleware for rate limiting by client IP.
+
+    Avoids BaseHTTPMiddleware to prevent interference with multipart streaming.
+    """
+
     def __init__(self, app: ASGIApp) -> None:
-        super().__init__(app)
+        self.app = app
         self._limit = settings.rate_limit_per_minute
 
-    async def dispatch(self, request: Request, call_next):
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        # Extract path and method from scope
+        path = scope.get("path", "")
+        method = scope.get("method", "")
+
         # Exempt OPTIONS (CORS preflight), health checks, and certain prefixes
         if (
             not settings.rate_limit_enabled
             or self._limit <= 0
-            or request.method == "OPTIONS"  # Always allow CORS preflight
-            or request.url.path.startswith(_EXEMPT_PREFIXES)
+            or method == "OPTIONS"  # Always allow CORS preflight
+            or path.startswith(_EXEMPT_PREFIXES)
         ):
-            return await call_next(request)
+            await self.app(scope, receive, send)
+            return
 
-        client_ip = request.client.host if request.client else "unknown"
+        # Extract client IP from scope
+        client = scope.get("client")
+        client_ip = client[0] if client else "unknown"
+
+        # Check rate limit
         count, retry_after = await _incr(client_ip, self._limit)
         if count > self._limit:
-            return JSONResponse(
-                status_code=429,
-                content={"detail": "Rate limit exceeded"},
-                headers={"Retry-After": str(retry_after)},
+            # Send 429 response
+            response_body = json.dumps({"detail": "Rate limit exceeded"})
+            await send(
+                {
+                    "type": "http.response.start",
+                    "status": 429,
+                    "headers": [
+                        (b"content-type", b"application/json"),
+                        (b"retry-after", str(retry_after).encode()),
+                    ],
+                }
             )
-        return await call_next(request)
+            await send(
+                {
+                    "type": "http.response.body",
+                    "body": response_body.encode(),
+                }
+            )
+            return
+
+        # Allow request to proceed
+        await self.app(scope, receive, send)

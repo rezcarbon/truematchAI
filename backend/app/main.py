@@ -36,6 +36,10 @@ app = FastAPI(
     description="AI-embodied ATS / hiring-assessment platform backend.",
 )
 
+# Configure multipart handling for large file uploads
+# These settings are critical for proper PDF/document upload support
+app.state.multipart_max_size = 100 * 1024 * 1024  # 100MB max body size
+
 
 # ─ Exception Handlers ────────────────────────────────────────────────────
 
