@@ -24,8 +24,8 @@ router = APIRouter(prefix="/resume", tags=["resumes"])
 def _extract_text_from_pdf(pdf_content: bytes) -> str:
     """Extract text from PDF file."""
     try:
-        import PyPDF2
-        pdf_reader = PyPDF2.PdfReader(BytesIO(pdf_content))
+        from pypdf import PdfReader
+        pdf_reader = PdfReader(BytesIO(pdf_content))
         text = ""
         for page in pdf_reader.pages:
             text += page.extract_text() + "\n"
@@ -35,18 +35,19 @@ def _extract_text_from_pdf(pdf_content: bytes) -> str:
         return ""
 
 
-@router.post("/upload", response_model=ResumeResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/upload", status_code=status.HTTP_201_CREATED)
 async def upload_resume(
-    file: UploadFile = File(..., description="Resume PDF file"),
     user: CurrentUser,
     db: DBSession,
-) -> Resume:
+    file: UploadFile = File(..., description="Resume PDF file"),
+):
     """Upload a new resume file.
 
     Accepts PDF files and extracts text for processing.
     Creates a new resume record and initial version.
     """
     logger.info(f"Upload endpoint called for user {user.id if user else 'UNKNOWN'}")
+    logger.info(f"User object: {user}, DB session: {db}")
 
     try:
         if not file.filename:
@@ -108,9 +109,12 @@ async def upload_resume(
         logger.info(f"Resume uploaded successfully: {resume.id} by user {user.id}")
         return resume
     except HTTPException:
+        logger.info(f"HTTPException in upload_resume: {str(e)}")
         raise
     except Exception as e:
-        logger.exception(f"Error in upload_resume: {str(e)}")
+        logger.exception(f"CRITICAL ERROR in upload_resume: {type(e).__name__}: {str(e)}")
+        import traceback
+        logger.error(f"Full traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to upload resume: {str(e)}",

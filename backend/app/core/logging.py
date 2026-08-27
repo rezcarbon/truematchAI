@@ -87,6 +87,9 @@ class RequestContextMiddleware(BaseHTTPMiddleware):
                 elapsed_ms,
             )
             return response
+        except Exception as e:
+            self._log.exception(f"Exception in middleware for {request.method} {request.url.path}: {type(e).__name__}: {e}")
+            raise
         finally:
             _request_id.reset(token)
 
