@@ -17,24 +17,39 @@ depends_on = None
 def upgrade() -> None:
     """Create screening tables for Phase 1 agent implementation."""
 
-    # Create screening batch status enum (with IF NOT EXISTS check via SQL)
+    # Create enum types using raw SQL with IF NOT EXISTS (PostgreSQL 10+)
     conn = op.get_bind()
-    try:
-        conn.execute(text("CREATE TYPE screening_batch_status AS ENUM ('queued', 'screening', 'pending_review', 'completed')"))
-    except:
-        pass  # Type already exists
 
-    # Create screening recommendation enum
-    try:
-        conn.execute(text("CREATE TYPE screening_recommendation AS ENUM ('advance', 'hold', 'review')"))
-    except:
-        pass  # Type already exists
+    # PostgreSQL doesn't support IF NOT EXISTS for enums, so check the information_schema
+    conn.execute(text("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'screening_batch_status') THEN
+                CREATE TYPE screening_batch_status AS ENUM ('queued', 'screening', 'pending_review', 'completed');
+            END IF;
+        END
+        $$;
+    """))
 
-    # Create recruiter decision enum
-    try:
-        conn.execute(text("CREATE TYPE recruiter_decision AS ENUM ('interview', 'hold', 'further_review')"))
-    except:
-        pass  # Type already exists
+    conn.execute(text("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'screening_recommendation') THEN
+                CREATE TYPE screening_recommendation AS ENUM ('advance', 'hold', 'review');
+            END IF;
+        END
+        $$;
+    """))
+
+    conn.execute(text("""
+        DO $$
+        BEGIN
+            IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'recruiter_decision') THEN
+                CREATE TYPE recruiter_decision AS ENUM ('interview', 'hold', 'further_review');
+            END IF;
+        END
+        $$;
+    """))
 
     # Create screening_batches table
     op.create_table(
