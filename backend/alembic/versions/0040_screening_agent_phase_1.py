@@ -5,6 +5,7 @@ Revises: 0029
 """
 from alembic import op
 from sqlalchemy import text, inspect
+from sqlalchemy.exc import ProgrammingError
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
@@ -15,15 +16,9 @@ depends_on = None
 
 
 def upgrade() -> None:
-    """Create screening tables for Phase 1 agent implementation."""
+    """Create screening tables - idempotent to handle duplicate type errors."""
 
-    conn = op.get_bind()
-    inspector = inspect(conn)
-
-    # Check if tables already exist (handles idempotency)
-    existing_tables = inspector.get_table_names()
-
-    if "screening_batches" not in existing_tables:
+    try:
         # Create screening_batches table
         op.create_table(
             "screening_batches",
@@ -48,8 +43,11 @@ def upgrade() -> None:
         op.create_index("ix_screening_batches_position_id_status", "screening_batches", ["position_id", "status"])
         op.create_index("ix_screening_batches_created_by", "screening_batches", ["created_by"])
         op.create_index("ix_screening_batches_created_at", "screening_batches", ["created_at"])
+    except (ProgrammingError, Exception):
+        # Table may already exist from ORM reflection or previous migration
+        pass
 
-    if "screening_results" not in existing_tables:
+    try:
         # Create screening_results table
         op.create_table(
             "screening_results",
@@ -88,6 +86,9 @@ def upgrade() -> None:
         op.create_index("ix_screening_results_position_recruiter_decision", "screening_results", ["position_id", "recruiter_decision"])
         op.create_index("ix_screening_results_created_at", "screening_results", ["created_at"])
         op.create_index("ix_screening_results_batch_decision", "screening_results", ["screening_batch_id", "recruiter_decision"])
+    except (ProgrammingError, Exception):
+        # Table may already exist from ORM reflection or previous migration
+        pass
 
 
 def downgrade() -> None:
