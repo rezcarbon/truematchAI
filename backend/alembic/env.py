@@ -24,19 +24,17 @@ if config.config_file_name is not None:
 target_metadata = Base.metadata
 
 # Use a synchronous driver for migrations (psycopg v3, matching the worker).
-# Strip +asyncpg and incompatible SSL params, then set psycopg dialect
-_url = settings.database_url.replace("+asyncpg", "").replace("?ssl=require", "").replace("&ssl=require", "")
-_sync_url = _url.replace("postgresql://", "postgresql+psycopg://")
-if "?" not in _sync_url and ("ssl" not in _url):
-    _sync_url += "?sslmode=require"
-elif "?" in _sync_url and "sslmode" not in _sync_url:
-    _sync_url += "&sslmode=require"
-config.set_main_option("sqlalchemy.url", _sync_url)
+# Strip +asyncpg and all SSL params, keep the base connection clean
+_base_url = (settings.database_url
+    .replace("postgresql+asyncpg://", "postgresql+psycopg://")
+    .split("?")[0]  # Remove all query params (SSL, sslmode, etc.)
+)
+config.set_main_option("sqlalchemy.url", _base_url)
 
 
 def run_migrations_offline() -> None:
     context.configure(
-        url=_sync_url,
+        url=_base_url,
         target_metadata=target_metadata,
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
