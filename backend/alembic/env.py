@@ -6,6 +6,7 @@ Runs migrations against the configured DATABASE_URL. Uses a synchronous driver
 from __future__ import annotations
 
 from logging.config import fileConfig
+from sqlalchemy import inspect, text
 
 from alembic import context
 from sqlalchemy import engine_from_config, pool
@@ -51,6 +52,13 @@ def run_migrations_online() -> None:
         poolclass=pool.NullPool,
     )
     with connectable.connect() as connection:
+        # Check if alembic_version table exists
+        inspector = inspect(connection)
+        if "alembic_version" not in inspector.get_table_names():
+            # Create the table if it doesn't exist
+            connection.execute(text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL PRIMARY KEY)"))
+            connection.commit()
+
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
