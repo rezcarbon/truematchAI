@@ -17,10 +17,14 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Add location column
-    op.add_column('users', sa.Column('location', sa.String(255), nullable=True))
-    # Add headline column
-    op.add_column('users', sa.Column('headline', sa.String(500), nullable=True))
+    # Add location column if it doesn't exist
+    conn = op.get_bind()
+    if conn.dialect.name == 'postgresql':
+        conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS location VARCHAR(255)")
+        conn.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS headline VARCHAR(500)")
+    else:
+        op.add_column('users', sa.Column('location', sa.String(255), nullable=True))
+        op.add_column('users', sa.Column('headline', sa.String(500), nullable=True))
 
 
 def downgrade() -> None:

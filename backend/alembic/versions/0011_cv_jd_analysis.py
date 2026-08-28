@@ -1,7 +1,7 @@
-"""Add CV analysis and JD simulation tables
+"""Add CV analysis and JD simulation tables (root migration)
 
 Revision ID: 0011
-Revises: 0010
+Revises: None
 Create Date: 2026-06-03 14:00:00.000000
 
 """
@@ -12,7 +12,7 @@ from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
 revision = "0011"
-down_revision = "0010"
+down_revision = None
 branch_labels = None
 depends_on = None
 

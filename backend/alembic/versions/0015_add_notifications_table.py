@@ -1,7 +1,7 @@
 """Add notifications table and notification_preferences table
 
 Revision ID: 0015
-Revises: 0013
+Revises: 0014
 Create Date: 2026-06-05 12:00:00.000000
 
 """
