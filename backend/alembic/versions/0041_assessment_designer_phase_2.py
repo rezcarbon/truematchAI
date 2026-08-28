@@ -4,6 +4,7 @@ Revision ID: 0041
 Revises: 0040
 """
 from alembic import op
+from sqlalchemy import text
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
@@ -93,7 +94,7 @@ def downgrade() -> None:
     op.drop_table("assessment_designs")
 
     # Drop enum
-    op.execute("DROP TYPE assessment_design_review_status")
+    op.execute(text("DROP TYPE assessment_design_review_status"))
 
     # Revert assessment extensions
     op.drop_index("ix_assessments_assessment_design_id")

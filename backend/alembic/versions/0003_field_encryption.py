@@ -13,6 +13,7 @@ from typing import Union
 import sqlalchemy as sa
 from alembic import op
 from sqlalchemy.dialects import postgresql
+from sqlalchemy import text
 
 revision: str = "0003"
 down_revision: Union[str, None] = "0002"
@@ -42,7 +43,7 @@ def upgrade() -> None:
     # Add singpass_id_bidx if it doesn't exist
     conn = op.get_bind()
     result = conn.execute(
-        "SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='singpass_id_bidx'"
+        text("SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='singpass_id_bidx'")
     )
     if not result.scalar():
         op.add_column("users", sa.Column("singpass_id_bidx", sa.String(64), nullable=True))
@@ -55,7 +56,7 @@ def upgrade() -> None:
 
     # Create bidx index if it doesn't exist
     result = conn.execute(
-        "SELECT 1 FROM pg_indexes WHERE tablename='users' AND indexname='ix_users_singpass_id_bidx'"
+        text("SELECT 1 FROM pg_indexes WHERE tablename='users' AND indexname='ix_users_singpass_id_bidx'")
     )
     if not result.scalar():
         op.create_index("ix_users_singpass_id_bidx", "users", ["singpass_id_bidx"])

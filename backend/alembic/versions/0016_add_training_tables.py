@@ -6,6 +6,7 @@ Create Date: 2026-06-06 18:30:00.000000
 
 """
 from alembic import op
+from sqlalchemy import text
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
@@ -201,4 +202,4 @@ def downgrade() -> None:
     op.drop_table('training_feedback')
 
     # Drop enum type
-    op.execute("DROP TYPE IF EXISTS feedback_type;")
+    op.execute(text("DROP TYPE IF EXISTS feedback_type;"))
