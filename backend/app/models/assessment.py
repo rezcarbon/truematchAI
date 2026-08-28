@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import enum
 import uuid
+from typing import TYPE_CHECKING
 
 from sqlalchemy import Boolean
 from sqlalchemy import Enum as SAEnum
@@ -14,6 +15,9 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 from app.models._mixins import TimestampMixin, uuid_pk
 from app.models._types import EncryptedJSON, EncryptedText
+
+if TYPE_CHECKING:
+    from app.models.analysis_result import AnalysisResult
 
 
 class AssessmentStatus(str, enum.Enum):

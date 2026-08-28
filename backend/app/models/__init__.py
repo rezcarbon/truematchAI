@@ -7,6 +7,7 @@ from app.models.job_application import (
     ApplicationEventType as JobApplicationEventType,
 )
 from app.models.assessment import Assessment
+from app.models.analysis_result import AnalysisResult, AnalysisStatus
 from app.models.audit import AuditTrail
 from app.models.candidate_archetype import CandidateArchetype
 from app.models.company import Company
@@ -112,6 +113,8 @@ __all__ = [
     "ApplicationStatus",
     "JobApplicationEventType",
     "Assessment",
+    "AnalysisResult",
+    "AnalysisStatus",
     "AuditTrail",
     "CandidateArchetype",
     "Company",
