@@ -88,8 +88,9 @@ async def upload_resume(
         logger.info("Creating resume record...")
         resume = Resume(
             user_id=user.id,
-            raw_narrative=extracted_text,
             file_type="pdf",
+            raw_narrative=extracted_text,
+            parsed_data={},
             supplementary={"filename": file.filename, "extracted_text": extracted_text},
         )
         db.add(resume)
