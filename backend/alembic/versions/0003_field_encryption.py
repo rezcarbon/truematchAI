@@ -38,9 +38,27 @@ def upgrade() -> None:
     # singpass_id: widen to TEXT (holds ciphertext) and swap the index for a
     # keyed blind index used by equality lookups.
     op.alter_column("users", "singpass_id", type_=sa.Text(), existing_nullable=True)
-    op.add_column("users", sa.Column("singpass_id_bidx", sa.String(64), nullable=True))
-    op.drop_index("ix_users_singpass_id", table_name="users")
-    op.create_index("ix_users_singpass_id_bidx", "users", ["singpass_id_bidx"])
+
+    # Add singpass_id_bidx if it doesn't exist
+    conn = op.get_bind()
+    result = conn.execute(
+        "SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='singpass_id_bidx'"
+    )
+    if not result.scalar():
+        op.add_column("users", sa.Column("singpass_id_bidx", sa.String(64), nullable=True))
+
+    # Drop and recreate index
+    try:
+        op.drop_index("ix_users_singpass_id", table_name="users")
+    except:
+        pass  # Index might not exist
+
+    # Create bidx index if it doesn't exist
+    result = conn.execute(
+        "SELECT 1 FROM pg_indexes WHERE tablename='users' AND indexname='ix_users_singpass_id_bidx'"
+    )
+    if not result.scalar():
+        op.create_index("ix_users_singpass_id_bidx", "users", ["singpass_id_bidx"])
 
 
 def downgrade() -> None:
