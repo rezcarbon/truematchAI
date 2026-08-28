@@ -17,20 +17,26 @@ depends_on = None
 def upgrade() -> None:
     """Create screening tables for Phase 1 agent implementation."""
 
-    # Create enum types - skip if they already exist
+    # Create enum types - drop if they exist to ensure clean state
     conn = op.get_bind()
 
-    for enum_name, enum_values in [
+    enums = [
         ('screening_batch_status', ['queued', 'screening', 'pending_review', 'completed']),
         ('screening_recommendation', ['advance', 'hold', 'review']),
         ('recruiter_decision', ['interview', 'hold', 'further_review']),
-    ]:
-        # Check if type exists
-        result = conn.execute(text(f"SELECT 1 FROM pg_type WHERE typname = '{enum_name}'"))
-        if not result.scalar():
-            # Type doesn't exist, create it
-            values_sql = ', '.join([f"'{v}'" for v in enum_values])
-            conn.execute(text(f"CREATE TYPE {enum_name} AS ENUM ({values_sql})"))
+    ]
+
+    # Drop types if they exist (handles re-runs and partial state)
+    for enum_name, _ in enums:
+        try:
+            conn.execute(text(f"DROP TYPE IF EXISTS {enum_name} CASCADE"))
+        except Exception:
+            pass
+
+    # Create the types fresh
+    for enum_name, enum_values in enums:
+        values_sql = ', '.join([f"'{v}'" for v in enum_values])
+        conn.execute(text(f"CREATE TYPE {enum_name} AS ENUM ({values_sql})"))
 
     # Create screening_batches table
     op.create_table(
