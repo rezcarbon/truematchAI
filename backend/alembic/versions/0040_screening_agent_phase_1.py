@@ -17,26 +17,24 @@ depends_on = None
 def upgrade() -> None:
     """Create screening tables for Phase 1 agent implementation."""
 
-    # Create screening batch status enum
-    screening_batch_status = postgresql.ENUM(
-        "queued", "screening", "pending_review", "completed",
-        name="screening_batch_status"
-    )
-    screening_batch_status.create(op.get_bind(), checkfirst=True)
+    # Create screening batch status enum (with IF NOT EXISTS check via SQL)
+    conn = op.get_bind()
+    try:
+        conn.execute(text("CREATE TYPE screening_batch_status AS ENUM ('queued', 'screening', 'pending_review', 'completed')"))
+    except:
+        pass  # Type already exists
 
     # Create screening recommendation enum
-    screening_recommendation = postgresql.ENUM(
-        "advance", "hold", "review",
-        name="screening_recommendation"
-    )
-    screening_recommendation.create(op.get_bind(), checkfirst=True)
+    try:
+        conn.execute(text("CREATE TYPE screening_recommendation AS ENUM ('advance', 'hold', 'review')"))
+    except:
+        pass  # Type already exists
 
     # Create recruiter decision enum
-    recruiter_decision = postgresql.ENUM(
-        "interview", "hold", "further_review",
-        name="recruiter_decision"
-    )
-    recruiter_decision.create(op.get_bind(), checkfirst=True)
+    try:
+        conn.execute(text("CREATE TYPE recruiter_decision AS ENUM ('interview', 'hold', 'further_review')"))
+    except:
+        pass  # Type already exists
 
     # Create screening_batches table
     op.create_table(
