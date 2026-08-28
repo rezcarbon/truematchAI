@@ -42,7 +42,7 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("position_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("created_by", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("status", sa.Enum("queued", "screening", "pending_review", "completed", name="screening_batch_status"), nullable=False, server_default="queued"),
+        sa.Column("status", postgresql.ENUM("queued", "screening", "pending_review", "completed", name="screening_batch_status", create_type=False), nullable=False, server_default="queued"),
         sa.Column("total_candidates", sa.Integer(), nullable=False),
         sa.Column("screened_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("pending_review_count", sa.Integer(), nullable=False, server_default="0"),
@@ -71,12 +71,12 @@ def upgrade() -> None:
         sa.Column("resume_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("assessment_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("agent_recommendation", sa.Enum("advance", "hold", "review", name="screening_recommendation"), nullable=False),
+        sa.Column("agent_recommendation", postgresql.ENUM("advance", "hold", "review", name="screening_recommendation", create_type=False), nullable=False),
         sa.Column("confidence_score", sa.Integer(), nullable=False),
         sa.Column("screening_summary", sa.Text(), nullable=False),  # Encrypted
         sa.Column("screening_details", sa.Text(), nullable=False),  # Encrypted JSON
         sa.Column("bias_flags", sa.Text(), nullable=False, server_default="{}"),  # Encrypted JSON
-        sa.Column("recruiter_decision", sa.Enum("interview", "hold", "further_review", name="recruiter_decision"), nullable=True),
+        sa.Column("recruiter_decision", postgresql.ENUM("interview", "hold", "further_review", name="recruiter_decision", create_type=False), nullable=True),
         sa.Column("recruiter_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("recruiter_notes", sa.Text(), nullable=True),  # Encrypted
         sa.Column("recruiter_confidence", sa.Integer(), nullable=True),
