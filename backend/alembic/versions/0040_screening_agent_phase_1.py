@@ -17,34 +17,13 @@ depends_on = None
 def upgrade() -> None:
     """Create screening tables for Phase 1 agent implementation."""
 
-    # Create enum types - drop if they exist to ensure clean state
-    conn = op.get_bind()
-
-    enums = [
-        ('screening_batch_status', ['queued', 'screening', 'pending_review', 'completed']),
-        ('screening_recommendation', ['advance', 'hold', 'review']),
-        ('recruiter_decision', ['interview', 'hold', 'further_review']),
-    ]
-
-    # Drop types if they exist (handles re-runs and partial state)
-    for enum_name, _ in enums:
-        try:
-            conn.execute(text(f"DROP TYPE IF EXISTS {enum_name} CASCADE"))
-        except Exception:
-            pass
-
-    # Create the types fresh
-    for enum_name, enum_values in enums:
-        values_sql = ', '.join([f"'{v}'" for v in enum_values])
-        conn.execute(text(f"CREATE TYPE {enum_name} AS ENUM ({values_sql})"))
-
     # Create screening_batches table
     op.create_table(
         "screening_batches",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("position_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("created_by", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("status", postgresql.ENUM("queued", "screening", "pending_review", "completed", name="screening_batch_status", create_type=False), nullable=False, server_default="queued"),
+        sa.Column("status", postgresql.ENUM("queued", "screening", "pending_review", "completed", name="screening_batch_status", create_type=True), nullable=False, server_default="queued"),
         sa.Column("total_candidates", sa.Integer(), nullable=False),
         sa.Column("screened_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("pending_review_count", sa.Integer(), nullable=False, server_default="0"),
@@ -73,12 +52,12 @@ def upgrade() -> None:
         sa.Column("resume_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("assessment_id", postgresql.UUID(as_uuid=True), nullable=True),
-        sa.Column("agent_recommendation", postgresql.ENUM("advance", "hold", "review", name="screening_recommendation", create_type=False), nullable=False),
+        sa.Column("agent_recommendation", postgresql.ENUM("advance", "hold", "review", name="screening_recommendation", create_type=True), nullable=False),
         sa.Column("confidence_score", sa.Integer(), nullable=False),
         sa.Column("screening_summary", sa.Text(), nullable=False),  # Encrypted
         sa.Column("screening_details", sa.Text(), nullable=False),  # Encrypted JSON
         sa.Column("bias_flags", sa.Text(), nullable=False, server_default="{}"),  # Encrypted JSON
-        sa.Column("recruiter_decision", postgresql.ENUM("interview", "hold", "further_review", name="recruiter_decision", create_type=False), nullable=True),
+        sa.Column("recruiter_decision", postgresql.ENUM("interview", "hold", "further_review", name="recruiter_decision", create_type=True), nullable=True),
         sa.Column("recruiter_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("recruiter_notes", sa.Text(), nullable=True),  # Encrypted
         sa.Column("recruiter_confidence", sa.Integer(), nullable=True),
