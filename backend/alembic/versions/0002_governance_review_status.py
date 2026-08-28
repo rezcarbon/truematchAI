@@ -19,9 +19,6 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # ALTER TYPE ... ADD VALUE cannot run inside a transaction block, so commit
-    # the migration's implicit transaction first.
-    op.execute("COMMIT")
     op.execute(
         "ALTER TYPE assessment_status ADD VALUE IF NOT EXISTS 'flagged_for_review'"
     )
