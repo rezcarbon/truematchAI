@@ -28,6 +28,15 @@ class Settings(BaseSettings):
         description="PostgreSQL connection URL - required for production",
     )
 
+    @field_validator("database_url", mode="after")
+    @classmethod
+    def clean_database_url(cls, v: str) -> str:
+        """Remove SSL params that asyncpg doesn't support."""
+        if v and "postgresql+asyncpg://" in v:
+            # asyncpg doesn't support sslmode in the connection string
+            v = v.replace("?sslmode=disable", "").replace("&sslmode=disable", "")
+        return v
+
     # Redis / Celery
     redis_url: str = "redis://localhost:6379/0"
 
