@@ -95,20 +95,6 @@ async def create_position(
     return position
 
 
-@router.get("", response_model=PositionList)
-async def list_positions(user: CurrentUser, db: DBSession) -> PositionList:
-    stmt = select(Position)
-    count_stmt = select(func.count()).select_from(Position)
-    if user.company_id is not None:
-        stmt = stmt.where(Position.company_id == user.company_id)
-        count_stmt = count_stmt.where(Position.company_id == user.company_id)
-    total = await db.scalar(count_stmt) or 0
-    items = list((await db.scalars(stmt.order_by(Position.created_at.desc()))).all())
-    return PositionList(
-        items=[PositionResponse.model_validate(p) for p in items], total=total
-    )
-
-
 @router.get("/taxonomy")
 async def get_role_taxonomy(user: CurrentUser, db: DBSession) -> dict:
     """The self-learned role taxonomy: clusters (role families) + members.

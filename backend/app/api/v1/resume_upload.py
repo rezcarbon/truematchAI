@@ -18,7 +18,7 @@ from app.core.exceptions import NotFoundError
 
 logger = logging.getLogger("truematch.resume_upload")
 
-router = APIRouter(prefix="/resume", tags=["resumes"])
+router = APIRouter(prefix="/candidates/resumes", tags=["resumes"])
 
 
 def _extract_text_from_pdf(pdf_content: bytes) -> str:

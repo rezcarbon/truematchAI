@@ -15,7 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.deps import get_db, get_current_user
 from app.models import MatchNotification, CandidateMatch, User
 
-router = APIRouter(prefix="/candidate/matches", tags=["candidate-matching"])
+router = APIRouter(prefix="/candidates/matches", tags=["candidate-matching"])
 
 
 @router.get("/notifications/{match_id}")
@@ -37,10 +37,14 @@ async def get_match_notifications(
         raise HTTPException(status_code=403, detail="Not authorized to view this match")
 
     # Get notifications sorted by timestamp
-    notifications = await db.execute(
-        "SELECT * FROM match_notifications WHERE candidate_match_id = ? ORDER BY status_timestamp DESC",
-        (match_id,),
-    )
+    from sqlalchemy import select, desc
+    from app.models import MatchNotification
+
+    stmt = select(MatchNotification).where(
+        MatchNotification.candidate_match_id == match_id
+    ).order_by(desc(MatchNotification.status_timestamp))
+
+    notifications = await db.scalars(stmt)
 
     return {
         "match_id": match_id,
@@ -52,7 +56,7 @@ async def get_match_notifications(
                 "timestamp": n.status_timestamp.isoformat(),
                 "emailSent": n.email_sent,
             }
-            for n in notifications.scalars().all()
+            for n in notifications.all()
         ],
     }
 
