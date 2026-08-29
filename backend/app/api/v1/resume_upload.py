@@ -103,7 +103,7 @@ async def upload_resume(
 
         logger.info(f"Resume uploaded successfully: {resume.id} by user {user.id}")
         return resume
-    except HTTPException:
+    except HTTPException as e:
         logger.info(f"HTTPException in upload_resume: {str(e)}")
         raise
     except Exception as e:
