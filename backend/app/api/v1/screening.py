@@ -38,7 +38,7 @@ from app.workers.screening_queue import process_screening_batch
 
 logger = logging.getLogger("truematch.screening_api")
 
-router = APIRouter(prefix="/api/v1/screenings", tags=["screening"])
+router = APIRouter(prefix="/screenings", tags=["screening"])
 
 
 def require_recruiter(user: User = Depends(get_current_user)) -> User:
