@@ -100,6 +100,7 @@ from app.models.career_coach import (
 )
 from app.models.candidate_match import CandidateMatch, MatchStatus, FitLevel, PERSONA_ICONS
 from app.models.match_notification import MatchNotification, NotificationStatus
+from app.models.assessment_design import AssessmentDesign
 
 __all__ = [
     "TransitionAnalysis",
@@ -212,4 +213,5 @@ __all__ = [
     "PERSONA_ICONS",
     "MatchNotification",
     "NotificationStatus",
+    "AssessmentDesign",
 ]

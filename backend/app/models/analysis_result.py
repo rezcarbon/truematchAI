@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
@@ -25,6 +26,13 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base
 from app.models._mixins import TimestampMixin
+
+if TYPE_CHECKING:
+    from app.models.assessment_design import AssessmentDesign
+    from app.models.assessment import Assessment
+    from app.models.candidate_match import CandidateMatch
+    from app.models.position import Position
+    from app.models.user import User
 
 
 class AnalysisStatus(str, Enum):
