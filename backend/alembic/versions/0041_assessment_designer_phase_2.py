@@ -18,11 +18,15 @@ def upgrade() -> None:
     """Create assessment_designs table for Phase 2 agent implementation."""
 
     # Create assessment design review status enum
-    review_status_enum = postgresql.ENUM(
-        "pending_review", "approved", "changes_requested", "rejected",
-        name="assessment_design_review_status"
-    )
-    review_status_enum.create(op.get_bind(), checkfirst=True)
+    op.execute("""
+    DO $$
+    BEGIN
+        CREATE TYPE assessment_design_review_status AS ENUM ('pending_review', 'approved', 'changes_requested', 'rejected');
+    EXCEPTION WHEN duplicate_object THEN
+        NULL;
+    END
+    $$;
+    """)
 
     # Create assessment_designs table
     op.create_table(
@@ -34,7 +38,7 @@ def upgrade() -> None:
         sa.Column("agent_designed_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()),
         sa.Column("agent_design", sa.Text(), nullable=False),  # Encrypted JSON
         sa.Column("design_fairness_check", sa.Text(), nullable=False, server_default="{}"),  # Encrypted JSON
-        sa.Column("review_status", sa.Enum("pending_review", "approved", "changes_requested", "rejected", name="assessment_design_review_status"), nullable=False, server_default="pending_review"),
+        sa.Column("review_status", postgresql.ENUM("pending_review", "approved", "changes_requested", "rejected", name="assessment_design_review_status", create_type=False), nullable=False, server_default="pending_review"),
         sa.Column("recruiter_id", postgresql.UUID(as_uuid=True), nullable=True),
         sa.Column("recruiter_reviewed_at", sa.DateTime(timezone=True), nullable=True),
         sa.Column("recruiter_feedback", sa.Text(), nullable=True),  # Encrypted

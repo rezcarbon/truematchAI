@@ -51,13 +51,12 @@ def run_migrations_online() -> None:
         prefix="sqlalchemy.",
         poolclass=pool.NullPool,
     )
-    with connectable.connect() as connection:
+    with connectable.begin() as connection:
         # Check if alembic_version table exists
         inspector = inspect(connection)
         if "alembic_version" not in inspector.get_table_names():
             # Create the table if it doesn't exist
             connection.execute(text("CREATE TABLE alembic_version (version_num VARCHAR(32) NOT NULL PRIMARY KEY)"))
-            connection.commit()
 
         context.configure(
             connection=connection,
