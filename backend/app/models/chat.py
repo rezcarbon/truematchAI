@@ -54,3 +54,44 @@ class Message(Base):
 
     conversation = relationship("Conversation", back_populates="messages")
     user = relationship("User", foreign_keys=[user_id])
+
+
+# Legacy chat models (kept for backward compatibility with existing code)
+class ChatSession(Base):
+    """Legacy chat session model."""
+    __tablename__ = "chat_sessions"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=lambda: UUID(int=0))
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    title = Column(String(255), nullable=False)
+    last_message_at = Column(DateTime(timezone=True), nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class ChatMessage(Base):
+    """Legacy chat message model."""
+    __tablename__ = "chat_messages"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=lambda: UUID(int=0))
+    session_id = Column(PG_UUID(as_uuid=True), ForeignKey("chat_sessions.id"), nullable=False)
+    role = Column(String(50), nullable=False)
+    content = Column(Text, nullable=False)
+    actions_taken = Column(JSONB, nullable=True)
+    message_metadata = Column(JSONB, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    session = relationship("ChatSession", back_populates="messages")
+
+    # For backward compatibility, allow accessing the message_metadata through metadata attribute
+    @property
+    def metadata(self):
+        return self.message_metadata
+
+    @metadata.setter
+    def metadata(self, value):
+        self.message_metadata = value

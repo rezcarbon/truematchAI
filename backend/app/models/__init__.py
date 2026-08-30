@@ -41,7 +41,7 @@ from app.models.training import (
 # Previously missing from the package init — meaning these tables were absent
 # so the metadata is complete and migrations stay accurate.
 from app.models.autonomous_settings import AutonomousSettings
-from app.models.chat import Conversation, Message, ConversationStatus, MessageRole
+from app.models.chat import Conversation, Message, ConversationStatus, MessageRole, ChatSession, ChatMessage
 from app.models.chat_memory import ChatSessionMemory
 from app.models.governance_review import GovernanceReview, ReviewType, ReviewStatus
 from app.models.job_scraping import (
@@ -158,6 +158,8 @@ __all__ = [
     "TrainingInsight",
     "VirtualBrainState",
     "AutonomousSettings",
+    "ChatSession",
+    "ChatMessage",
     "Conversation",
     "Message",
     "ConversationStatus",
