@@ -1,52 +1,56 @@
-"""Chat session and message models."""
-from __future__ import annotations
-
-import uuid
-
-from sqlalchemy import ForeignKey, Index, Text
-from sqlalchemy.dialects.postgresql import JSONB
+"""Chat message and conversation models."""
+from datetime import datetime
+from uuid import UUID
+from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Enum, Integer
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import relationship
+import enum
 
-from app.database import Base
-from app.models._mixins import TimestampMixin, uuid_pk
-
-
-class ChatSession(Base, TimestampMixin):
-    """A conversation session between user and AI agent."""
-    __tablename__ = "chat_sessions"
-
-    id: Mapped[uuid.UUID] = uuid_pk()
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("users.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    title: Mapped[str] = mapped_column(nullable=False)
-    last_message_at: Mapped[__import__("datetime").datetime | None] = mapped_column(nullable=True)
-
-    __table_args__ = (
-        Index("ix_chat_sessions_user_id", "user_id"),
-        Index("ix_chat_sessions_last_message_at", "last_message_at"),
-    )
+from app.core.clock import utcnow
+from app.models.base import Base
 
 
-class ChatMessage(Base, TimestampMixin):
-    """A single message in a chat session."""
-    __tablename__ = "chat_messages"
+class ConversationStatus(str, enum.Enum):
+    active = "active"
+    archived = "archived"
+    closed = "closed"
 
-    id: Mapped[uuid.UUID] = uuid_pk()
-    session_id: Mapped[uuid.UUID] = mapped_column(
-        PG_UUID(as_uuid=True),
-        ForeignKey("chat_sessions.id", ondelete="CASCADE"),
-        nullable=False,
-    )
-    role: Mapped[str] = mapped_column(nullable=False)  # "user" or "assistant"
-    content: Mapped[str] = mapped_column(Text, nullable=False)
-    actions_taken: Mapped[list[dict] | None] = mapped_column(JSONB, nullable=True)
-    message_metadata: Mapped[dict | None] = mapped_column(JSONB, nullable=True)  # persona_id, persona_name, objective, mode
 
-    __table_args__ = (
-        Index("ix_chat_messages_session_id", "session_id"),
-        Index("ix_chat_messages_created_at", "created_at"),
-    )
+class MessageRole(str, enum.Enum):
+    user = "user"
+    assistant = "assistant"
+    system = "system"
+
+
+class Conversation(Base):
+    """Chat conversation."""
+    __tablename__ = "conversations"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=lambda: UUID(int=0))
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    title = Column(String(255), nullable=True)
+    status = Column(Enum(ConversationStatus), default=ConversationStatus.active)
+    message_count = Column(Integer, default=0)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+    archived_at = Column(DateTime(timezone=True), nullable=True)
+
+    messages = relationship("Message", back_populates="conversation", cascade="all, delete-orphan")
+    user = relationship("User", foreign_keys=[user_id])
+
+
+class Message(Base):
+    """Chat message."""
+    __tablename__ = "messages"
+
+    id = Column(PG_UUID(as_uuid=True), primary_key=True, default=lambda: UUID(int=0))
+    conversation_id = Column(PG_UUID(as_uuid=True), ForeignKey("conversations.id"), nullable=False)
+    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
+    role = Column(Enum(MessageRole), default=MessageRole.user, nullable=False)
+    content = Column(Text, nullable=False)
+    metadata = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
+    updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
+
+    conversation = relationship("Conversation", back_populates="messages")
+    user = relationship("User", foreign_keys=[user_id])
