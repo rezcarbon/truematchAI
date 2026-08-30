@@ -5,42 +5,17 @@
 
 import SwiftUI
 
-enum OnboardingScreen {
+enum OnboardingScreen: Hashable {
     case home
     case login
     case signup
 }
 
-@MainActor
-final class OnboardingFlowState: ObservableObject {
-    @Published var currentScreen: OnboardingScreen = .home
-
-    func goToLogin() {
-        currentScreen = .login
-    }
-
-    func goToSignUp() {
-        currentScreen = .signup
-    }
-
-    func goHome() {
-        currentScreen = .home
-    }
-}
-
 struct OnboardingView: View {
-    @StateObject private var flowState = OnboardingFlowState()
+    @State private var navigationPath: [OnboardingScreen] = []
 
     var body: some View {
-        if flowState.currentScreen == .login {
-            LoginView(onBack: {
-                flowState.goHome()
-            })
-        } else if flowState.currentScreen == .signup {
-            SignUpView(onBack: {
-                flowState.goHome()
-            })
-        } else {
+        NavigationStack(path: $navigationPath) {
             ZStack {
                 Color.white.ignoresSafeArea()
 
@@ -65,22 +40,19 @@ struct OnboardingView: View {
                     Spacer()
 
                     VStack(spacing: 12) {
-                        Button(action: {
-                            flowState.goToSignUp()
-                        }) {
+                        NavigationLink(value: OnboardingScreen.signup) {
                             Text("Create account")
-                                .frame(maxWidth: .infinity)
+                                .frame(maxWidth: .infinity, minHeight: 50)
                                 .padding()
                                 .background(Color.blue)
                                 .foregroundColor(.white)
                                 .cornerRadius(8)
                         }
+                        .contentShape(Rectangle())
 
-                        Button(action: {
-                            flowState.goToLogin()
-                        }) {
+                        NavigationLink(value: OnboardingScreen.login) {
                             Text("Log in")
-                                .frame(maxWidth: .infinity)
+                                .frame(maxWidth: .infinity, minHeight: 50)
                                 .padding()
                                 .background(Color.clear)
                                 .foregroundColor(.blue)
@@ -89,10 +61,25 @@ struct OnboardingView: View {
                                         .stroke(Color.blue, lineWidth: 1)
                                 )
                         }
+                        .contentShape(Rectangle())
                     }
                     .padding()
                 }
                 .padding()
+            }
+            .navigationDestination(for: OnboardingScreen.self) { screen in
+                switch screen {
+                case .login:
+                    LoginView(onBack: {
+                        navigationPath.removeAll()
+                    })
+                case .signup:
+                    SignUpView(onBack: {
+                        navigationPath.removeAll()
+                    })
+                case .home:
+                    EmptyView()
+                }
             }
         }
     }
