@@ -16,57 +16,56 @@ struct OnboardingView: View {
 
     var body: some View {
         NavigationStack(path: $navigationPath) {
-            ZStack {
-                Color.white.ignoresSafeArea()
+            VStack(spacing: 40) {
+                Spacer()
 
-                VStack(spacing: 40) {
-                    Spacer()
+                VStack(spacing: 16) {
+                    Image(systemName: "person.text.rectangle")
+                        .font(.system(size: 64))
+                        .foregroundStyle(.blue)
 
-                    VStack(spacing: 16) {
-                        Image(systemName: "person.text.rectangle")
-                            .font(.system(size: 64))
-                            .foregroundStyle(.blue)
+                    VStack(spacing: 8) {
+                        Text("TrueMatch")
+                            .font(.system(size: 40, weight: .bold))
+                        Text("See the candidate the keywords miss.")
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(.gray)
+                            .multilineTextAlignment(.center)
+                    }
+                }
 
-                        VStack(spacing: 8) {
-                            Text("TrueMatch")
-                                .font(.system(size: 40, weight: .bold))
-                            Text("See the candidate the keywords miss.")
-                                .font(.system(size: 16, weight: .medium))
-                                .foregroundStyle(.gray)
-                                .multilineTextAlignment(.center)
-                        }
+                Spacer()
+
+                VStack(spacing: 12) {
+                    Button(action: {
+                        navigationPath.append(OnboardingScreen.signup)
+                    }) {
+                        Text("Create account")
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .background(Color.blue)
+                            .foregroundColor(.white)
+                            .cornerRadius(8)
                     }
 
-                    Spacer()
-
-                    VStack(spacing: 12) {
-                        NavigationLink(value: OnboardingScreen.signup) {
-                            Text("Create account")
-                                .frame(maxWidth: .infinity, minHeight: 50)
-                                .padding()
-                                .background(Color.blue)
-                                .foregroundColor(.white)
-                                .cornerRadius(8)
-                        }
-                        .contentShape(Rectangle())
-
-                        NavigationLink(value: OnboardingScreen.login) {
-                            Text("Log in")
-                                .frame(maxWidth: .infinity, minHeight: 50)
-                                .padding()
-                                .background(Color.clear)
-                                .foregroundColor(.blue)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 8)
-                                        .stroke(Color.blue, lineWidth: 1)
-                                )
-                        }
-                        .contentShape(Rectangle())
+                    Button(action: {
+                        navigationPath.append(OnboardingScreen.login)
+                    }) {
+                        Text("Log in")
+                            .frame(maxWidth: .infinity)
+                            .frame(height: 50)
+                            .foregroundColor(.blue)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.blue, lineWidth: 1)
+                            )
                     }
-                    .padding()
                 }
                 .padding()
             }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.white.ignoresSafeArea())
             .navigationDestination(for: OnboardingScreen.self) { screen in
                 switch screen {
                 case .login:
