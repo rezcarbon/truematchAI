@@ -22,8 +22,8 @@ def upgrade() -> None:
     conversation_status_enum = postgresql.ENUM("active", "archived", "closed", name="conversationstatus", create_type=True)
     message_role_enum = postgresql.ENUM("user", "assistant", "system", name="messagerole", create_type=True)
 
-    conversation_status_enum.create(op.get_bind(), checkfirst=True)
-    message_role_enum.create(op.get_bind(), checkfirst=True)
+    op.execute("CREATE TYPE IF NOT EXISTS conversationstatus AS ENUM ('active', 'archived', 'closed')")
+    op.execute("CREATE TYPE IF NOT EXISTS messagerole AS ENUM ('user', 'assistant', 'system')")
 
     # Create conversations table
     op.create_table(
