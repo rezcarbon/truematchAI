@@ -18,12 +18,16 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Drop existing enum types if they exist to start fresh
+    op.execute("DROP TYPE IF EXISTS conversationstatus CASCADE")
+    op.execute("DROP TYPE IF EXISTS messagerole CASCADE")
+
     # Create enum types
     conversation_status_enum = postgresql.ENUM("active", "archived", "closed", name="conversationstatus", create_type=True)
     message_role_enum = postgresql.ENUM("user", "assistant", "system", name="messagerole", create_type=True)
 
-    op.execute("CREATE TYPE IF NOT EXISTS conversationstatus AS ENUM ('active', 'archived', 'closed')")
-    op.execute("CREATE TYPE IF NOT EXISTS messagerole AS ENUM ('user', 'assistant', 'system')")
+    conversation_status_enum.create(op.get_bind())
+    message_role_enum.create(op.get_bind())
 
     # Create conversations table
     op.create_table(
