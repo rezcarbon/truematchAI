@@ -2,7 +2,7 @@
 from datetime import datetime
 from uuid import UUID
 from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Enum, Integer
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
 from sqlalchemy.orm import relationship
 import enum
 
@@ -48,7 +48,7 @@ class Message(Base):
     user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     role = Column(Enum(MessageRole), default=MessageRole.user, nullable=False)
     content = Column(Text, nullable=False)
-    metadata = Column(String, nullable=True)
+    message_metadata = Column(JSONB, nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow, nullable=False)
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 

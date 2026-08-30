@@ -118,7 +118,7 @@ async def get_conversation(
                     "user_id": m.user_id,
                     "content": m.content,
                     "role": m.role.value,
-                    "metadata": m.metadata,
+                    "metadata": m.message_metadata,
                     "created_at": m.created_at,
                     "updated_at": m.updated_at,
                 }
@@ -150,7 +150,7 @@ async def send_message(
             user_id=user.id,
             role=MessageRole(request.role) if request.role else MessageRole.user,
             content=request.content,
-            metadata=request.metadata,
+            message_metadata=request.metadata,
         )
         db.add(message)
         conversation.message_count += 1
@@ -164,7 +164,7 @@ async def send_message(
             "user_id": message.user_id,
             "content": message.content,
             "role": message.role.value,
-            "metadata": message.metadata,
+            "metadata": message.message_metadata,
             "created_at": message.created_at,
             "updated_at": message.updated_at,
         }
@@ -207,7 +207,7 @@ async def list_messages(
                     "user_id": m.user_id,
                     "content": m.content,
                     "role": m.role.value,
-                    "metadata": m.metadata,
+                    "metadata": m.message_metadata,
                     "created_at": m.created_at,
                     "updated_at": m.updated_at,
                 }
