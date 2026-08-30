@@ -18,13 +18,20 @@ depends_on = None
 
 
 def upgrade() -> None:
+    # Create enum types
+    conversation_status_enum = postgresql.ENUM("active", "archived", "closed", name="conversationstatus", create_type=True)
+    message_role_enum = postgresql.ENUM("user", "assistant", "system", name="messagerole", create_type=True)
+
+    conversation_status_enum.create(op.get_bind(), checkfirst=True)
+    message_role_enum.create(op.get_bind(), checkfirst=True)
+
     # Create conversations table
     op.create_table(
         "conversations",
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False, primary_key=True, default=sa.text("gen_random_uuid()")),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("title", sa.String(255), nullable=False),
-        sa.Column("status", sa.String(50), nullable=False, server_default="active", comment="active, archived, or closed"),
+        sa.Column("status", conversation_status_enum, nullable=False, server_default="active", comment="active, archived, or closed"),
         sa.Column("message_count", sa.Integer(), nullable=False, server_default="0"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
@@ -41,7 +48,7 @@ def upgrade() -> None:
         sa.Column("id", postgresql.UUID(as_uuid=True), nullable=False, primary_key=True, default=sa.text("gen_random_uuid()")),
         sa.Column("conversation_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("user_id", postgresql.UUID(as_uuid=True), nullable=False),
-        sa.Column("role", sa.String(50), nullable=False, comment="user, assistant, or system"),
+        sa.Column("role", message_role_enum, nullable=False, comment="user, assistant, or system"),
         sa.Column("content", sa.Text(), nullable=False),
         sa.Column("message_metadata", postgresql.JSONB(astext_type=sa.Text()), nullable=True, comment="Additional message metadata"),
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")),
@@ -60,3 +67,7 @@ def downgrade() -> None:
 
     # Drop conversations table
     op.drop_table("conversations")
+
+    # Drop enum types
+    op.execute("DROP TYPE IF EXISTS messagerole CASCADE")
+    op.execute("DROP TYPE IF EXISTS conversationstatus CASCADE")
