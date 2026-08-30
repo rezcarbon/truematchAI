@@ -86,12 +86,3 @@ class ChatMessage(Base):
     updated_at = Column(DateTime(timezone=True), default=utcnow, onupdate=utcnow, nullable=False)
 
     session = relationship("ChatSession", back_populates="messages")
-
-    # For backward compatibility, allow accessing the message_metadata through metadata attribute
-    @property
-    def metadata(self):
-        return self.message_metadata
-
-    @metadata.setter
-    def metadata(self, value):
-        self.message_metadata = value
