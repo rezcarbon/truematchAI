@@ -2,37 +2,71 @@
 @tailwind components;
 @tailwind utilities;
 
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
 @layer base {
   :root {
-    --background: 210 40% 98%;
+    --background: 210 20% 98%;
     --foreground: 222 47% 11%;
     --card: 0 0% 100%;
     --card-foreground: 222 47% 11%;
-    --primary: 221 83% 53%;
+    --primary: 217 91% 60%;
     --primary-foreground: 210 40% 98%;
     --secondary: 210 40% 96%;
     --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96%;
     --muted-foreground: 215 16% 47%;
-    --accent: 221 83% 96%;
-    --accent-foreground: 221 83% 30%;
+    --accent: 172 76% 53%;
+    --accent-foreground: 0 0% 100%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 210 40% 98%;
-    --success: 142 71% 45%;
+    --success: 160 84% 39%;
     --success-foreground: 0 0% 100%;
     --warning: 38 92% 50%;
     --warning-foreground: 0 0% 100%;
     --border: 214 32% 91%;
     --input: 214 32% 91%;
-    --ring: 221 83% 53%;
-    --radius: 0.75rem;
+    --ring: 217 91% 60%;
+    --radius: 0.5rem;
+
+    /* Evidence-first color system */
+    --critical: 0 72% 51%;
+    --critical-light: 0 72% 97%;
+    --semantic: 38 92% 50%;
+    --semantic-light: 38 92% 96%;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --background: 222 84% 5%;
+      --foreground: 210 40% 98%;
+      --card: 222 84% 9%;
+      --card-foreground: 210 40% 98%;
+      --primary: 217 91% 65%;
+      --primary-foreground: 222 84% 5%;
+      --secondary: 222 84% 12%;
+      --secondary-foreground: 210 40% 98%;
+      --muted: 217 33% 40%;
+      --muted-foreground: 210 9% 67%;
+      --accent: 172 76% 58%;
+      --accent-foreground: 222 84% 5%;
+      --border: 217 33% 20%;
+      --input: 217 33% 20%;
+      --ring: 172 76% 58%;
+    }
   }
 
   * {
     @apply border-border;
   }
+
   body {
     @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+
+  .font-mono {
+    font-family: 'IBM Plex Mono', monospace;
   }
 }
