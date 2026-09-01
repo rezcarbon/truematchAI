@@ -1,0 +1,1159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TrueMatch - Seed Pitch Deck</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #0a0e27;
+            color: #e0e7ff;
+            overflow-x: hidden;
+        }
+
+        .deck {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .slide {
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 80px;
+            background: linear-gradient(135deg, #0a0e27 0%, #1a1f4e 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .slide.active {
+            display: flex;
+        }
+
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(14, 165, 233, 0.15) 0%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .slide-content {
+            max-width: 1000px;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+        }
+
+        h1 {
+            font-size: 64px;
+            font-weight: 900;
+            margin-bottom: 30px;
+            background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        h2 {
+            font-size: 48px;
+            font-weight: 800;
+            margin-bottom: 40px;
+            color: #ffffff;
+        }
+
+        h3 {
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #e0e7ff;
+        }
+
+        .subtitle {
+            font-size: 28px;
+            color: #a5b4fc;
+            margin-bottom: 40px;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .body-text {
+            font-size: 20px;
+            color: #c7d2fe;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .accent-text {
+            color: #14b8a6;
+            font-weight: 600;
+        }
+
+        .stat {
+            font-size: 56px;
+            font-weight: 900;
+            color: #0ea5e9;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 18px;
+            color: #a5b4fc;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .grid-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .card {
+            background: rgba(30, 41, 59, 0.6);
+            border: 1px solid rgba(14, 165, 233, 0.3);
+            border-radius: 12px;
+            padding: 30px;
+            backdrop-filter: blur(10px);
+        }
+
+        .card-title {
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 15px;
+            color: #e0e7ff;
+        }
+
+        .card-body {
+            font-size: 16px;
+            color: #cbd5e1;
+            line-height: 1.6;
+        }
+
+        .feature-list {
+            list-style: none;
+            margin-top: 30px;
+        }
+
+        .feature-list li {
+            font-size: 18px;
+            color: #c7d2fe;
+            margin-bottom: 15px;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .feature-list li:before {
+            content: '✓';
+            position: absolute;
+            left: 0;
+            color: #14b8a6;
+            font-weight: bold;
+            font-size: 24px;
+        }
+
+        .problem-list {
+            list-style: none;
+            margin-top: 30px;
+        }
+
+        .problem-list li {
+            font-size: 18px;
+            color: #c7d2fe;
+            margin-bottom: 20px;
+            padding-left: 30px;
+            position: relative;
+        }
+
+        .problem-list li:before {
+            content: '⚠';
+            position: absolute;
+            left: 0;
+            font-size: 24px;
+        }
+
+        .gate {
+            background: rgba(14, 165, 233, 0.1);
+            border-left: 4px solid #14b8a6;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 6px;
+        }
+
+        .gate-title {
+            font-weight: 700;
+            color: #14b8a6;
+            font-size: 16px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 8px;
+        }
+
+        .gate-desc {
+            font-size: 14px;
+            color: #a5b4fc;
+        }
+
+        .controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .btn {
+            background: rgba(14, 165, 233, 0.2);
+            border: 1px solid rgba(14, 165, 233, 0.5);
+            color: #0ea5e9;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            background: rgba(14, 165, 233, 0.3);
+            border-color: rgba(14, 165, 233, 0.7);
+        }
+
+        .slide-counter {
+            position: fixed;
+            top: 30px;
+            right: 40px;
+            font-size: 18px;
+            color: #a5b4fc;
+            font-weight: 600;
+        }
+
+        .logo {
+            position: absolute;
+            top: 30px;
+            left: 40px;
+            font-size: 28px;
+            font-weight: 900;
+            background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .comparison-table {
+            width: 100%;
+            margin-top: 30px;
+        }
+
+        .comparison-table th,
+        .comparison-table td {
+            padding: 15px;
+            text-align: left;
+            border-bottom: 1px solid rgba(14, 165, 233, 0.2);
+        }
+
+        .comparison-table th {
+            background: rgba(14, 165, 233, 0.1);
+            font-weight: 700;
+            color: #14b8a6;
+        }
+
+        .comparison-table td {
+            color: #c7d2fe;
+        }
+
+        .checkmark {
+            color: #14b8a6;
+            font-weight: bold;
+            font-size: 20px;
+        }
+
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .timeline-item {
+            display: flex;
+            gap: 20px;
+            align-items: flex-start;
+        }
+
+        .timeline-marker {
+            width: 40px;
+            height: 40px;
+            background: #14b8a6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #0a0e27;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .timeline-content h4 {
+            font-size: 18px;
+            font-weight: 700;
+            color: #e0e7ff;
+            margin-bottom: 5px;
+        }
+
+        .timeline-content p {
+            font-size: 16px;
+            color: #a5b4fc;
+        }
+
+        .cta-button {
+            background: linear-gradient(135deg, #0ea5e9 0%, #14b8a6 100%);
+            color: #0a0e27;
+            padding: 16px 40px;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 700;
+            cursor: pointer;
+            margin-top: 30px;
+            transition: transform 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="logo">TrueMatch</div>
+    <div class="slide-counter"><span id="current">1</span> / <span id="total">23</span></div>
+
+    <div class="deck">
+        <!-- SLIDE 1: TITLE -->
+        <div class="slide active">
+            <div class="slide-content" style="text-align: center;">
+                <h1>TrueMatch</h1>
+                <p class="subtitle">Evidence-First Hiring Assessment<br/>Powered by AI & Patent-Protected Compliance Gates</p>
+                <p class="body-text" style="margin-top: 60px; font-size: 18px; color: #a5b4fc;">
+                    We solve a $15-50K per mis-hire problem<br/>
+                    when regulatory compliance creates urgency
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 2: THE PROBLEM -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>The Problem</h2>
+                <p class="body-text">Traditional ATS systems are broken:</p>
+                <ul class="problem-list">
+                    <li><strong>40% of qualified candidates are missed</strong> — keyword-only matching fails</li>
+                    <li><strong>30% of hires fail</strong> — credentials don't equal capability</li>
+                    <li><strong>Compliance liability</strong> — no audit trail, no explainability, regulatory risk</li>
+                    <li><strong>Bias hiding in plain sight</strong> — no accountability for algorithmic decisions</li>
+                </ul>
+                <p class="body-text" style="margin-top: 40px; color: #14b8a6;">
+                    Cost: $15-50K per mis-hire (Talent Board data)
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 3: THE OPPORTUNITY -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>The Opportunity</h2>
+                <div class="grid-2">
+                    <div class="card">
+                        <p class="stat">$8.5B</p>
+                        <p class="stat-label">Market TAM</p>
+                        <p class="card-body">Global hiring assessment market</p>
+                    </div>
+                    <div class="card">
+                        <p class="stat">15-20%</p>
+                        <p class="stat-label">CAGR</p>
+                        <p class="card-body">Sustained growth rate through 2030</p>
+                    </div>
+                </div>
+                <div class="grid-2" style="margin-top: 40px;">
+                    <div class="card">
+                        <p class="stat">NOW</p>
+                        <p class="stat-label">Regulatory Mandate</p>
+                        <p class="card-body">EU AI Act enforcement creates compliance budget</p>
+                    </div>
+                    <div class="card">
+                        <p class="stat">12-18mo</p>
+                        <p class="stat-label">First-Mover Window</p>
+                        <p class="card-body">Before competitors launch compliance features</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 4: OUR SOLUTION -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Our Solution: Three-Layer Evidence Scoring</h2>
+                <p class="body-text">Traditional ATS only does Layer 1. We go three layers deep:</p>
+
+                <div style="margin-top: 50px;">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div style="font-size: 48px; color: #0ea5e9; font-weight: 900;">32</div>
+                            <div>
+                                <p class="card-title" style="margin-bottom: 5px;">Layer 1: Keyword Match</p>
+                                <p class="card-body">Resume parsed for skill keywords + experience level</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div style="font-size: 48px; color: #3b82f6; font-weight: 900;">68</div>
+                            <div>
+                                <p class="card-title" style="margin-bottom: 5px;">+ Layer 2: Semantic Analysis</p>
+                                <p class="card-body">NLP embeddings match meaning, not just words (+100% improvement)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; align-items: center; gap: 20px;">
+                            <div style="font-size: 48px; color: #14b8a6; font-weight: 900;">85</div>
+                            <div>
+                                <p class="card-title" style="margin-bottom: 5px;">+ Layer 3: Verified Evidence</p>
+                                <p class="card-body">GitHub activity + published papers + patents + certificates (+25% improvement)</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="body-text" style="margin-top: 40px; color: #14b8a6;">
+                    <strong>Result: +53 point delta flags the 40% of candidates traditional ATS misses</strong>
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 5: SIX PATENT-PROTECTED COMPLIANCE GATES -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Six Non-Bypassable Compliance Gates</h2>
+                <p class="body-text" style="margin-bottom: 30px;">Every assessment passes all 6 gates or verdict is blocked:</p>
+
+                <div class="gate">
+                    <div class="gate-title">Gate 1: Coherence Check</div>
+                    <div class="gate-desc">All signals (keyword, semantic, evidence) must align within acceptable range</div>
+                </div>
+
+                <div class="gate">
+                    <div class="gate-title">Gate 2: Temporal Depth Processor</div>
+                    <div class="gate-desc">Timeline must be physically possible (can't claim 10 years at 25 years old)</div>
+                </div>
+
+                <div class="gate">
+                    <div class="gate-title">Gate 3: Lipschitz Constraint</div>
+                    <div class="gate-desc">Confidence bounded by evidence density (high claim = more evidence required)</div>
+                </div>
+
+                <div class="gate">
+                    <div class="gate-title">Gate 4: Physiological Evidence Integrator</div>
+                    <div class="gate-desc">All evidence sources verified (GitHub commits verified, DOI papers checked, patents confirmed)</div>
+                </div>
+
+                <div class="gate">
+                    <div class="gate-title">Gate 5: Pre-Linguistic Thought Separator</div>
+                    <div class="gate-desc">Inferences flagged separately from factual claims</div>
+                </div>
+
+                <div class="gate">
+                    <div class="gate-title">Gate 6: Gate Orchestrator</div>
+                    <div class="gate-desc">Single failure = entire verdict blocked (non-bypassable enforcement)</div>
+                </div>
+
+                <p class="body-text" style="margin-top: 30px; color: #14b8a6;">
+                    <strong>Result: EU AI Act Article 12-15 compliant + NYC Local Law 144 audit-ready + GDPR Article 22 aligned</strong>
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 6: PRODUCT DEMO / WHAT EXISTS TODAY -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>What TrueMatch Does Today</h2>
+                <p class="body-text">Working MVP deployed at api.truematch.digital</p>
+
+                <div style="margin-top: 40px;">
+                    <ul class="feature-list">
+                        <li><strong>Resume Upload & Parsing</strong> — Extracts skills, experience, credentials</li>
+                        <li><strong>Job Description Analysis</strong> — Parses requirements and must-haves</li>
+                        <li><strong>Three-Layer Scoring</strong> — Keyword (32) → Semantic (68) → Evidence (85)</li>
+                        <li><strong>Evidence Verification</strong> — GitHub API integration, DOI registry checks, patent database lookups</li>
+                        <li><strong>Compliance Gate Validation</strong> — All 6 gates enforced; verdict only generated if all pass</li>
+                        <li><strong>Counter-Recommendations</strong> — Flags hidden talent missed by traditional ATS</li>
+                        <li><strong>Chat Interface</strong> — Q&A with assessment results</li>
+                        <li><strong>Authentication</strong> — JWT + NextAuth.js (enterprise-grade)</li>
+                    </ul>
+                </div>
+
+                <p class="body-text" style="margin-top: 40px; font-size: 16px; color: #a5b4fc;">
+                    <strong>Coming Post-Seed:</strong> Recruiter dashboard (60% complete) • Admin console (40% complete) • ATS integrations • Billing system • Mobile app scaling
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 7: TECHNICAL ARCHITECTURE -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Technical Architecture</h2>
+                <p class="body-text">Enterprise-grade from day one:</p>
+
+                <div class="grid-2" style="margin-top: 40px;">
+                    <div class="card">
+                        <p class="card-title">Frontend</p>
+                        <p class="card-body">
+                            • Next.js 14.2.5<br/>
+                            • shadcn/ui components<br/>
+                            • Tailwind CSS<br/>
+                            • Dark mode support
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <p class="card-title">Backend</p>
+                        <p class="card-body">
+                            • FastAPI (async)<br/>
+                            • PostgreSQL + SQLAlchemy ORM<br/>
+                            • Redis caching<br/>
+                            • JWT authentication
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <p class="card-title">Mobile</p>
+                        <p class="card-body">
+                            • SwiftUI iOS app<br/>
+                            • NavigationStack architecture<br/>
+                            • 80% feature complete
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <p class="card-title">Deployment</p>
+                        <p class="card-body">
+                            • AWS EC2 (ap-southeast-1)<br/>
+                            • Nginx reverse proxy<br/>
+                            • SSL/TLS encryption<br/>
+                            • 47 DB migrations
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 8: COMPETITIVE LANDSCAPE -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Competitive Landscape</h2>
+                <p class="body-text">No direct competitor has compliance-first + evidence verification:</p>
+
+                <table class="comparison-table">
+                    <thead>
+                        <tr>
+                            <th>Company</th>
+                            <th>Funding</th>
+                            <th>Focus</th>
+                            <th>Compliance Gates</th>
+                            <th>Evidence Verification</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>TrueMatch</strong></td>
+                            <td>$0 (Seed)</td>
+                            <td>Compliance-first hiring</td>
+                            <td class="checkmark">✓ 6 gates</td>
+                            <td class="checkmark">✓ GitHub+DOI+Patents</td>
+                        </tr>
+                        <tr>
+                            <td>LinkedIn Recruiter</td>
+                            <td>$15B+ revenue</td>
+                            <td>Search + recommender</td>
+                            <td>—</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>Pymetrics/Harver</td>
+                            <td>$225M+/$100M</td>
+                            <td>Neuroscience assessment</td>
+                            <td>—</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>Eightfold AI</td>
+                            <td>$410M</td>
+                            <td>AI matching</td>
+                            <td>—</td>
+                            <td>—</td>
+                        </tr>
+                        <tr>
+                            <td>Alex (AI Recruiting)</td>
+                            <td>Series A $20M</td>
+                            <td>AI candidate matching</td>
+                            <td>—</td>
+                            <td>—</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <p class="body-text" style="margin-top: 30px; color: #14b8a6;">
+                    <strong>Our advantage: We're the only vendor with compliance-first design + patent-protected gates</strong>
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 9: WHY NOW (REGULATORY) -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Why Now: Regulatory Compliance Mandate</h2>
+                <p class="body-text">Three regulations creating immediate budget & urgency:</p>
+
+                <div class="card" style="margin-top: 40px; margin-bottom: 30px;">
+                    <p class="card-title">EU AI Act (Enforcement: 2025-2026)</p>
+                    <p class="card-body">
+                        • Hiring decisions must be auditable and explainable<br/>
+                        • Named human reviewer required (AI alone insufficient)<br/>
+                        • Data Protection Impact Assessments mandatory<br/>
+                        • Applies to ANY company hiring in EU (even remote)
+                    </p>
+                </div>
+
+                <div class="card" style="margin-bottom: 30px;">
+                    <p class="card-title">NYC Local Law 144 (Effective: July 2023)</p>
+                    <p class="card-body">
+                        • AI hiring tools must pass bias audit annually<br/>
+                        • 10-day notice before deployment required<br/>
+                        • $500-$1,500 per violation penalties<br/>
+                        • Enforced by NYC Department of Consumer Protection
+                    </p>
+                </div>
+
+                <div class="card">
+                    <p class="card-title">GDPR Article 22 (Already Enforced)</p>
+                    <p class="card-body">
+                        • Right to human review of automated decisions<br/>
+                        • Data minimization requirements<br/>
+                        • Vendor compliance responsibility on employer<br/>
+                        • $20M+ fines for violations
+                    </p>
+                </div>
+
+                <p class="body-text" style="margin-top: 40px; color: #14b8a6;">
+                    <strong>Timing: Companies must audit and implement by end of 2026. Budget is allocated NOW.</strong>
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 10: BUSINESS MODEL -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Business Model</h2>
+                <p class="body-text">High-margin SaaS targeting enterprise ATS vendors:</p>
+
+                <div class="grid-2" style="margin-top: 40px;">
+                    <div class="card">
+                        <p class="card-title">Pricing Tiers</p>
+                        <p class="card-body">
+                            <strong>Starter:</strong> $500-2K/mo<br/>
+                            500 assessments/month<br/><br/>
+                            <strong>Enterprise:</strong> $5-20K/mo<br/>
+                            Unlimited assessments
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <p class="card-title">Unit Economics</p>
+                        <p class="card-body">
+                            CAC: $5-25K<br/>
+                            CLV: $150-600K<br/>
+                            Payback: 6-12 months<br/>
+                            Gross margin: 70-80%
+                        </p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 40px;">
+                    <p class="card-title" style="margin-bottom: 20px;">Revenue Path (Base Case)</p>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker">1</div>
+                            <div class="timeline-content">
+                                <h4>Year 1: $300K ARR</h4>
+                                <p>4-5 pilot customers validating GTM</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker">2</div>
+                            <div class="timeline-content">
+                                <h4>Year 2: $2.5M ARR</h4>
+                                <p>35+ customers, VP Sales scaling playbook (733% growth)</p>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker">3</div>
+                            <div class="timeline-content">
+                                <h4>Year 5: $40M ARR</h4>
+                                <p>280+ customers, $240-260M exit value at 6-8x multiple</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 11: THE TEAM -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>The Team</h2>
+                <p class="body-text">Strong founders with domain expertise and track record:</p>
+
+                <div class="grid-2" style="margin-top: 50px;">
+                    <div class="card">
+                        <p class="card-title">Rez — CEO & Founder</p>
+                        <p class="card-body">
+                            • 10+ successful ventures in APAC<br/>
+                            • Proven founder execution track record<br/>
+                            • Patent inventor (6 compliance gates)<br/>
+                            • Committed: 5+ years R&D, left other ventures to focus
+                        </p>
+                    </div>
+
+                    <div class="card">
+                        <p class="card-title">Carmen — CTO & Co-Founder</p>
+                        <p class="card-body">
+                            • Behavioral science expert<br/>
+                            • Commercial banking background<br/>
+                            • Patent co-inventor (6 compliance gates)<br/>
+                            • Built working MVP from scratch
+                        </p>
+                    </div>
+                </div>
+
+                <p class="body-text" style="margin-top: 40px; font-size: 16px; color: #a5b4fc;">
+                    <strong>Hiring plan post-seed:</strong> VP Sales (6-12 months post-seed) • VP Product (12-15 months post-seed)<br/>
+                    Will hire experienced operators after proving GTM works, not before.
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 12: GO-TO-MARKET STRATEGY -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Go-To-Market Strategy</h2>
+                <p class="body-text">Founder-led sales proving GTM works, then scale with operations:</p>
+
+                <div style="margin-top: 40px;">
+                    <p class="card-title" style="margin-bottom: 20px;">6-Month Founder-Led Phase</p>
+                    <ul class="feature-list">
+                        <li>Rez leads sales personally (removes biggest investor concern)</li>
+                        <li>Target: Fortune 500 + mid-market ATS vendors</li>
+                        <li>Goal: 3-5 pilot LOIs with $20K+ annual commitment</li>
+                        <li>Prove repeatable playbook before hiring VP Sales</li>
+                    </ul>
+                </div>
+
+                <div style="margin-top: 40px;">
+                    <p class="card-title" style="margin-bottom: 20px;">12+ Month Scaling Phase</p>
+                    <ul class="feature-list">
+                        <li>VP Sales hired after founder proves concept works</li>
+                        <li>Build sales team (3-5 SDRs) to scale playbook</li>
+                        <li>Target: $100K-200K MRR by Series A</li>
+                        <li>Investor network for customer introductions</li>
+                    </ul>
+                </div>
+
+                <p class="body-text" style="margin-top: 30px; font-size: 16px; color: #a5b4fc;">
+                    <strong>Differentiation:</strong> We sell compliance first (regulatory mandate), then capability scoring (competitive advantage)
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 13: USE OF PROCEEDS -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Use of Proceeds: $1.3M Seed</h2>
+                <p class="body-text">Capital allocation for 18-month runway:</p>
+
+                <div style="margin-top: 40px;">
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <p class="card-title">Founder Salaries</p>
+                                <p class="card-body">Modest salaries to extend runway. Rez leads sales (core focus).</p>
+                            </div>
+                            <div style="font-size: 32px; color: #0ea5e9; font-weight: 900;">$200K</div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <p class="card-title">Product Development</p>
+                                <p class="card-body">Complete dashboards (60%→100%), add integrations, scale architecture.</p>
+                            </div>
+                            <div style="font-size: 32px; color: #0ea5e9; font-weight: 900;">$200K</div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <p class="card-title">Sales & Marketing</p>
+                                <p class="card-body">Sales tools (Outreach, Salesforce), compliance consulting advisors.</p>
+                            </div>
+                            <div style="font-size: 32px; color: #0ea5e9; font-weight: 900;">$200K</div>
+                        </div>
+                    </div>
+
+                    <div class="card" style="margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <p class="card-title">Infrastructure & Ops</p>
+                                <p class="card-body">AWS, monitoring, CI/CD pipeline, legal, HR basics.</p>
+                            </div>
+                            <div style="font-size: 32px; color: #0ea5e9; font-weight: 900;">$100K</div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <p class="card-title">Contingency Buffer</p>
+                                <p class="card-body">Reserve for hiring, market opportunities, or extended runway if needed.</p>
+                            </div>
+                            <div style="font-size: 32px; color: #0ea5e9; font-weight: 900;">$600K</div>
+                        </div>
+                    </div>
+                </div>
+
+                <p class="body-text" style="margin-top: 30px;">
+                    <strong>Runway:</strong> 18-24 months (comfortable buffer for Series A fundraising at month 15-18)
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 14: FINANCIAL PROJECTIONS -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Financial Projections (Base Case)</h2>
+                <p class="body-text">Conservative assumptions; strong unit economics:</p>
+
+                <table class="comparison-table" style="font-size: 16px;">
+                    <thead>
+                        <tr>
+                            <th>Metric</th>
+                            <th>Year 1</th>
+                            <th>Year 2</th>
+                            <th>Year 3</th>
+                            <th>Year 5</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>ARR</strong></td>
+                            <td>$300K</td>
+                            <td>$2.5M</td>
+                            <td>$7M</td>
+                            <td>$40M</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Customers</strong></td>
+                            <td>4</td>
+                            <td>35</td>
+                            <td>90</td>
+                            <td>280</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Growth</strong></td>
+                            <td>—</td>
+                            <td>733%</td>
+                            <td>180%</td>
+                            <td>45% CAGR</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Gross Margin</strong></td>
+                            <td>75%</td>
+                            <td>75%</td>
+                            <td>75%</td>
+                            <td>75%</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Burn Rate</strong></td>
+                            <td>$50K/mo</td>
+                            <td>$80K/mo</td>
+                            <td>—</td>
+                            <td>—</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="grid-2" style="margin-top: 40px;">
+                    <div class="card">
+                        <p class="stat">$240M-260M</p>
+                        <p class="stat-label">Exit Value (Year 5)</p>
+                        <p class="card-body">At 6-8x revenue multiple (SaaS standard)</p>
+                    </div>
+
+                    <div class="card">
+                        <p class="stat">48-52x</p>
+                        <p class="stat-label">VC Return</p>
+                        <p class="card-body">On $5M Series A at $20M pre-money (base case)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 15: INVESTMENT HIGHLIGHTS -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Investment Highlights</h2>
+                <p class="body-text">Why now is the right time to invest:</p>
+
+                <ul class="feature-list">
+                    <li><strong>Exceptional timing</strong> — EU AI Act enforcement NOW; 12-18 month first-mover window</li>
+                    <li><strong>Defensible moat</strong> — 6 patent-protected gates competitors can't bypass; 20-year protection</li>
+                    <li><strong>Proven founders</strong> — Rez's 10+ successful ventures in APAC; Carmen's behavioral science expertise + patents</li>
+                    <li><strong>Working MVP</strong> — Not a deck, but production code deployed at api.truematch.digital</li>
+                    <li><strong>Clear market validation</strong> — Regulatory compliance is non-negotiable; companies will pay</li>
+                    <li><strong>High-margin model</strong> — 70-80% gross margins; $150-600K CLV vs $5-25K CAC</li>
+                    <li><strong>Precedent in market</strong> — Alex (AI recruiting) raised $20M Series A from Peak XV in similar space</li>
+                    <li><strong>Patent upside</strong> — 5% patent equity creates dual revenue stream (licensing)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SLIDE 16: RISKS & MITIGATIONS -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Risks & Mitigations</h2>
+                <p class="body-text">We've identified major risks and have mitigation strategies:</p>
+
+                <div class="card" style="margin-top: 30px; margin-bottom: 20px;">
+                    <p class="card-title">Risk: Founder-led sales doesn't work</p>
+                    <p class="card-body">Mitigation: Rez has startup founder background; sales consultant available; can pivot to SMB if enterprise slow</p>
+                </div>
+
+                <div class="card" style="margin-bottom: 20px;">
+                    <p class="card-title">Risk: Regulatory requirements change</p>
+                    <p class="card-body">Mitigation: GDPR Article 22 remains enforced; compliance is structural trend, not cyclical</p>
+                </div>
+
+                <div class="card" style="margin-bottom: 20px;">
+                    <p class="card-title">Risk: Competitors launch faster</p>
+                    <p class="card-body">Mitigation: Patent gates are defensible; first-mover advantage 12-18 months; acquisition by LinkedIn/Workday possible</p>
+                </div>
+
+                <div class="card">
+                    <p class="card-title">Risk: Funding environment deteriorates</p>
+                    <p class="card-body">Mitigation: Prove unit economics (path to profitability); strategic investors interested; acquisition interest likely</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 17: SERIES A READINESS -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Path to Series A (18 Months)</h2>
+                <p class="body-text">Clear metrics to achieve Series A at $20M+ pre-money:</p>
+
+                <div class="card" style="margin-top: 30px; margin-bottom: 20px;">
+                    <p class="card-title">Months 1-6: Foundation</p>
+                    <p class="card-body">Rez leads sales; achieve 1+ pilot LOI; product roadmap validated; team cohesion proven</p>
+                </div>
+
+                <div class="card" style="margin-bottom: 20px;">
+                    <p class="card-title">Months 6-12: Proof</p>
+                    <p class="card-body">3-5 pilot customers paying; $50-75K MRR achieved; unit economics positive; VP Sales hired</p>
+                </div>
+
+                <div class="card" style="margin-bottom: 20px;">
+                    <p class="card-title">Months 12-15: Validation</p>
+                    <p class="card-body">80%+ retention proven; competitor benchmarking shows our advantage; Series A narrative clear</p>
+                </div>
+
+                <div class="card">
+                    <p class="card-title">Months 15-18: Ready</p>
+                    <p class="card-body">$100-200K MRR; 5-10 customers; team proven (Rez + Carmen + VP Sales + VP Product); Series A closes at $20M+ pre-money</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 18: ASK -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>The Ask</h2>
+                <div style="text-align: center; margin-top: 80px;">
+                    <p class="stat">$1.3M-$1.5M</p>
+                    <p class="stat-label">Seed Round</p>
+
+                    <p class="body-text" style="margin-top: 60px;">
+                        At <span class="accent-text">$5M-$6M pre-money</span><br/>
+                        Including <span class="accent-text">5% patent equity</span> for investor pool<br/>
+                        Runway: <span class="accent-text">18-24 months</span> to Series A
+                    </p>
+
+                    <p class="body-text" style="margin-top: 60px; font-size: 18px; color: #a5b4fc;">
+                        We're building the hiring assessment infrastructure<br/>
+                        for a compliance-first world.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SLIDE 19: CLOSING -->
+        <div class="slide">
+            <div class="slide-content" style="text-align: center;">
+                <h2 style="font-size: 56px; margin-bottom: 60px;">Let's Build a $500M+ Company</h2>
+
+                <div style="margin: 80px 0;">
+                    <p class="body-text" style="font-size: 24px; color: #14b8a6;">
+                        We solve a $15-50K per mis-hire problem<br/>
+                        when regulatory compliance creates budget<br/>
+                        with a defensible moat competitors can't bypass
+                    </p>
+                </div>
+
+                <p class="body-text" style="margin-top: 80px; font-size: 18px;">
+                    <strong>Rez</strong> (CEO) • <strong>Carmen</strong> (CTO)<br/>
+                    <strong>api.truematch.digital</strong>
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 20: APPENDIX - MARKET DATA -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>Market Data & Sources</h2>
+                <p class="body-text">Research validated against 2024-2025 public sources:</p>
+
+                <ul class="feature-list">
+                    <li><strong>$15-50K per mis-hire cost:</strong> Talent Board research (published)</li>
+                    <li><strong>$8.5B-$12B TAM:</strong> Gartner, LinkedIn HR data, industry reports</li>
+                    <li><strong>15-20% CAGR:</strong> Industry analysis, market trend data</li>
+                    <li><strong>40% missed candidates:</strong> ATS limitation research</li>
+                    <li><strong>Alex raised $20M Series A:</strong> TechCrunch, Peak XV portfolio data (2024-2025)</li>
+                    <li><strong>Eightfold $2.1B valuation:</strong> Public valuation data ($96.6M ARR reported)</li>
+                    <li><strong>EU AI Act enforcement 2025-2026:</strong> Official EU documentation</li>
+                    <li><strong>NYC Local Law 144 effective July 2023:</strong> NYC Department of Consumer Protection</li>
+                </ul>
+
+                <p class="body-text" style="margin-top: 40px; font-size: 14px; color: #a5b4fc;">
+                    All figures are conservative estimates based on publicly available data.
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 21: APPENDIX - COMPLIANCE GATES DETAIL -->
+        <div class="slide">
+            <div class="slide-content">
+                <h2>How Compliance Gates Work Together</h2>
+                <p class="body-text">Real example: Candidate claims "Lead engineer at Amazon for 15 years"</p>
+
+                <div style="margin-top: 40px; background: rgba(20, 184, 166, 0.1); border-left: 4px solid #14b8a6; padding: 30px; border-radius: 8px;">
+                    <p style="font-size: 18px; color: #e0e7ff; line-height: 1.8;">
+                        <strong>Gate 1 (Coherence):</strong> LinkedIn shows 3 years at Amazon (not 15) → flag<br/><br/>
+                        <strong>Gate 2 (Temporal):</strong> Started at Amazon age 22, can't have 15 years → flag<br/><br/>
+                        <strong>Gate 3 (Lipschitz):</strong> Claim high confidence, but GitHub shows junior-level work → flag<br/><br/>
+                        <strong>Gate 4 (Evidence):</strong> DOI papers don't match claimed expertise → flag<br/><br/>
+                        <strong>Gate 5 (Logic):</strong> All evidence contradicts resume → inferences marked as such<br/><br/>
+                        <strong>Gate 6 (Orchestrator):</strong> 5 flags = verdict blocked. Assessment cannot proceed.
+                    </p>
+                </div>
+
+                <p class="body-text" style="margin-top: 40px; color: #14b8a6;">
+                    <strong>Result:</strong> Candidate either corrects resume or doesn't pass assessment. No guessing.
+                </p>
+            </div>
+        </div>
+
+        <!-- SLIDE 22: CONTACT -->
+        <div class="slide">
+            <div class="slide-content" style="text-align: center;">
+                <h2>Get in Touch</h2>
+
+                <div style="margin-top: 100px; margin-bottom: 100px;">
+                    <p class="body-text" style="font-size: 24px; margin-bottom: 40px;">
+                        <strong>Website:</strong> api.truematch.digital
+                    </p>
+                    <p class="body-text" style="font-size: 24px;">
+                        <strong>Demo:</strong> Live evidence engine + compliance gates
+                    </p>
+                </div>
+
+                <p class="body-text" style="font-size: 20px; color: #a5b4fc;">
+                    Questions about compliance, technology, market, or team?<br/>
+                    Let's talk.
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="previousSlide()">← Previous</button>
+        <button class="btn" onclick="nextSlide()">Next →</button>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+
+        function showSlide(n) {
+            slides[currentSlide].classList.remove('active');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].classList.add('active');
+            document.getElementById('current').textContent = currentSlide + 1;
+        }
+
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+
+        function previousSlide() {
+            showSlide(currentSlide - 1);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
+        });
+    </script>
+</body>
+</html>
