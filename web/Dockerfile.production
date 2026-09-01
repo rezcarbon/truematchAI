@@ -1,0 +1,47 @@
+# Production-optimized Dockerfile for TrueMatch Admin Dashboard
+# Multi-stage build for smaller final image
+
+# Stage 1: Builder
+FROM node:20-slim as builder
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install --legacy-peer-deps
+
+# Copy source code
+COPY . .
+
+# Build Next.js application
+RUN npm run build
+
+# Stage 2: Runtime
+FROM node:20-slim
+
+WORKDIR /app
+
+# Install only production dependencies
+COPY package*.json ./
+RUN npm install --legacy-peer-deps --production
+
+# Copy built application from builder
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+COPY --from=builder /app/node_modules ./node_modules
+
+# Create non-root user for security
+RUN useradd -m -u 1000 nextjs && chown -R nextjs:nextjs /app
+USER nextjs
+
+# Expose port
+EXPOSE 3000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:3000', (r) => {if (r.statusCode !== 200) throw new Error(r.statusCode)})"
+
+# Start Next.js in production mode
+CMD ["npm", "run", "start"]

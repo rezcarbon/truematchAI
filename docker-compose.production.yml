@@ -1,0 +1,68 @@
+version: '3.9'
+
+services:
+  admin-dashboard:
+    # Use your Docker registry URL
+    image: truematch/admin-dashboard:latest
+    container_name: truematch-admin-dashboard
+
+    # Restart policy for production
+    restart: always
+
+    # Network configuration
+    networks:
+      - truematch-network
+
+    # Port mapping
+    ports:
+      - "3000:3000"
+
+    # Environment variables from .env.production
+    env_file:
+      - web/.env.production
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 40s
+
+    # Logging configuration
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    # Read-only filesystem where possible
+    read_only: false
+
+    # Environment for Node.js
+    environment:
+      - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
+
+networks:
+  truematch-network:
+    driver: bridge
+
+# Volumes (if needed for persistent data)
+volumes:
+  admin-logs:
+    driver: local

@@ -6,15 +6,15 @@ import { useState } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
+import { AlertCircle, Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
 import { adminApi } from '@/lib/api-admin';
 
 export default function SettingsPage() {
-  const { addToast } = useToast();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -31,54 +31,40 @@ export default function SettingsPage() {
 
   const handleChangePassword = async () => {
     setError(null);
+    setSuccess(false);
 
     // Validation
     if (!formData.current_password) {
       setError('Current password is required');
-      addToast('Current password is required', 'warning');
       return;
     }
     if (!formData.new_password || formData.new_password.length < 8) {
       setError('New password must be at least 8 characters');
-      addToast('New password must be at least 8 characters', 'warning');
       return;
     }
     if (formData.new_password !== formData.confirm_password) {
       setError('Passwords do not match');
-      addToast('Passwords do not match', 'error');
       return;
     }
     if (formData.current_password === formData.new_password) {
       setError('New password must be different from current password');
-      addToast('New password must be different from current password', 'warning');
       return;
     }
 
     setLoading(true);
 
     try {
-      const response = await fetch('/api/proxy/auth/password', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          current_password: formData.current_password,
-          new_password: formData.new_password,
-        }),
+      await adminApi.changePassword({
+        current_password: formData.current_password,
+        new_password: formData.new_password,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(
-          errorData.detail || 'Failed to change password'
-        );
-      }
-
-      addToast('Password changed successfully! ', 'success');
+      setSuccess(true);
       setFormData({ current_password: '', new_password: '', confirm_password: '' });
+      setTimeout(() => setSuccess(false), 3000);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'An error occurred';
       setError(message);
-      addToast(message, 'error');
     } finally {
       setLoading(false);
     }
@@ -192,6 +178,13 @@ export default function SettingsPage() {
               <div className="flex items-start gap-3 rounded-lg bg-red-50/60 border border-red-200/60 p-4">
                 <AlertCircle className="h-4 w-4 text-red-600 mt-0.5 flex-shrink-0" />
                 <p className="text-sm text-red-600">{error}</p>
+              </div>
+            )}
+
+            {success && (
+              <div className="flex items-start gap-3 rounded-lg bg-green-50/60 border border-green-200/60 p-4">
+                <CheckCircle2 className="h-4 w-4 text-green-600 mt-0.5 flex-shrink-0" />
+                <p className="text-sm text-green-600">Password changed successfully!</p>
               </div>
             )}
 
