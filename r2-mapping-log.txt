@@ -1,0 +1,18 @@
+🔍 Scanning R2 bucket for all directories...
+
+📡 Connecting to R2 bucket...
+
+📄 Fetching page 1...
+(node:32957) NOTE: The AWS SDK for JavaScript (v2) has reached end-of-support.
+It will no longer receive updates or releases.
+
+Please migrate your code to use AWS SDK for JavaScript (v3).
+For more information, check the blog post at https://a.co/cUPnyil
+(Use `node --trace-warnings ...` to show where the warning was created)
+❌ Error scanning R2 bucket:
+Inaccessible host: `6180cb04149e6f50799375c0228962a.r2.cloudflarestorage.com' at port `undefined'. This service may not be available in the `us-east-1' region.
+
+💡 Connection error - check:
+   • R2 credentials are correct
+   • Network/firewall isn't blocking R2
+   • Credentials have proper permissions
