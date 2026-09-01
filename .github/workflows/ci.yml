@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: Backend (lint + eval + tests)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: truematch
+          POSTGRES_PASSWORD: password
+          POSTGRES_DB: truematch
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U truematch"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      # CI runs with encryption + governance configured so the full paths exercise.
+      LLM_FORCE_MOCK: "true"
+      DATABASE_URL: postgresql+asyncpg://truematch:password@127.0.0.1:5432/truematch
+      # The pytest fixtures create per-test databases via these TEST_DB_* vars
+      # (conftest does not read DATABASE_URL); point them at the postgres service
+      # so they don't fall back to the runner's local user (auth failure).
+      TEST_DB_HOST: "127.0.0.1"
+      TEST_DB_PORT: "5432"
+      TEST_DB_USER: truematch
+      TEST_DB_PASSWORD: password
+      REDIS_URL: redis://127.0.0.1:6379/0
+      ENCRYPTION_KEY: "MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE="
+      # Startup config-validation rejects an unset/default JWT secret, which
+      # erroring out every test that boots the app. A CI-only throwaway value.
+      JWT_SECRET: "ci-test-only-jwt-secret-not-used-in-production-0123456789abcdef"
+      GOVERNANCE_COHERENCE_THRESHOLD: "0.7"
+      GOVERNANCE_CONSISTENCY_BOUND: "0.25"
+      GOVERNANCE_FIDELITY_THRESHOLD: "0.9"
+      GOVERNANCE_COUNTER_REC_DELTA: "25"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: Lint (ruff)
+        run: ruff check app tests
+      - name: Migrations build a clean schema (alembic upgrade + drift check)
+        run: |
+          alembic upgrade head
+          alembic check
+      - name: Scoring eval harness (offline regression gate)
+        run: python -m tests.eval.test_scoring_eval
+      - name: Tests (pytest)
+        run: pytest -q
+
+  web:
+    name: Web (lint + typecheck + build)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install
+        run: npm ci || npm install
+      - name: Lint (eslint / next lint)
+        run: npm run lint
+      - name: Build
+        run: npm run build
+
+  ios:
+    name: iOS (build)
+    # macos-15 ships Xcode 16+, required to read the project xcodegen emits
+    # (objectVersion 77). macos-14 / Xcode 15.4 fails with "future project
+    # format (77)" before compiling.
+    runs-on: macos-15
+    defaults:
+      run:
+        working-directory: ios
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select latest Xcode
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode*.app | sort -V | tail -1)"
+      - name: Install xcodegen
+        run: brew install xcodegen
+      - name: Generate project
+        run: xcodegen generate
+      - name: Build (simulator, unsigned)
+        # No `| tail` here: piping masked xcodebuild's exit code (the step took
+        # the pipe's status, always 0), so build failures passed as green. Run
+        # xcodebuild directly so a compile error actually fails the check.
+        run: |
+          xcodebuild -project TrueMatch.xcodeproj -scheme TrueMatch \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            build CODE_SIGNING_ALLOWED=NO

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f9fafb;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: 700;
+        }
+        .content {
+            padding: 40px;
+        }
+        .content p {
+            margin: 0 0 16px 0;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        .content strong {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .details-box {
+            background-color: #f3f4f6;
+            border-left: 4px solid #2563eb;
+            padding: 20px;
+            margin: 24px 0;
+            border-radius: 4px;
+        }
+        .details-box h3 {
+            margin: 0 0 12px 0;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            font-size: 15px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        .detail-item:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 500;
+            color: #6b7280;
+        }
+        .detail-value {
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .button-container {
+            text-align: center;
+            margin: 32px 0;
+        }
+        .button {
+            display: inline-block;
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            padding: 14px 40px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+        }
+        .footer {
+            background-color: #f9fafb;
+            padding: 20px 40px;
+            text-align: center;
+            border-top: 1px solid #e5e7eb;
+            font-size: 14px;
+            color: #6b7280;
+        }
+        .footer p {
+            margin: 8px 0;
+        }
+        .footer a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Your Assessment Has Started</h1>
+        </div>
+
+        <div class="content">
+            <p>Hi <strong>{{ candidate_name }}</strong>,</p>
+
+            <p>Great news! Your assessment for the <strong>{{ position_title }}</strong> position at <strong>{{ company_name }}</strong> has been launched and is ready for you to begin.</p>
+
+            <div class="details-box">
+                <h3>Assessment Details</h3>
+                <div class="detail-item">
+                    <span class="detail-label">Position</span>
+                    <span class="detail-value">{{ position_title }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Company</span>
+                    <span class="detail-value">{{ company_name }}</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Assessment Type</span>
+                    <span class="detail-value">Capability-based Evaluation</span>
+                </div>
+                <div class="detail-item">
+                    <span class="detail-label">Expected Duration</span>
+                    <span class="detail-value">45-60 minutes</span>
+                </div>
+            </div>
+
+            <p>Please find a quiet location where you can focus without interruptions. The assessment is designed to evaluate your capabilities in a fair and comprehensive way.</p>
+
+            <div class="button-container">
+                <a href="{{ assessment_url }}" class="button">Start Assessment</a>
+            </div>
+
+            <p>If you have any questions or technical issues before starting, please reach out to <strong>{{ recruiter_name }}</strong> at <a href="mailto:{{ recruiter_email }}">{{ recruiter_email }}</a>.</p>
+
+            <p>Good luck with your assessment! We look forward to reviewing your results.</p>
+        </div>
+
+        <div class="footer">
+            <p>&copy; {{ current_year }} TrueMatch. All rights reserved.</p>
+            <p>
+                <a href="https://truematch.ai">truematch.ai</a> |
+                <a href="https://truematch.ai/privacy">Privacy Policy</a> |
+                <a href="https://truematch.ai/terms">Terms of Service</a>
+            </p>
+        </div>
+    </div>
+</body>
+</html>

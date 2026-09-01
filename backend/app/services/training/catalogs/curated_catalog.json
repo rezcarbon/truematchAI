@@ -1,0 +1,78 @@
+{
+  "_comment": "Curated curriculum map. To extend: add an entry with `keywords` (lower-case substrings matched against a gap capability) and one or more `courses`. No code change required. `provider` is free-text; set realistic partners.",
+  "entries": [
+    {
+      "keywords": ["leadership", "people management", "managing a team", "team lead", "line management"],
+      "courses": [
+        {"title": "Leading Teams & People Management", "provider": "NTUC LearningHub", "format": "hybrid", "duration_weeks": 4, "level": "intermediate", "relevance": "Builds demonstrated people-leadership scope for higher-complexity roles."},
+        {"title": "First-Time Manager Essentials", "provider": "SkillsFuture", "format": "online", "duration_weeks": 6, "level": "foundational", "relevance": "Covers the management fundamentals a step-up role expects."}
+      ]
+    },
+    {
+      "keywords": ["stakeholder", "executive communication", "c-suite", "influencing", "client-facing"],
+      "courses": [
+        {"title": "Executive Stakeholder Engagement", "provider": "NTUC LearningHub", "format": "in-person", "duration_weeks": 2, "level": "intermediate", "relevance": "Develops senior-stakeholder and C-suite communication evidence."}
+      ]
+    },
+    {
+      "keywords": ["consulting", "advisory", "transformation programme", "engagement management"],
+      "courses": [
+        {"title": "Management Consulting Toolkit", "provider": "Coursera", "format": "online", "duration_weeks": 8, "level": "intermediate", "relevance": "Structured problem-solving and engagement skills for advisory roles."}
+      ]
+    },
+    {
+      "keywords": ["kubernetes", "container orchestration", "cloud native", "devops"],
+      "courses": [
+        {"title": "Kubernetes for Practitioners", "provider": "SkillsFuture", "format": "online", "duration_weeks": 6, "level": "intermediate", "relevance": "Hands-on orchestration skills mapping to cloud-native role requirements."}
+      ]
+    },
+    {
+      "keywords": ["cloud architecture", "aws", "azure", "gcp", "solution architecture"],
+      "courses": [
+        {"title": "Cloud Solution Architecture", "provider": "Coursera", "format": "online", "duration_weeks": 10, "level": "advanced", "relevance": "Architecture-level cloud design for senior technical roles."}
+      ]
+    },
+    {
+      "keywords": ["machine learning", "data science", "ml", "ai engineering", "mlops"],
+      "courses": [
+        {"title": "Applied Machine Learning", "provider": "Coursera", "format": "online", "duration_weeks": 12, "level": "intermediate", "relevance": "Core ML competence for AI-augmented role transitions."}
+      ]
+    },
+    {
+      "keywords": ["ai governance", "responsible ai", "model risk", "ai ethics"],
+      "courses": [
+        {"title": "AI Governance & Responsible AI", "provider": "NTUC LearningHub", "format": "hybrid", "duration_weeks": 3, "level": "intermediate", "relevance": "Governance literacy increasingly required in senior AI roles."}
+      ]
+    },
+    {
+      "keywords": ["enterprise architecture", "togaf", "ea framework"],
+      "courses": [
+        {"title": "TOGAF Enterprise Architecture Foundations", "provider": "SkillsFuture", "format": "online", "duration_weeks": 8, "level": "advanced", "relevance": "Formal EA credential frequently gating architecture-director roles."}
+      ]
+    },
+    {
+      "keywords": ["project management", "delivery", "pmp", "agile", "scrum"],
+      "courses": [
+        {"title": "Agile Delivery & Project Management", "provider": "SkillsFuture", "format": "online", "duration_weeks": 6, "level": "foundational", "relevance": "Demonstrable delivery-ownership for step-up roles."}
+      ]
+    },
+    {
+      "keywords": ["product management", "product strategy", "roadmap"],
+      "courses": [
+        {"title": "Product Management Fundamentals", "provider": "Coursera", "format": "online", "duration_weeks": 8, "level": "foundational", "relevance": "Product discipline for transitions into product-facing roles."}
+      ]
+    },
+    {
+      "keywords": ["data analysis", "analytics", "sql", "visualization"],
+      "courses": [
+        {"title": "Data Analytics for Decision-Making", "provider": "NTUC LearningHub", "format": "online", "duration_weeks": 6, "level": "foundational", "relevance": "Analytics competence supporting data-informed roles."}
+      ]
+    },
+    {
+      "keywords": ["cybersecurity", "security", "infosec"],
+      "courses": [
+        {"title": "Cybersecurity Essentials", "provider": "SkillsFuture", "format": "online", "duration_weeks": 8, "level": "foundational", "relevance": "Security fundamentals for roles with a security mandate."}
+      ]
+    }
+  ]
+}

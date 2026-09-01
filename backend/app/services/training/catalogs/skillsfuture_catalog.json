@@ -1,0 +1,41 @@
+{
+  "_comment": "SkillsFuture Singapore catalog (illustrative). Same data-driven shape as the curated catalog: edit `keywords` and `courses` to extend. Demonstrates a SECOND provider contributing to (and de-duplicating against) the merged recommendations.",
+  "entries": [
+    {
+      "keywords": ["leadership", "people management", "team lead"],
+      "courses": [
+        {"title": "WSQ Leadership & People Management", "provider": "SkillsFuture SG", "url": "https://www.skillsfuture.gov.sg/", "format": "hybrid", "duration_weeks": 5, "level": "intermediate", "relevance": "WSQ-aligned leadership credential recognised by SG employers."}
+      ]
+    },
+    {
+      "keywords": ["ai governance", "responsible ai", "ai ethics"],
+      "courses": [
+        {"title": "WSQ Implementing AI Governance", "provider": "SkillsFuture SG", "url": "https://www.skillsfuture.gov.sg/", "format": "online", "duration_weeks": 4, "level": "intermediate", "relevance": "National-framework AI governance training for senior AI roles."}
+      ]
+    },
+    {
+      "keywords": ["machine learning", "data science", "ai engineering", "mlops"],
+      "courses": [
+        {"title": "WSQ Applied AI & Machine Learning", "provider": "SkillsFuture SG", "url": "https://www.skillsfuture.gov.sg/", "format": "hybrid", "duration_weeks": 12, "level": "advanced", "relevance": "Subsidised, work-relevant ML pathway for role transitions."}
+      ]
+    },
+    {
+      "keywords": ["cloud architecture", "aws", "azure", "gcp", "kubernetes", "container orchestration"],
+      "courses": [
+        {"title": "WSQ Cloud Infrastructure Engineering", "provider": "SkillsFuture SG", "url": "https://www.skillsfuture.gov.sg/", "format": "online", "duration_weeks": 8, "level": "intermediate", "relevance": "Cloud and orchestration skills aligned to in-demand SG roles."}
+      ]
+    },
+    {
+      "keywords": ["data analysis", "analytics", "sql"],
+      "courses": [
+        {"title": "WSQ Data Analytics", "provider": "SkillsFuture SG", "url": "https://www.skillsfuture.gov.sg/", "format": "online", "duration_weeks": 6, "level": "foundational", "relevance": "Foundational analytics for data-informed roles."}
+      ]
+    },
+    {
+      "keywords": ["product management", "product strategy"],
+      "courses": [
+        {"title": "WSQ Product Management", "provider": "SkillsFuture SG", "url": "https://www.skillsfuture.gov.sg/", "format": "hybrid", "duration_weeks": 7, "level": "intermediate", "relevance": "Product discipline for moves into product roles."}
+      ]
+    }
+  ]
+}

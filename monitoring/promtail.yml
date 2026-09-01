@@ -1,0 +1,69 @@
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+positions:
+  filename: /tmp/positions.yaml
+
+clients:
+  - url: http://loki:3100/loki/api/v1/push
+    tenant_id: truematch
+
+scrape_configs:
+  # Docker logs
+  - job_name: docker
+    docker:
+      host: unix:///var/run/docker.sock
+      use_hostname: true
+    relabel_configs:
+      - source_labels: ['__meta_docker_container_name']
+        target_label: 'container'
+      - source_labels: ['__meta_docker_container_labels_com_docker_compose_service']
+        target_label: 'service'
+      - source_labels: ['__meta_docker_container_labels_com_docker_compose_project']
+        target_label: 'project'
+
+  # Application logs from files
+  - job_name: truematch_app_logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: truematch-app
+          __path__: /var/log/truematch/*.log
+
+  # System logs
+  - job_name: syslog
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: syslog
+          __path__: /var/log/syslog
+
+  # PostgreSQL logs
+  - job_name: postgres_logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: postgres
+          __path__: /var/log/postgresql/*.log
+
+  # Redis logs
+  - job_name: redis_logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: redis
+          __path__: /var/log/redis/*.log
+
+  # Celery logs
+  - job_name: celery_logs
+    static_configs:
+      - targets:
+          - localhost
+        labels:
+          job: celery
+          __path__: /var/log/celery/*.log

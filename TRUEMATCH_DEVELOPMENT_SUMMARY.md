@@ -33,14 +33,14 @@ ssh -i ~/.ssh/ec2-key.pem ec2-user@54.157.212.33
 ```
 
 ### Anthropic Claude API
-**API Key:** `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`  
+**API Key:** `[SECURE: Set in environment variables]`  
 **Service:** Claude 3.5 Sonnet for AI-powered candidate analysis  
 **Configured in:** Backend environment variables (`ANTHROPIC_API_KEY`)
 
 ### GitHub Repository
 **Repository:** https://github.com/rezcarbon/truematchAI.git  
 **Branch:** main  
-**GitHub PAT (for HTTPS push):** `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`
+**GitHub PAT (for HTTPS push):** `[SECURE: Set in local git config or .env]`
 
 ### Database Credentials
 **Database:** PostgreSQL 16  

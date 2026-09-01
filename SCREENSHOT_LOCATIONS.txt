@@ -1,0 +1,119 @@
+================================================================================
+TrueMatch Screenshots - LOCATION CONFIRMATION
+================================================================================
+
+INTENDED LOCATION:
+  /Users/modvader/Documents/codebase/truematch/screenshots/
+
+REQUIRED FILES (to be saved):
+  ✓ 01_login_page.png
+  ✓ 02_admin_dashboard.png
+  ✓ 03_recruiter_dashboard.png
+  ✓ 04_candidate_dashboard.png
+  ✓ 05_chat_interface.png
+  ✓ 06_assessment_results.png
+  ✓ 07_pipeline_positions.png
+  ✓ 08_jd_simulation.png
+
+================================================================================
+STATUS: Screenshots captured by Claude browser automation
+================================================================================
+
+SCREENSHOTS CAPTURED (8 total):
+1. Login Page (ss_1690dtdoz)
+   - URL: http://localhost:3001/login
+   - Resolution: 1491 x 812 pixels
+   - Status: ✅ Captured
+
+2. Admin Dashboard (ss_52387k3rm)
+   - URL: http://localhost:3001/admin/dashboard
+   - Resolution: 1491 x 812 pixels
+   - Status: ✅ Captured
+
+3. Recruiter Dashboard (ss_6789o0236)
+   - URL: http://localhost:3001/recruiter/dashboard
+   - Resolution: 1491 x 812 pixels
+   - Status: ✅ Captured
+
+4. Candidate Dashboard (ss_6672wor76)
+   - URL: http://localhost:3001/candidate/dashboard
+   - Resolution: 1491 x 812 pixels
+   - Status: ✅ Captured
+
+5. Chat Interface (ss_6215yz93r)
+   - URL: http://localhost:3001/chat
+   - Resolution: 1491 x 812 pixels
+   - Status: ✅ Captured
+
+6. Assessment Results (ss_6859s6w0f)
+   - URL: http://localhost:3001/recruiter/candidates
+   - Resolution: 1491 x 812 pixels
+   - Status: ✅ Captured
+
+7. Pipeline Positions (ss_7545hlgnc)
+   - URL: http://localhost:3001/recruiter/positions
+   - Resolution: 1491 x 812 pixels
+   - Status: ✅ Captured
+
+8. JD Simulation (ss_5100esqek)
+   - URL: http://localhost:3001/recruiter/jd-simulation
+   - Resolution: 1491 x 812 pixels
+   - Status: ✅ Captured
+
+================================================================================
+NOTE: IMPORTANT - Screenshots displayed in chat but need to be saved
+================================================================================
+
+The screenshots were captured and displayed in the browser but need to be
+explicitly saved to the codebase folder as image files.
+
+REQUIRED ACTION:
+You need to manually save each screenshot to:
+  /Users/modvader/Documents/codebase/truematch/screenshots/
+
+OR
+
+Claude will need to use a file saving method to extract the captured images
+and save them to disk with proper filenames.
+
+Files needed in screenshots folder:
+  01_login_page.png
+  02_admin_dashboard.png
+  03_recruiter_dashboard.png
+  04_candidate_dashboard.png
+  05_chat_interface.png
+  06_assessment_results.png
+  07_pipeline_positions.png
+  08_jd_simulation.png
+
+================================================================================
+FOLDER STATUS:
+================================================================================
+
+Current folder created: /Users/modvader/Documents/codebase/truematch/screenshots/
+Status: Empty (awaiting screenshot files)
+
+Supporting files created:
+  ✓ SCREENSHOT_CAPTURE_GUIDE.md
+  ✓ SCREENSHOTS_CAPTURED.md
+  ✓ SCREENSHOT_LOCATIONS.txt (this file)
+  ✓ save_screenshots.py
+
+================================================================================
+NEXT STEPS:
+================================================================================
+
+Option A: Manual Save (Fastest)
+1. Each screenshot shown in chat can be right-click → "Save Image As"
+2. Save to: /Users/modvader/Documents/codebase/truematch/screenshots/
+3. Name as: 01_login_page.png, 02_admin_dashboard.png, etc.
+
+Option B: Automated Save (Recommended)
+1. Claude re-captures screenshots using Selenium
+2. Saves directly to codebase folder with proper filenames
+3. All 8 files saved automatically
+
+Current Status: Option A requires manual download
+                Option B requires Python/Selenium execution
+
+================================================================================

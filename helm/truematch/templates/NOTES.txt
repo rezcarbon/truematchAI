@@ -1,0 +1,26 @@
+1. Get the API URL:
+{{- if .Values.ingress.enabled }}
+  https://{{ (index .Values.ingress.hosts 0).host }}
+{{- else }}
+  kubectl port-forward -n truematch svc/api 8080:80
+  http://localhost:8080
+{{- end }}
+
+2. Watch the deployment:
+  kubectl rollout status deployment/api -n truematch
+
+3. View logs:
+  kubectl logs -n truematch -l app=api -f
+
+4. Port forward for database:
+  kubectl port-forward -n truematch svc/postgres 5432:5432
+
+5. Access Prometheus:
+  kubectl port-forward -n truematch svc/prometheus 9090:9090
+  http://localhost:9090
+
+6. View current values:
+  helm get values truematch -n truematch
+
+7. Upgrade the release:
+  helm upgrade truematch ./helm/truematch -f helm/truematch/values-{{ .Values.global.environment }}.yaml -n truematch

@@ -1,0 +1,59 @@
+# AWS Production Stack: Uses RDS PostgreSQL + ElastiCache Redis
+# Requires .env with AWS_DATABASE_URL and AWS_REDIS_URL
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: truematch
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: truematch
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U truematch"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build: .
+    command: alembic upgrade head
+    env_file: .env
+
+  api:
+    build: .
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    env_file: .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+
+  worker:
+    build: .
+    # threads pool matches run-local.sh — correct for the blocking LLM/IO pipeline.
+    command: celery -A app.workers.celery_app.celery_app worker --pool=threads --concurrency=4 --loglevel=info
+    env_file: .env
+
+  # Celery Beat — REQUIRED for scheduled work (CV/JD/email ingestion polling,
+  # retention sweep, stale-candidate alerts, daily digest). Without it those
+  # autonomous/proactive features never fire.
+  beat:
+    build: .
+    command: celery -A app.workers.celery_app.celery_app beat --loglevel=info
+    env_file: .env
+
+volumes:
+  postgres_data:

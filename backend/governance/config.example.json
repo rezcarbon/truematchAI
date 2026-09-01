@@ -1,0 +1,7 @@
+{
+  "_comment": "PLACEHOLDER configuration. Real threshold values are provisioned server-side via an encrypted/external source referenced by GOVERNANCE_CONFIG_PATH, or via GOVERNANCE_<KEY> environment variables injected from a secrets manager. NEVER commit real values. With placeholder values present, governance gates are non-operational and the pipeline marks results as ungoverned.",
+  "COHERENCE_THRESHOLD": "<encrypted-server-side>",
+  "CONSISTENCY_BOUND": "<encrypted-server-side>",
+  "FIDELITY_THRESHOLD": "<encrypted-server-side>",
+  "COUNTER_REC_DELTA": "<encrypted-server-side>"
+}

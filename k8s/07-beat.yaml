@@ -1,0 +1,120 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: beat
+  namespace: truematch
+  labels:
+    app: beat
+    component: celery
+spec:
+  serviceName: beat
+  replicas: 1  # Beat must run on exactly one instance
+  selector:
+    matchLabels:
+      app: beat
+  template:
+    metadata:
+      labels:
+        app: beat
+        component: celery
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+    spec:
+      serviceAccountName: truematch
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      terminationGracePeriodSeconds: 60
+      containers:
+      - name: beat
+        image: truematch-api:latest
+        imagePullPolicy: IfNotPresent
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          capabilities:
+            drop:
+              - ALL
+        command:
+          - celery
+          - -A
+          - app.workers.celery_app
+          - beat
+          - -l
+          - info
+        envFrom:
+        - configMapRef:
+            name: truematch-config
+        - secretRef:
+            name: truematch-secrets
+        env:
+        - name: DATABASE_URL
+          value: "postgresql+asyncpg://$(DATABASE_USER):$(DATABASE_PASSWORD)@postgres:5432/$(DATABASE_NAME)"
+        - name: CELERY_BROKER_URL
+          value: "redis://redis:6379/1"
+        - name: CELERY_RESULT_BACKEND
+          value: "redis://redis:6379/2"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        - name: PYTHONDONTWRITEBYTECODE
+          value: "1"
+        volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          exec:
+            command:
+            - celery
+            - -A
+            - app.workers.celery_app
+            - inspect
+            - active
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: tmp
+        emptyDir: {}
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beat
+  namespace: truematch
+  labels:
+    app: beat
+    component: celery
+spec:
+  type: ClusterIP
+  clusterIP: None
+  selector:
+    app: beat
+  ports:
+  - port: 6379
+    targetPort: 6379
+    protocol: TCP
+    name: celery
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: beat-pdb
+  namespace: truematch
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app: beat

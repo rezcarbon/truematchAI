@@ -1,0 +1,289 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-backup-script
+  namespace: truematch
+data:
+  backup.sh: |
+    #!/bin/bash
+    set -e
+
+    # Configuration from environment variables
+    DB_HOST="${DATABASE_HOST:-postgres}"
+    DB_PORT="${DATABASE_PORT:-5432}"
+    DB_NAME="${DATABASE_NAME:-truematch}"
+    DB_USER="${DATABASE_USER:-truematch}"
+    S3_BUCKET="${BACKUP_S3_BUCKET}"
+    S3_REGION="${AWS_REGION:-us-east-1}"
+    BACKUP_RETENTION_DAYS="${BACKUP_RETENTION_DAYS:-30}"
+
+    if [ -z "$S3_BUCKET" ]; then
+      echo "ERROR: BACKUP_S3_BUCKET not set"
+      exit 1
+    fi
+
+    # Create backup filename with timestamp
+    TIMESTAMP=$(date -u +"%Y%m%d_%H%M%S")
+    BACKUP_FILE="postgres_backup_${TIMESTAMP}.sql.gz"
+    BACKUP_PATH="/tmp/${BACKUP_FILE}"
+
+    echo "Starting PostgreSQL backup to S3: ${BACKUP_FILE}"
+
+    # Perform full database dump
+    pg_dump \
+      -h "${DB_HOST}" \
+      -p "${DB_PORT}" \
+      -U "${DB_USER}" \
+      -d "${DB_NAME}" \
+      --format=plain \
+      --verbose \
+      --compress=9 \
+      --no-password \
+      -F c > "${BACKUP_PATH}"
+
+    if [ ! -f "${BACKUP_PATH}" ]; then
+      echo "ERROR: Backup file not created"
+      exit 1
+    fi
+
+    BACKUP_SIZE=$(du -h "${BACKUP_PATH}" | cut -f1)
+    echo "Backup created successfully: ${BACKUP_SIZE}"
+
+    # Upload to S3
+    echo "Uploading to S3: s3://${S3_BUCKET}/postgres-backups/${BACKUP_FILE}"
+    aws s3 cp "${BACKUP_PATH}" "s3://${S3_BUCKET}/postgres-backups/${BACKUP_FILE}" \
+      --region "${S3_REGION}" \
+      --sse AES256 \
+      --storage-class INTELLIGENT_TIERING \
+      --metadata "timestamp=${TIMESTAMP},database=${DB_NAME},host=${DB_HOST}"
+
+    # Verify upload
+    if aws s3 ls "s3://${S3_BUCKET}/postgres-backups/${BACKUP_FILE}" \
+       --region "${S3_REGION}" > /dev/null 2>&1; then
+      echo "✓ Backup successfully uploaded to S3"
+    else
+      echo "ERROR: S3 upload verification failed"
+      rm "${BACKUP_PATH}"
+      exit 1
+    fi
+
+    # Cleanup local backup
+    rm "${BACKUP_PATH}"
+
+    # Cleanup old backups (retention policy)
+    echo "Cleaning up backups older than ${BACKUP_RETENTION_DAYS} days"
+    aws s3 ls "s3://${S3_BUCKET}/postgres-backups/" \
+      --region "${S3_REGION}" | while read -r DATE TIME SIZE FILE; do
+      FILE_DATE=$(date -d "${DATE}" +%s)
+      CUTOFF_DATE=$(date -d "${BACKUP_RETENTION_DAYS} days ago" +%s)
+
+      if [ "${FILE_DATE}" -lt "${CUTOFF_DATE}" ]; then
+        echo "Deleting old backup: ${FILE}"
+        aws s3 rm "s3://${S3_BUCKET}/postgres-backups/${FILE}" \
+          --region "${S3_REGION}"
+      fi
+    done
+
+    echo "Backup job completed successfully"
+
+  restore.sh: |
+    #!/bin/bash
+    set -e
+
+    # Configuration from environment variables
+    DB_HOST="${DATABASE_HOST:-postgres}"
+    DB_PORT="${DATABASE_PORT:-5432}"
+    DB_NAME="${DATABASE_NAME:-truematch}"
+    DB_USER="${DATABASE_USER:-truematch}"
+    S3_BUCKET="${BACKUP_S3_BUCKET}"
+    S3_REGION="${AWS_REGION:-us-east-1}"
+    BACKUP_FILE="${1:-}"
+
+    if [ -z "$S3_BUCKET" ] || [ -z "$BACKUP_FILE" ]; then
+      echo "Usage: restore.sh <backup_filename>"
+      echo "Available backups:"
+      aws s3 ls "s3://${S3_BUCKET}/postgres-backups/" --region "${S3_REGION}"
+      exit 1
+    fi
+
+    BACKUP_PATH="/tmp/${BACKUP_FILE}"
+
+    echo "Downloading backup from S3: s3://${S3_BUCKET}/postgres-backups/${BACKUP_FILE}"
+    aws s3 cp "s3://${S3_BUCKET}/postgres-backups/${BACKUP_FILE}" "${BACKUP_PATH}" \
+      --region "${S3_REGION}"
+
+    echo "WARNING: This will restore the entire database and overwrite current data"
+    echo "Proceeding with restore..."
+
+    # Restore from backup
+    pg_restore \
+      -h "${DB_HOST}" \
+      -p "${DB_PORT}" \
+      -U "${DB_USER}" \
+      -d "${DB_NAME}" \
+      --no-password \
+      --verbose \
+      "${BACKUP_PATH}"
+
+    # Cleanup
+    rm "${BACKUP_PATH}"
+
+    echo "✓ Database restore completed successfully"
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup-daily
+  namespace: truematch
+  labels:
+    app: backup
+    component: postgres
+spec:
+  schedule: "2 2 * * *"  # 2:02 AM UTC daily (low-traffic window)
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: backup
+            component: postgres
+        spec:
+          serviceAccountName: truematch
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            fsGroup: 10001
+          restartPolicy: Never
+          containers:
+          - name: postgres-backup
+            image: postgres:17-alpine  # Includes pg_dump and utilities
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+            command:
+              - /bin/bash
+              - /scripts/backup.sh
+            envFrom:
+            - configMapRef:
+                name: truematch-config
+            - secretRef:
+                name: truematch-secrets
+            env:
+            - name: AWS_REGION
+              value: "us-east-1"  # Change to your AWS region
+            - name: BACKUP_S3_BUCKET
+              value: "truematch-backups"  # Change to your S3 bucket
+            - name: BACKUP_RETENTION_DAYS
+              value: "30"
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: truematch-secrets
+                  key: DATABASE_PASSWORD
+            volumeMounts:
+            - name: backup-script
+              mountPath: /scripts
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+          volumes:
+          - name: backup-script
+            configMap:
+              name: postgres-backup-script
+              defaultMode: 0755
+          - name: tmp
+            emptyDir: {}
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup-hourly
+  namespace: truematch
+  labels:
+    app: backup
+    component: postgres
+spec:
+  schedule: "0 * * * *"  # Every hour
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 2
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      template:
+        metadata:
+          labels:
+            app: backup
+            component: postgres
+        spec:
+          serviceAccountName: truematch
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            fsGroup: 10001
+          restartPolicy: Never
+          containers:
+          - name: postgres-backup
+            image: postgres:17-alpine
+            securityContext:
+              allowPrivilegeEscalation: false
+              readOnlyRootFilesystem: true
+              capabilities:
+                drop:
+                  - ALL
+            command:
+              - /bin/bash
+              - /scripts/backup.sh
+            envFrom:
+            - configMapRef:
+                name: truematch-config
+            - secretRef:
+                name: truematch-secrets
+            env:
+            - name: AWS_REGION
+              value: "us-east-1"
+            - name: BACKUP_S3_BUCKET
+              value: "truematch-backups"
+            - name: BACKUP_RETENTION_DAYS
+              value: "7"  # Shorter retention for hourly backups
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: truematch-secrets
+                  key: DATABASE_PASSWORD
+            volumeMounts:
+            - name: backup-script
+              mountPath: /scripts
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            resources:
+              requests:
+                memory: "512Mi"
+                cpu: "500m"
+              limits:
+                memory: "2Gi"
+                cpu: "1000m"
+          volumes:
+          - name: backup-script
+            configMap:
+              name: postgres-backup-script
+              defaultMode: 0755
+          - name: tmp
+            emptyDir: {}

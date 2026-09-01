@@ -1,0 +1,74 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: truematch
+  labels:
+    app: truematch
+    component: migration
+spec:
+  backoffLimit: 3
+  completions: 1
+  parallelism: 1
+  ttlSecondsAfterFinished: 300
+  template:
+    metadata:
+      labels:
+        app: truematch
+        component: migration
+    spec:
+      serviceAccountName: truematch
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        fsGroup: 10001
+      containers:
+      - name: db-migrate
+        image: truematch-api:latest
+        imagePullPolicy: IfNotPresent
+        command:
+          - alembic
+          - upgrade
+          - head
+        envFrom:
+        - configMapRef:
+            name: truematch-config
+        - secretRef:
+            name: truematch-secrets
+        env:
+        - name: DATABASE_URL
+          value: "postgresql+asyncpg://$(DATABASE_USER):$(DATABASE_PASSWORD)@postgres:5432/$(DATABASE_NAME)"
+        - name: PYTHONUNBUFFERED
+          value: "1"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        volumeMounts:
+        - name: alembic
+          mountPath: /app/alembic
+          readOnly: true
+      volumes:
+      - name: alembic
+        configMap:
+          name: alembic-config
+          optional: true
+      restartPolicy: Never
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: alembic-config
+  namespace: truematch
+  labels:
+    app: truematch
+    component: migration
+data:
+  # This is a placeholder. In production, mount the actual alembic directory from your image
+  alembic.ini: |
+    # Alembic configuration - this should be injected from your source
+    # Placeholder for documentation

@@ -1,0 +1,71 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+
+    // Core strict options (comprehensive)
+    "strict": true,
+    "noImplicitAny": true,
+    "noImplicitThis": true,
+    "strictNullChecks": true,
+    "strictFunctionTypes": true,
+    "strictBindCallApply": true,
+    "strictPropertyInitialization": true,
+    "alwaysStrict": true,
+
+    // Additional safety checks. Core `strict` (null checks, no-implicit-any,
+    // etc.) stays ON. The four opt-in extras below are intentionally OFF: they
+    // are not part of recommended `strict`, are notoriously noisy, and are
+    // better handled as lint warnings than as build-blocking type errors
+    // (unused symbols → eslint; index-signature/unchecked-index → defensive
+    // code where it actually matters).
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false,
+    "noPropertyAccessFromIndexSignature": false,
+
+    // Module resolution
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "allowJs": false,
+    "checkJs": false,
+
+    // JSX and output
+    "jsx": "preserve",
+    "noEmit": true,
+    "outDir": ".next",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+
+    // Compatibility
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "useDefineForClassFields": true,
+    "isolatedModules": true,
+
+    // Path mapping
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    },
+
+    // Next.js
+    "incremental": true,
+    "plugins": [{ "name": "next" }]
+  },
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "jest.config.ts",
+    "jest.setup.ts",
+    "**/__tests__/**",
+    "**/*.test.ts",
+    "**/*.test.tsx"
+  ]
+}
