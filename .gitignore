@@ -1,0 +1,41 @@
+# System files
+.DS_Store
+.localized
+Thumbs.db
+
+# Environment and config
+.env
+.env.local
+.env.*.local
+.wrangler/
+.claude/
+
+# Dependencies and build
+node_modules/
+package-lock.json
+dist/
+build/
+.next/
+
+# IDE and editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Large files (already documented elsewhere)
+*.pdf
+*.docx
+*.heic
+*.zip
+*.tar.gz
+
+# Temporary and cache
+.cache/
+tmp/
+temp/
