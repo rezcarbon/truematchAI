@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
-import { useToast } from '@/components/providers/ToastProvider';
+import { adminApi } from '@/lib/api-admin';
 
 interface CandidateSignal {
   candidateId: string;
@@ -33,7 +33,6 @@ interface SignalAnalytics {
 }
 
 export default function ThreeSignalAnalyticsPage() {
-  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<SignalAnalytics | null>(null);
   const [selectedSignal, setSelectedSignal] = useState<'keyword' | 'semantic' | 'capability'>('keyword');
@@ -45,80 +44,18 @@ export default function ThreeSignalAnalyticsPage() {
         setLoading(true);
         setError(null);
 
-        // Mock data - in a real app, fetch from API
-        const mockAnalytics: SignalAnalytics = {
-          candidates: [
-            {
-              candidateId: '1',
-              candidateName: 'Sarah Chen',
-              position: 'Senior Backend Engineer',
-              keywordScore: 85,
-              semanticScore: 90,
-              capabilityScore: 88,
-              overallScore: 88,
-              stage: 'applied',
-            },
-            {
-              candidateId: '2',
-              candidateName: 'Marcus Johnson',
-              position: 'Senior Backend Engineer',
-              keywordScore: 72,
-              semanticScore: 78,
-              capabilityScore: 81,
-              overallScore: 77,
-              stage: 'phone_screen',
-            },
-            {
-              candidateId: '3',
-              candidateName: 'Priya Patel',
-              position: 'Senior Backend Engineer',
-              keywordScore: 88,
-              semanticScore: 92,
-              capabilityScore: 94,
-              overallScore: 91,
-              stage: 'technical',
-            },
-            {
-              candidateId: '4',
-              candidateName: 'Alex Rivera',
-              position: 'Senior Backend Engineer',
-              keywordScore: 79,
-              semanticScore: 85,
-              capabilityScore: 87,
-              overallScore: 84,
-              stage: 'onsite',
-            },
-          ],
-          avgKeywordScore: 81,
-          avgSemanticScore: 86,
-          avgCapabilityScore: 87.5,
-          avgOverallScore: 85,
-          scoreDistribution: {
-            keyword: { '80-100': 2, '60-79': 2, '0-59': 0 },
-            semantic: { '80-100': 3, '60-79': 1, '0-59': 0 },
-            capability: { '80-100': 4, '60-79': 0, '0-59': 0 },
-          },
-          insights: [
-            ' Capability Assessment shows the strongest signal (87.5 avg), suggesting candidates have genuine skills',
-            ' Semantic matching (86 avg) is ahead of keyword matching (81 avg), indicating candidates understand concepts deeply',
-            ' Keyword-Capability gap: Sarah has 3pt spread - may need soft skills coaching on communication',
-            ' Top performers (Priya): All signals aligned (88+ across board) - highly confident hire',
-            ' Consider expanding semantic/capability criteria for sourcing - less keyword-dependent candidates available',
-          ],
-        };
-
-        setAnalytics(mockAnalytics);
+        const data = await adminApi.getThreeSignalAnalytics();
+        setAnalytics(data);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load analytics';
         setError(message);
-        addToast(message, 'error');
       } finally {
         setLoading(false);
       }
     };
 
     loadAnalytics();
-  }, [addToast]);
+  }, []);
 
   if (loading) {
     return (

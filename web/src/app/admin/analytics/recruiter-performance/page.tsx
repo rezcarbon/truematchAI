@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
-import { useToast } from '@/components/providers/ToastProvider';
+import { adminApi } from '@/lib/api-admin';
 
 interface RecruiterMetrics {
   recruiterId: string;
@@ -38,7 +38,6 @@ interface RecruiterAnalytics {
 }
 
 export default function RecruiterPerformancePage() {
-  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<RecruiterAnalytics | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -49,84 +48,18 @@ export default function RecruiterPerformancePage() {
         setLoading(true);
         setError(null);
 
-        // Fetch real data from API
-        const response = await fetch('/api/proxy/ats/recruiter-metrics/');
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch recruiter metrics');
-        }
-
-        const data = await response.json() as {
-          recruiters: Array<{
-            recruiter_id: string;
-            recruiter_name: string;
-            metrics: {
-              candidates_reviewed: number;
-              interviews_scheduled: number;
-              offers_made: number;
-              hire_rate: number;
-              avg_time_to_hire: number;
-              avg_interviews_per_hire: number;
-            };
-            conversion_funnel: {
-              applied: number;
-              phone_screen: number;
-              technical: number;
-              onsite: number;
-              offer: number;
-              hired: number;
-            };
-          }>;
-          team_averages: {
-            hire_rate: number;
-            time_to_hire: number;
-            reviews_per_hire: number;
-          };
-        };
-
-        // Transform API data to component format
-        const recruiters: RecruiterMetrics[] = data.recruiters.map((r) => ({
-          recruiterId: r.recruiter_id,
-          recruiterName: r.recruiter_name,
-          metrics: {
-            candidatesReviewed: r.metrics.candidates_reviewed,
-            interviewsScheduled: r.metrics.interviews_scheduled,
-            offersMade: r.metrics.offers_made,
-            hireRate: r.metrics.hire_rate,
-            avgTimeToHire: r.metrics.avg_time_to_hire,
-            avgInterviewsPerHire: r.metrics.avg_interviews_per_hire,
-          },
-          conversionFunnel: {
-            applied: r.conversion_funnel.applied,
-            phoneScreen: r.conversion_funnel.phone_screen,
-            technical: r.conversion_funnel.technical,
-            onsite: r.conversion_funnel.onsite,
-            offer: r.conversion_funnel.offer,
-            hired: r.conversion_funnel.hired,
-          },
-        }));
-
-        const analytics: RecruiterAnalytics = {
-          recruiters,
-          teamAverages: {
-            hireRate: data.team_averages.hire_rate,
-            timeToHire: data.team_averages.time_to_hire,
-            reviewsPerHire: data.team_averages.reviews_per_hire,
-          },
-        };
-
-        setAnalytics(analytics);
+        const data = await adminApi.getRecruiterPerformance();
+        setAnalytics(data);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load analytics';
         setError(message);
-        addToast(message, 'error');
       } finally {
         setLoading(false);
       }
     };
 
     loadAnalytics();
-  }, [addToast]);
+  }, []);
 
   if (loading) {
     return (

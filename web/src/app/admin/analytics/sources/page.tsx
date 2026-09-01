@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
-import { useToast } from '@/components/providers/ToastProvider';
+import { adminApi } from '@/lib/api-admin';
 
 interface SourceMetric {
   source: string;
@@ -31,7 +31,6 @@ const SOURCE_ICONS: Record<string, string> = {
 };
 
 export default function SourceAnalyticsPage() {
-  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<Analytics | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -42,33 +41,18 @@ export default function SourceAnalyticsPage() {
         setLoading(true);
         setError(null);
 
-        // In a real app, fetch from API
-        // GET /api/v1/ats/source-analytics
-
-        // Mock data
-        const mockAnalytics: Analytics = {
-          bySources: [
-            { source: 'linkedin', applications: 45, hires: 8, hireRate: 17.8, averageTimeToHire: 16 },
-            { source: 'referral', applications: 28, hires: 7, hireRate: 25.0, averageTimeToHire: 12 },
-            { source: 'indeed', applications: 32, hires: 4, hireRate: 12.5, averageTimeToHire: 22 },
-            { source: 'glassdoor', applications: 18, hires: 2, hireRate: 11.1, averageTimeToHire: 24 },
-            { source: 'recruiter_outreach', applications: 12, hires: 3, hireRate: 25.0, averageTimeToHire: 14 },
-            { source: 'company_website', applications: 8, hires: 1, hireRate: 12.5, averageTimeToHire: 28 },
-          ],
-        };
-
-        setAnalytics(mockAnalytics);
+        const data = await adminApi.getSourceAnalytics();
+        setAnalytics(data);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load analytics';
         setError(message);
-        addToast(message, 'error');
       } finally {
         setLoading(false);
       }
     };
 
     loadAnalytics();
-  }, [addToast]);
+  }, []);
 
   if (loading) {
     return (

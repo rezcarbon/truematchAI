@@ -1,172 +1,348 @@
 'use client';
 
-export const dynamic = 'force-dynamic';
+import { useEffect, useState } from 'react';
+import { PageHeader } from '@/components/shared/AppShell';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Loader2, Download, CreditCard } from 'lucide-react';
+import { adminApi } from '@/lib/api-admin';
+import { Subscription, Invoice, SubscriptionStatus } from '@/types/admin';
+import { formatDate } from '@/lib/utils';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 
-import { useCallback, useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { api, type AdminOrder, type BillingAdminSummary } from "@/lib/api";
-import { DollarSign, Package, Clock, RotateCcw, Loader2 } from "lucide-react";
-
-const NEXT_STATE: Record<string, string | null> = {
-  pending: "processing",
-  queued: "processing",
-  processing: "delivered",
-  delivered: null,
+const subscriptionStatusMap: Record<SubscriptionStatus, 'success' | 'warning' | 'error' | 'default'> = {
+  active: 'success',
+  canceled: 'default',
+  past_due: 'error',
+  expired: 'error',
 };
 
-function money(cents: number, currency = "usd"): string {
-  return (cents / 100).toLocaleString("en-US", { style: "currency", currency: currency.toUpperCase() });
-}
+export default function BillingPage() {
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
+  const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [isDownloading, setIsDownloading] = useState<string | null>(null);
 
-function fulfillmentBadge(s: string): React.ReactElement {
-  const map: Record<string, string> = {
-    delivered: "bg-green-100 text-green-800",
-    processing: "bg-blue-100 text-blue-800",
-    queued: "bg-amber-100 text-amber-800",
-    pending: "bg-gray-100 text-gray-700",
-  };
-  return <Badge className={map[s] ?? ""}>{s}</Badge>;
-}
+  useEffect(() => {
+    fetchSubscriptions();
+  }, [page]);
 
-export default function AdminBillingPage(): React.ReactElement {
-  const [summary, setSummary] = useState<BillingAdminSummary | null>(null);
-  const [orders, setOrders] = useState<AdminOrder[]>([]);
-  const [filter, setFilter] = useState<"awaiting" | "all" | "paid">("awaiting");
-  const [busy, setBusy] = useState<string | null>(null);
-
-  const load = useCallback(async (): Promise<void> => {
-    setSummary(await api.getBillingSummary());
-    // "awaiting" = paid but not yet delivered (the 48h manual queue).
-    if (filter === "awaiting") {
-      const r = await api.getAdminOrders("paid");
-      setOrders(r.items.filter((o) => o.fulfillment_status !== "delivered"));
-    } else if (filter === "paid") {
-      setOrders((await api.getAdminOrders("paid")).items);
-    } else {
-      setOrders((await api.getAdminOrders()).items);
-    }
-  }, [filter]);
-
-  useEffect(() => { load(); }, [load]);
-
-  const advance = async (o: AdminOrder): Promise<void> => {
-    const next = NEXT_STATE[o.fulfillment_status];
-    if (!next) return;
-    setBusy(o.id);
+  const fetchSubscriptions = async () => {
     try {
-      await api.setFulfillment(o.id, next, `Manual fulfillment → ${next}`);
-      await load();
-    } finally { setBusy(null); }
+      setLoading(true);
+      setError(null);
+      const response = await adminApi.getSubscriptions({
+        page,
+        limit: 10,
+      });
+      setSubscriptions(response.data);
+      setTotalPages(response.pages);
+      if (response.data.length > 0) {
+        setSelectedSubscription(response.data[0]);
+        fetchInvoices(response.data[0].id);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load subscriptions');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const refund = async (o: AdminOrder): Promise<void> => {
-    if (!confirm(`Refund ${money(o.amount, o.currency)} to ${o.user_email}?`)) return;
-    setBusy(o.id);
-    try { await api.refundOrderById(o.id); await load(); }
-    catch (e) { alert(e instanceof Error ? e.message : "Refund failed"); }
-    finally { setBusy(null); }
+  const fetchInvoices = async (subscriptionId: string) => {
+    try {
+      const response = await adminApi.getInvoices(subscriptionId);
+      setInvoices(response.data);
+    } catch (err) {
+      console.error('Failed to load invoices:', err);
+    }
+  };
+
+  const handleSubscriptionSelect = (subscription: Subscription) => {
+    setSelectedSubscription(subscription);
+    fetchInvoices(subscription.id);
+  };
+
+  const handleDownloadInvoice = async (invoiceId: string) => {
+    try {
+      setIsDownloading(invoiceId);
+      const blob = await adminApi.getInvoicePdf(invoiceId);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `invoice-${invoiceId}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to download invoice');
+    } finally {
+      setIsDownloading(null);
+    }
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <h1 className="mb-1 text-2xl font-bold tracking-tight">Billing &amp; fulfillment</h1>
-      <p className="mb-6 text-sm text-muted-foreground">
-        Work the 48-hour manual assessment queue and track Founding 100 inventory.
-      </p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Billing & Subscriptions"
+        subtitle="Manage customer subscriptions and invoices"
+      />
 
-      {summary && (
-        <div className="mb-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <SummaryCard icon={<DollarSign className="h-4 w-4" />} label="Gross revenue" value={money(summary.gross_revenue)} />
-          <SummaryCard icon={<Package className="h-4 w-4" />} label="Paid orders" value={String(summary.paid_orders)} />
-          <SummaryCard icon={<Clock className="h-4 w-4" />} label="Awaiting fulfillment" value={String(summary.awaiting_fulfillment)} accent={summary.awaiting_fulfillment > 0} />
-          <SummaryCard icon={<RotateCcw className="h-4 w-4" />} label="Refunded" value={String(summary.refunded_orders)} />
+      {/* Error Display */}
+      {error && (
+        <div className="rounded-lg bg-red-50 p-4 text-sm text-red-800 dark:bg-red-900/20 dark:text-red-200">
+          {error}
+          <button onClick={() => setError(null)} className="ml-2 underline">
+            Dismiss
+          </button>
         </div>
       )}
 
-      {summary && summary.founding.length > 0 && (
-        <Card className="mb-6">
-          <CardHeader><CardTitle className="text-base">Founding 100 inventory</CardTitle></CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-3">
-            {summary.founding.map((t) => (
-              <div key={t.sku}>
-                <div className="mb-1 flex justify-between text-sm">
-                  <span className="font-medium">{t.name}</span>
-                  <span className="text-muted-foreground">{t.remaining}/{t.limit} left</span>
-                </div>
-                <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
-                  <div className="h-full bg-blue-500" style={{ width: `${Math.min(100, (t.sold / t.limit) * 100)}%` }} />
-                </div>
-              </div>
-            ))}
+      {/* Loading State */}
+      {loading && (
+        <div className="flex items-center justify-center p-8">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!loading && subscriptions.length === 0 && (
+        <Card>
+          <CardContent className="p-8 text-center text-muted-foreground">
+            No subscriptions found
           </CardContent>
         </Card>
       )}
 
-      <div className="mb-3 flex gap-2">
-        {(["awaiting", "paid", "all"] as const).map((f) => (
-          <Button key={f} size="sm" variant={filter === f ? "default" : "outline"} onClick={() => setFilter(f)}>
-            {f === "awaiting" ? "Awaiting fulfillment" : f === "paid" ? "All paid" : "All orders"}
-          </Button>
-        ))}
-      </div>
-
-      <Card>
-        <CardContent className="p-0">
-          <table className="w-full text-sm">
-            <thead className="border-b bg-muted/50 text-left text-xs uppercase text-muted-foreground">
-              <tr>
-                <th className="px-4 py-2">Customer</th>
-                <th className="px-4 py-2">Product</th>
-                <th className="px-4 py-2">Amount</th>
-                <th className="px-4 py-2">Payment</th>
-                <th className="px-4 py-2">Fulfillment</th>
-                <th className="px-4 py-2 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {orders.length === 0 && (
-                <tr><td colSpan={6} className="px-4 py-8 text-center text-muted-foreground">No orders.</td></tr>
-              )}
-              {orders.map((o) => (
-                <tr key={o.id} className="border-b last:border-0">
-                  <td className="px-4 py-2">{o.user_email}</td>
-                  <td className="px-4 py-2">{o.sku}</td>
-                  <td className="px-4 py-2">{money(o.amount, o.currency)}</td>
-                  <td className="px-4 py-2"><Badge className={o.status === "paid" ? "bg-green-100 text-green-800" : o.status === "refunded" ? "bg-red-100 text-red-700" : ""}>{o.status}</Badge></td>
-                  <td className="px-4 py-2">{fulfillmentBadge(o.fulfillment_status)}</td>
-                  <td className="px-4 py-2 text-right">
-                    <div className="flex justify-end gap-2">
-                      {o.status === "paid" && NEXT_STATE[o.fulfillment_status] && (
-                        <Button size="sm" disabled={busy === o.id} onClick={() => advance(o)}>
-                          {busy === o.id ? <Loader2 className="h-4 w-4 animate-spin" /> : `→ ${NEXT_STATE[o.fulfillment_status]}`}
-                        </Button>
-                      )}
-                      {o.status === "paid" && (
-                        <Button size="sm" variant="outline" disabled={busy === o.id} onClick={() => refund(o)}>Refund</Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
+      {/* Main Content */}
+      {!loading && subscriptions.length > 0 && (
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* Subscriptions List */}
+          <Card className="lg:col-span-1">
+            <CardHeader>
+              <CardTitle>Subscriptions</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              {subscriptions.map((subscription) => (
+                <button
+                  key={subscription.id}
+                  onClick={() => handleSubscriptionSelect(subscription)}
+                  className={`w-full text-left p-3 rounded-lg transition-colors ${
+                    selectedSubscription?.id === subscription.id
+                      ? 'bg-primary text-primary-foreground'
+                      : 'hover:bg-muted border border-transparent'
+                  }`}
+                >
+                  <p className="font-medium text-sm">{subscription.organizationName}</p>
+                  <p className="text-xs text-muted-foreground">{subscription.plan} Plan</p>
+                  <StatusBadge
+                    status={subscriptionStatusMap[subscription.status]}
+                    text={subscription.status}
+                  />
+                </button>
               ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
+            </CardContent>
+          </Card>
 
-function SummaryCard({ icon, label, value, accent }: {
-  icon: React.ReactNode; label: string; value: string; accent?: boolean;
-}): React.ReactElement {
-  return (
-    <Card className={accent ? "border-amber-300" : ""}>
-      <CardContent className="py-4">
-        <div className="flex items-center gap-2 text-xs text-muted-foreground">{icon}{label}</div>
-        <div className="mt-1 text-2xl font-bold">{value}</div>
-      </CardContent>
-    </Card>
+          {/* Subscription Details */}
+          <div className="lg:col-span-2 space-y-6">
+            {selectedSubscription && (
+              <>
+                {/* Summary Cards */}
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Monthly Rate</p>
+                        <p className="text-3xl font-bold">
+                          ${(selectedSubscription.monthlyRate / 100).toLocaleString()}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">This Month Usage</p>
+                        <p className="text-3xl font-bold">
+                          ${(selectedSubscription.totalThisMonth / 100).toLocaleString()}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Estimated Next Month</p>
+                        <p className="text-3xl font-bold">
+                          ${(selectedSubscription.estimatedNextMonth / 100).toLocaleString()}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="pt-6">
+                      <div className="space-y-2">
+                        <p className="text-sm text-muted-foreground">Auto Renew</p>
+                        <p className="text-xl font-bold">
+                          {selectedSubscription.autoRenew ? 'Enabled' : 'Disabled'}
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Billing Cycle */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Billing Cycle</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Cycle Start</span>
+                      <span className="font-medium">{formatDate(selectedSubscription.billingCycleStart)}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm text-muted-foreground">Cycle End</span>
+                      <span className="font-medium">{formatDate(selectedSubscription.billingCycleEnd)}</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Usage Metrics */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Usage Metrics</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {selectedSubscription.usageThisMonth?.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No usage data available</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="border-b bg-muted/50">
+                            <tr>
+                              <th className="px-4 py-2 text-left font-semibold">Date</th>
+                              <th className="px-4 py-2 text-left font-semibold">Assessments</th>
+                              <th className="px-4 py-2 text-left font-semibold">Active Recruiters</th>
+                              <th className="px-4 py-2 text-left font-semibold">Cost</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedSubscription.usageThisMonth?.map((usage) => (
+                              <tr key={usage.date} className="border-b hover:bg-muted/30">
+                                <td className="px-4 py-2">{formatDate(usage.date)}</td>
+                                <td className="px-4 py-2">{usage.assessmentsCreated}</td>
+                                <td className="px-4 py-2">{usage.activeRecruiters}</td>
+                                <td className="px-4 py-2">
+                                  ${(usage.costEstimate / 100).toLocaleString()}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+
+                {/* Invoices */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Invoices</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {invoices.length === 0 ? (
+                      <p className="text-sm text-muted-foreground">No invoices</p>
+                    ) : (
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="border-b bg-muted/50">
+                            <tr>
+                              <th className="px-4 py-2 text-left font-semibold">Invoice</th>
+                              <th className="px-4 py-2 text-left font-semibold">Period</th>
+                              <th className="px-4 py-2 text-left font-semibold">Amount</th>
+                              <th className="px-4 py-2 text-left font-semibold">Status</th>
+                              <th className="px-4 py-2 text-left font-semibold">Due Date</th>
+                              <th className="px-4 py-2 text-right font-semibold">Action</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {invoices.map((invoice) => (
+                              <tr key={invoice.id} className="border-b hover:bg-muted/30">
+                                <td className="px-4 py-2 font-mono text-xs">{invoice.id}</td>
+                                <td className="px-4 py-2">{invoice.period}</td>
+                                <td className="px-4 py-2">
+                                  ${(invoice.amount / 100).toLocaleString()}
+                                </td>
+                                <td className="px-4 py-2">
+                                  <Badge
+                                    variant={
+                                      invoice.status === 'paid' ? 'default' : 'secondary'
+                                    }
+                                  >
+                                    {invoice.status}
+                                  </Badge>
+                                </td>
+                                <td className="px-4 py-2">{formatDate(invoice.dueDate)}</td>
+                                <td className="px-4 py-2 text-right">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => handleDownloadInvoice(invoice.id)}
+                                    disabled={isDownloading === invoice.id}
+                                  >
+                                    {isDownloading === invoice.id ? (
+                                      <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                      <Download className="h-4 w-4" />
+                                    )}
+                                  </Button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Pagination */}
+      {!loading && totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Page {page} of {totalPages}
+          </p>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              disabled={page === 1}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              Previous
+            </Button>
+            <Button
+              variant="outline"
+              disabled={page === totalPages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

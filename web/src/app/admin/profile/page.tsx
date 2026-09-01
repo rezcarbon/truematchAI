@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { adminApi } from '@/lib/api-admin';
 
 interface UserProfile {
   id: string;
@@ -28,18 +29,11 @@ export default function AdminProfilePage() {
     headline: '',
   });
 
-  // Fetch current profile
   useEffect(() => {
     const fetchProfile = async () => {
       try {
         setLoading(true);
-        const response = await fetch('/api/proxy/profile/user/me');
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch profile');
-        }
-
-        const data: UserProfile = await response.json();
+        const data = await adminApi.getProfile();
         setProfile(data);
         setFormData({
           display_name: data.display_name || '',
@@ -67,17 +61,7 @@ export default function AdminProfilePage() {
     setSaving(true);
 
     try {
-      const response = await fetch('/api/proxy/profile/user/me', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.detail || 'Failed to update profile');
-      }
-
+      await adminApi.updateProfile(formData);
       setSuccess(true);
       setTimeout(() => setSuccess(false), 3000);
     } catch (err) {

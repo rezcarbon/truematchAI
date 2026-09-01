@@ -5,7 +5,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
-import { useToast } from '@/components/providers/ToastProvider';
+import { adminApi } from '@/lib/api-admin';
 
 interface DiversityData {
   gender: Record<string, number>;
@@ -63,7 +63,6 @@ interface DEIAnalytics {
 }
 
 export default function DEIAnalyticsPage() {
-  const { addToast } = useToast();
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<DEIAnalytics | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -74,42 +73,18 @@ export default function DEIAnalyticsPage() {
         setLoading(true);
         setError(null);
 
-        // Fetch all DEI metrics in parallel
-        const [diversityRes, equityRes, inclusionRes, complianceRes] = await Promise.all([
-          fetch('/api/proxy/ats/dei-analytics/diversity'),
-          fetch('/api/proxy/ats/dei-analytics/equity'),
-          fetch('/api/proxy/ats/dei-analytics/inclusion'),
-          fetch('/api/proxy/ats/dei-analytics/compliance'),
-        ]);
-
-        if (!diversityRes.ok || !equityRes.ok || !inclusionRes.ok || !complianceRes.ok) {
-          throw new Error('Failed to fetch DEI analytics');
-        }
-
-        const [diversity, equity, inclusion, compliance] = await Promise.all([
-          diversityRes.json(),
-          equityRes.json(),
-          inclusionRes.json(),
-          complianceRes.json(),
-        ]);
-
-        setAnalytics({
-          diversity,
-          equity,
-          inclusion,
-          compliance,
-        });
+        const data = await adminApi.getComplianceReport();
+        setAnalytics(data);
       } catch (err) {
         const message = err instanceof Error ? err.message : 'Failed to load DEI analytics';
         setError(message);
-        addToast(message, 'error');
       } finally {
         setLoading(false);
       }
     };
 
     loadAnalytics();
-  }, [addToast]);
+  }, []);
 
   if (loading) {
     return (

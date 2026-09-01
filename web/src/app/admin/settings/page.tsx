@@ -8,8 +8,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useToast } from '@/components/providers/ToastProvider';
 import { ThemeToggle } from '@/components/shared/ThemeToggle';
+import { adminApi } from '@/lib/api-admin';
 
 export default function SettingsPage() {
   const { addToast } = useToast();

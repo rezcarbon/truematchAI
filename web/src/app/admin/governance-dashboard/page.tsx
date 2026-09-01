@@ -1,13 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { AlertCircle, CheckCircle2, Clock, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Clock, X, Loader2 } from 'lucide-react';
+import { adminApi } from '@/lib/api-admin';
 
 interface GovernanceReview {
   id: string;
@@ -30,49 +30,20 @@ interface GovernanceStats {
 
 export default function GovernanceDashboardPage() {
   const router = useRouter();
-  const { data: session } = useSession();
   const [reviews, setReviews] = useState<GovernanceReview[]>([]);
   const [stats, setStats] = useState<GovernanceStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>('pending');
   const [error, setError] = useState<string | null>(null);
 
-  // Check authorization
-  useEffect(() => {
-    if (session?.user) {
-      const userRole = (session.user as { role?: string }).role;
-      if (userRole !== 'admin' && userRole !== 'reviewer') {
-        router.push('/dashboard');
-      }
-    }
-  }, [session, router]);
-
-  // Fetch reviews
   useEffect(() => {
     const fetchReviews = async () => {
       try {
         setLoading(true);
-        const accessToken = (session?.user as { accessToken?: string })?.accessToken;
-        if (!accessToken) {
-          throw new Error('Not authenticated');
-        }
+        setError(null);
 
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-        const response = await fetch(
-          `${apiUrl}/api/v1/governance-reviews?status_filter=${filter}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch reviews');
-        }
-
-        const data = await response.json();
-        setReviews(data.items || []);
+        const data = await adminApi.getGovernanceConfig();
+        setReviews(data.reviews || []);
         setStats({
           total: data.total,
           pending: data.pending,
@@ -87,10 +58,8 @@ export default function GovernanceDashboardPage() {
       }
     };
 
-    if (session?.user) {
-      fetchReviews();
-    }
-  }, [session, filter]);
+    fetchReviews();
+  }, [filter]);
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -130,7 +99,7 @@ export default function GovernanceDashboardPage() {
         />
         <div className="container mx-auto px-4 py-8">
           <div className="flex items-center justify-center h-64">
-            <p className="text-muted-foreground">Loading governance reviews...</p>
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         </div>
       </div>
