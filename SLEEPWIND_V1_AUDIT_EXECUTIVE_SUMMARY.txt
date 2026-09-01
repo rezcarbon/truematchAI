@@ -1,0 +1,205 @@
+================================================================================
+SLEEPWIND v1 SCOPE AUDIT — EXECUTIVE SUMMARY
+================================================================================
+Date: July 23, 2026
+Audited: ~/Documents/codebase/SleepMind
+Source: SCOPE.md + CLAUDE.md
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+✓ IN SCOPE FOR v1 (Keep)
+  - 18 Feature directories (114 view files)
+  - ~30 Core services (HealthKit, Firebase, LLM, Auth, Notifications)
+  - Total: ~144 files (production-ready for v1)
+
+✗ OUT OF SCOPE (Remove)
+  - 4 Feature directories (Community, Shop, Search, Coaching)
+  - 2 Settings views (LanguagePickerView, LiveChatView)
+  - ~97 Service files (Multimodal, Voice, IPFS, Commerce, Legacy AI)
+  - Total: ~105 files to delete
+
+Code Readiness: ~58% of codebase is v1-relevant
+
+================================================================================
+CRITICAL ITEMS
+================================================================================
+
+1. COMMUNITY FEATURE — MUST REMOVE
+   Status: Violates SCOPE.md "No social, no leaderboards in v1"
+   Action: DELETE Features/Community/ entirely (4 files)
+   Impact: Removes social feed, posts, moderation infrastructure
+
+2. SHOP FEATURE — MUST REMOVE
+   Status: Not in SCOPE.md; requires Vision/multimodal (out-of-scope)
+   Action: DELETE Features/Shop/ entirely (1 file)
+   Impact: Removes product recommendation feature
+
+3. N3TRIGGER ENGINE — MUST KEEP (CORE)
+   Status: Patent-pending differentiator (IPOS C-02)
+   Action: KEEP entire Features/N3Trigger/ (22 files)
+   Critical: ProcessingOriginTelemetry.swift tracks sleep vs. on-wake processing
+
+4. INTELLIGENCE FEATURES — KEEP ALL
+   Status: Fully supports v1 Workouts/Recovery (NOT extra features)
+   Action: KEEP entire Features/Intelligence/ (16 files)
+   Usage: DailyWorkoutGenerator, ExerciseDatabase, ProgressionEngine, etc.
+           All integrated into core workout/recovery UX
+
+5. COACH CHAT — KEEP & ACTIVE
+   Status: Top-level tab in 5-tab interface (wired in v1)
+   Action: KEEP Features/Coach/ (3 files)
+   Note: Different from Coaching/ (which to remove)
+
+================================================================================
+FEATURES TO REMOVE BY CATEGORY
+================================================================================
+
+View Directories (4)
+  ❌ Features/Community/          4 files  — "no social" violation
+  ❌ Features/Shop/               1 file   — not in scope
+  ❌ Features/Search/             1 file   — not in scope
+  ❌ Features/Coaching/           1 file   — superseded by Coach/
+
+Settings Views (2)
+  ❌ LanguagePickerView.swift     — no i18n in v1
+  ❌ LiveChatView.swift           — not in scope (optional)
+
+Services (97)
+  ❌ Multimodal/Vision (3)        — VoiceService, MultiModal*, BodyAnalysis
+  ❌ Voice/Translation (16)       — VoiceService*, *Translation*, MLX*
+  ❌ Distributed Storage (5)      — IPFS*, Arweave*, *Shard*
+  ❌ Commerce (2)                 — ProductRecommendation*, CartValidation
+  ❌ Advanced AI (4)              — AdvancedAnalytics, AutonomousProblem*, etc.
+  ❌ Search (1)                   — VectorSearchService
+  ❌ DCourtKit Legacy (~60)       — OpenAI*, HuggingFace*, *Boot*, *Stealth*
+
+================================================================================
+v1 SCOPE COMPLIANCE CHECKLIST
+================================================================================
+
+Core Features (SCOPE.md A–G + Engine + Watch + Subscription)
+  ✓ A. Onboarding (4 screens)          → Onboarding/ + Workouts/BaselineAssessment
+  ✓ B. Training Logging (6 screens)    → Workouts/
+  ✓ C. Nutrition Logging (3 screens)   → Nutrition/
+  ✓ D. Sleep & Recovery (2 screens)    → Recovery/ + Health/
+  ✓ E. Morning Briefing (1 screen)     → Briefing/
+  ✓ F. Race Mode (2 screens)           → Race/
+  ✓ G. Settings (3 screens)            → Settings/ (minus 2 out-of-scope views)
+  ✓ Overnight Engine                   → N3Trigger/ (CORE)
+  ✓ Watch Companion                    → Watch/
+  ✓ Subscription/Paywall               → Subscription/
+
+Exclusions (SCOPE.md explicitly out-of-v1)
+  ✗ No social/leaderboards             → DELETE Community/
+  ✗ No OCR/Marathon/CrossFit           → KEEP v1 Hyrox-only
+  ✗ No WHOOP/Oura/Garmin               → KEEP HealthKit-only
+  ✗ No watch-native app                → KEEP companion only
+  ✗ No CarPlay/Widgets/Spotlight       → DELETE these if present
+  ✗ No free tier                       → KEEP paid-only
+  ✗ No Android                         → KEEP iOS only
+
+================================================================================
+IMMEDIATE ACTION ITEMS (Pre-v1 Ship)
+================================================================================
+
+Priority 1 — DELETIONS (High confidence, no review needed)
+  [ ] rm -rf Features/Community/              (4 files)
+  [ ] rm -rf Features/Shop/                   (1 file)
+  [ ] rm -rf Features/Search/                 (1 file)
+  [ ] rm -rf Features/Coaching/               (1 file)
+  [ ] rm Features/Settings/LanguagePickerView.swift
+  [ ] rm Services/Voice*.swift                (16 files)
+  [ ] rm Services/Multimodal*.swift           (3 files)
+  [ ] rm Services/IPFS*.swift                 (1 file)
+  [ ] rm Services/Arweave*.swift              (1 file)
+  [ ] rm Services/Commerce/*.swift            (2 files)
+  [ ] rm Services/OpenAI*.swift               (1 file)
+  [ ] rm Services/DCourtKit legacy            (~50 more files per CLAUDE.md)
+
+Priority 2 — OWNER REVIEW REQUIRED
+  [ ] LiveChatView.swift    — Keep for TestFlight support? (DECISION: Y/N)
+  [ ] AIKeySettingsView.swift — Keep for dev API key mgmt? (DECISION: Y/N)
+  [ ] ConfigOrchestrator.swift — Verify usage before delete (QUICK CHECK)
+
+Priority 3 — VERIFICATION (After deletions)
+  [ ] xcodebuild build (catch import errors)
+  [ ] Verify 5-tab interface loads (Today/Coach/Eat/Train/Recovery)
+  [ ] Verify no lingering references to deleted features
+  [ ] Test core workflows (briefing, workout, nutrition, race)
+
+================================================================================
+DOCUMENTATION
+================================================================================
+
+Three audit reports have been generated:
+
+1. SLEEPWIND_V1_SCOPE_AUDIT.md (Main Audit)
+   - Complete directory-by-directory analysis
+   - File-level categorization (in-scope vs. out-of-scope)
+   - Service audit with justifications
+   - Detailed action checklist
+
+2. FILES_TO_REMOVE.md (Deletion Guide)
+   - Exact file paths for every deletion
+   - Grouped by category for easy removal
+   - Quick copy-paste commands
+
+3. QUICK_REFERENCE.md (Summary Tables)
+   - Status at a glance
+   - Feature architecture (v1 app structure)
+   - Test plan checklist
+   - Phase 1 vs. Phase 2 work
+
+Location: ~/Documents/
+
+================================================================================
+STATISTICS
+================================================================================
+
+Total Codebase
+  - Feature view files: 114
+  - Service files: 127
+  - Total: 241 files
+
+v1 Scope (Keep)
+  - Feature views: 114
+  - Core services: ~30
+  - Total: ~144 files (58%)
+
+Out-of-Scope (Remove)
+  - Feature views: ~7
+  - Services: ~97
+  - Total: ~105 files (42%)
+
+================================================================================
+NOTES
+================================================================================
+
+N3 Overnight Engine (CORE v1 Differentiator)
+  Features/N3Trigger/ contains 22 essential files orchestrating N3-triggered
+  on-device AI briefing generation (patent-pending claim C-02). Must run
+  during sleep, not on-wake, for patent reduction-to-practice evidence.
+  ProcessingOriginTelemetry.swift tracks sleep vs. on-wake execution.
+
+Coach vs. Coaching
+  - KEEP Coach/ (CoachChatView) — wired into main 5-tab interface
+  - REMOVE Coaching/ (CoachingChatView) — superseded implementation
+
+Intelligence Features (All In-Scope)
+  All 16 Intelligence files support core v1 Workouts/Recovery:
+  - DailyWorkoutGenerator → TodayWorkoutCard (suggested workout)
+  - ExerciseDatabase → InWorkoutPlayerView (exercise data)
+  - ProgressionEngine → In-workout progression UI
+  - RestTimerView, SetProgressionCard → In-workout features
+  - RecoveryMapView, VolumeTrackingView → Recovery tab
+  - PlateauAlertCard → Plateau detection alert
+  VERDICT: All 16 files are production-ready for v1.
+
+Settings Curation Needed
+  Keep: NotificationSettingsView (G2), PrivacyDataView (G3)
+  Remove: LanguagePickerView (no i18n), LiveChatView (not in scope)
+  Review: AIKeySettingsView (dev-only but user-visible)
+
+================================================================================
