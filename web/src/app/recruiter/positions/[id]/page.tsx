@@ -1,3 +1,5 @@
+'use client';
+
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/AppShell";
 import { JDQualityCard } from "@/components/recruiter/JDQualityCard";

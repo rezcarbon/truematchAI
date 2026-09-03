@@ -1,3 +1,5 @@
+'use client';
+
 import { api } from "@/lib/api";
 import { PageHeader } from "@/components/shared/AppShell";
 import { ScoreTrio } from "@/components/shared/ScoreTrio";
