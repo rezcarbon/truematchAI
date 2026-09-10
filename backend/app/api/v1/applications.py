@@ -9,21 +9,22 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from app.deps import CurrentUser, DBSession
 from app.schemas.applications import (
-    SubmitApplicationRequest,
-    UpdateApplicationRequest,
-    ScheduleInterviewRequest,
-    LogInterviewRequest,
-    ApplicationResponse,
     ApplicationDetailResponse,
-    InterviewScheduleResponse,
-    InterviewLogResponse,
+    ApplicationHistoryItem,
+    ApplicationHistoryResponse,
     ApplicationListResponse,
+    ApplicationResponse,
     ApplicationStatsResponse,
     BulkApplicationActionRequest,
-    WithdrawApplicationRequest,
+    InterviewLogResponse,
+    InterviewScheduleResponse,
+    LogInterviewRequest,
     RejectionAnalysisResponse,
-    ApplicationHistoryResponse,
+    ScheduleInterviewRequest,
+    SubmitApplicationRequest,
     SuggestedFollowUpResponse,
+    UpdateApplicationRequest,
+    WithdrawApplicationRequest,
 )
 
 router = APIRouter(prefix="/candidates/applications", tags=["applications"])
@@ -49,9 +50,8 @@ async def submit_application(
 ) -> ApplicationResponse:
     """Submit a job application."""
     try:
-        from sqlalchemy import select
-        from app.models.application import Application, PipelineStage
         from app.core.clock import utcnow
+        from app.models.application import Application, PipelineStage
 
         # Create application record
         app = Application(
@@ -101,6 +101,7 @@ async def get_application(
     """Get detailed information about an application."""
     try:
         from sqlalchemy import select
+
         from app.models.application import Application
 
         stmt = select(Application).where(Application.id == application_id)
@@ -154,7 +155,8 @@ async def list_applications(
 ) -> ApplicationListResponse:
     """List all applications owned by the current user."""
     try:
-        from sqlalchemy import select, desc, func
+        from sqlalchemy import desc, func, select
+
         from app.models.application import Application
 
         stmt = select(Application).where(Application.user_id == user.id)
@@ -207,9 +209,10 @@ async def update_application(
 ) -> ApplicationResponse:
     """Update an application's details."""
     try:
-        from sqlalchemy import select, update
-        from app.models.application import Application
+        from sqlalchemy import select
+
         from app.core.clock import utcnow
+        from app.models.application import Application
 
         stmt = select(Application).where(Application.id == application_id)
         result = await db.execute(stmt)
@@ -262,6 +265,7 @@ async def delete_application(
     """Delete an application."""
     try:
         from sqlalchemy import select
+
         from app.models.application import Application, PipelineStage
 
         stmt = select(Application).where(Application.id == application_id)
@@ -306,9 +310,10 @@ async def schedule_interview(
     """Schedule an interview for an application."""
     try:
         from sqlalchemy import select
+
+        from app.core.clock import utcnow
         from app.models.application import Application
         from app.models.interview import Interview, InterviewStatus
-        from app.core.clock import utcnow
 
         stmt = select(Application).where(Application.id == application_id)
         result = await db.execute(stmt)
@@ -370,7 +375,8 @@ async def get_application_interviews(
 ):
     """Get all interviews for an application."""
     try:
-        from sqlalchemy import select, desc
+        from sqlalchemy import desc, select
+
         from app.models.application import Application
         from app.models.interview import Interview
 
@@ -433,9 +439,10 @@ async def log_interview(
     """Log a completed interview."""
     try:
         from sqlalchemy import select
+
+        from app.core.clock import utcnow
         from app.models.application import Application
         from app.models.interview import Interview, InterviewStatus
-        from app.core.clock import utcnow
 
         # Verify application ownership
         stmt = select(Application).where(Application.id == application_id)
@@ -499,9 +506,10 @@ async def update_interview(
     """Update a scheduled interview."""
     try:
         from sqlalchemy import select
+
+        from app.core.clock import utcnow
         from app.models.application import Application
         from app.models.interview import Interview
-        from app.core.clock import utcnow
 
         # Verify application ownership
         stmt = select(Application).where(Application.id == application_id)
@@ -568,9 +576,10 @@ async def cancel_interview(
     """Cancel a scheduled interview."""
     try:
         from sqlalchemy import select
+
+        from app.core.clock import utcnow
         from app.models.application import Application
         from app.models.interview import Interview, InterviewStatus
-        from app.core.clock import utcnow
 
         # Verify application ownership
         stmt = select(Application).where(Application.id == application_id)
@@ -623,7 +632,8 @@ async def get_application_stats(
 ) -> ApplicationStatsResponse:
     """Get statistics about user's applications."""
     try:
-        from sqlalchemy import select, func
+        from sqlalchemy import func, select
+
         from app.models.application import Application
 
         # Count total applications
@@ -631,7 +641,6 @@ async def get_application_stats(
         total = await db.scalar(stmt)
 
         # Count by status (stage)
-        from sqlalchemy import distinct
         stmt = select(Application.stage, func.count(Application.id)).where(
             Application.user_id == user.id
         ).group_by(Application.stage)
@@ -676,7 +685,8 @@ async def get_application_history(
 ) -> ApplicationHistoryResponse:
     """Get the status history of an application."""
     try:
-        from sqlalchemy import select, desc
+        from sqlalchemy import desc, select
+
         from app.models.application import Application
         from app.models.application_tracking import ApplicationEvent
 
@@ -734,10 +744,12 @@ async def get_suggested_follow_up(
 ) -> SuggestedFollowUpResponse:
     """Get suggested follow-up actions for an application."""
     try:
-        from sqlalchemy import select
-        from app.models.application import Application
-        from app.core.clock import utcnow
         from datetime import timedelta
+
+        from sqlalchemy import select
+
+        from app.core.clock import utcnow
+        from app.models.application import Application
 
         stmt = select(Application).where(Application.id == application_id)
         result = await db.execute(stmt)
@@ -798,8 +810,9 @@ async def mark_application_rejected(
     """Mark an application as rejected."""
     try:
         from sqlalchemy import select
-        from app.models.application import Application, PipelineStage
+
         from app.core.clock import utcnow
+        from app.models.application import Application, PipelineStage
 
         stmt = select(Application).where(Application.id == application_id)
         result = await db.execute(stmt)
@@ -837,6 +850,7 @@ async def analyze_rejection(
     """Get analysis of why an application was rejected."""
     try:
         from sqlalchemy import select
+
         from app.models.application import Application, PipelineStage
 
         stmt = select(Application).where(Application.id == application_id)
@@ -891,8 +905,9 @@ async def withdraw_application(
     """Withdraw an application."""
     try:
         from sqlalchemy import select
-        from app.models.application import Application, PipelineStage
+
         from app.core.clock import utcnow
+        from app.models.application import Application, PipelineStage
 
         stmt = select(Application).where(Application.id == application_id)
         result = await db.execute(stmt)
@@ -939,8 +954,9 @@ async def bulk_application_actions(
     """Perform bulk actions on applications."""
     try:
         from sqlalchemy import select
-        from app.models.application import Application, PipelineStage
+
         from app.core.clock import utcnow
+        from app.models.application import Application, PipelineStage
 
         # Verify ownership of all applications
         stmt = select(Application).where(
@@ -1002,11 +1018,13 @@ async def export_applications(
 ):
     """Export user's applications."""
     try:
-        from sqlalchemy import select
-        from app.models.application import Application
-        from fastapi.responses import StreamingResponse
         import csv
         import io
+
+        from fastapi.responses import StreamingResponse
+        from sqlalchemy import select
+
+        from app.models.application import Application
 
         # Query applications
         stmt = select(Application).where(Application.user_id == user.id)
@@ -1065,11 +1083,12 @@ async def get_monthly_report(
 ):
     """Get monthly application report."""
     try:
-        from sqlalchemy import select, func, and_
-        from app.models.application import Application
-        from app.core.clock import utcnow
         from datetime import datetime, timedelta
-        import calendar
+
+        from sqlalchemy import and_, select
+
+        from app.core.clock import utcnow
+        from app.models.application import Application
 
         # Parse month or use current
         if month:

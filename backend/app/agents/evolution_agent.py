@@ -11,12 +11,11 @@ Analyzes hiring outcomes and:
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
-from uuid import UUID
+from datetime import datetime
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.hiring_outcome import HiringOutcome, HiringDecision
+from app.models.hiring_outcome import HiringOutcome
 
 logger = logging.getLogger("truematch.evolution_agent")
 

@@ -7,15 +7,13 @@ over fairness validation and final approval.
 """
 from __future__ import annotations
 
-import json
 import logging
 from typing import Optional
 
 from sqlalchemy.orm import Session
 
-from app.models.assessment_design import AssessmentDesign
-from app.models.resume import Resume
 from app.models.position import Position
+from app.models.resume import Resume
 
 logger = logging.getLogger("truematch.assessment_designer")
 

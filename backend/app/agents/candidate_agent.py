@@ -1,21 +1,21 @@
 """Candidate Career Coach Agent for CV analysis and job matching."""
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.enhanced_agent import EnhancedBaseAgent
-from app.agents.persona_system import PersonaSystem, UserRole
 from app.agents.persona_integration import (
-    PersonaEnhancedAgentMixin,
-    PersonaContextLoader,
     PersonaAnalytics,
+    PersonaContextLoader,
+    PersonaEnhancedAgentMixin,
 )
-from app.models.user import User
-from app.models.resume import Resume
+from app.agents.persona_system import UserRole
 from app.models.application import Application
 from app.models.position import Position
+from app.models.resume import Resume
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -323,7 +323,7 @@ Focus on helping with career development, CV improvement, and job matching."""
         }
 
         # Combine system prompt with context
-        full_prompt = system_prompt + "\n\nUSER_CONTEXT:\n" + str(user_context)
+        system_prompt + "\n\nUSER_CONTEXT:\n" + str(user_context)
 
         # This would normally call the actual Claude API or agent logic
         # For now, return a placeholder that will be handled by parent class

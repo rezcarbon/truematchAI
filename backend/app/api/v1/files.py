@@ -219,7 +219,7 @@ async def upload_resume_image(
             detail=f"Image exceeds the {settings.max_upload_bytes} byte limit",
         )
 
-    from app.engines.client import extract_text_from_image, is_live, LLMError
+    from app.engines.client import LLMError, extract_text_from_image, is_live
 
     if not is_live():
         raise HTTPException(

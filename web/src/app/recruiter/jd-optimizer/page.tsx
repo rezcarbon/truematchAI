@@ -1,12 +1,10 @@
 'use client';
 
 import { JDOptimizer } from '@/components/JDOptimizer';
-import { Metadata } from 'next';
 
-export const metadata: Metadata = {
-  title: 'JD Optimizer - TrueMatch',
-  description: 'Optimize your job descriptions with AI-powered analysis',
-};
+// NOTE: `metadata` cannot be exported from a Client Component. This page renders
+// the client-only <JDOptimizer>, so the title/description live in the route
+// segment's layout instead of here.
 
 export default function JDOptimizerPage() {
   return <JDOptimizer apiEndpoint="/api/jd-optimizer" />;

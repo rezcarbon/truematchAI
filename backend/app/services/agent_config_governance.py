@@ -13,7 +13,7 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import User, AgentConfig, AgentConfigVersion, UserRole
+from app.models import AgentConfig, AgentConfigVersion, User, UserRole
 
 
 class AgentConfigGovernance:
@@ -49,7 +49,7 @@ class AgentConfigGovernance:
         if config.created_by_id == user.id:
             return True, None
 
-        return False, f"Only config creator or admin can update this config"
+        return False, "Only config creator or admin can update this config"
 
     async def check_submit_permission(
         self, user: User, config: AgentConfig
@@ -61,7 +61,7 @@ class AgentConfigGovernance:
         if config.created_by_id == user.id:
             return True, None
 
-        return False, f"Only config creator or admin can submit this config"
+        return False, "Only config creator or admin can submit this config"
 
     async def check_approve_permission(self, user: User) -> tuple[bool, Optional[str]]:
         """Check if user can approve agent configs.

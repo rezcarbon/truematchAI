@@ -5,14 +5,14 @@ import enum
 import uuid
 from datetime import datetime
 
-from sqlalchemy import ForeignKey, Index, String, DateTime
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy import DateTime, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 from app.models._mixins import TimestampMixin, uuid_pk
-from app.models._types import EncryptedJSON, EncryptedText
+from app.models._types import EncryptedJSON
 
 
 class EventType(str, enum.Enum):

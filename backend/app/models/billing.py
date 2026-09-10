@@ -16,13 +16,13 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from app.core.clock import utcnow
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.clock import utcnow
 from app.database import Base
 from app.models._mixins import TimestampMixin, uuid_pk
 

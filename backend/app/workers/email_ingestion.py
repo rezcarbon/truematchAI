@@ -10,7 +10,6 @@ import hashlib
 import logging
 import re
 from datetime import datetime, timedelta
-from app.core.clock import utcnow
 from email import message_from_bytes
 from email.mime.text import MIMEText
 from pathlib import Path
@@ -21,6 +20,7 @@ import aioimaplib
 import aiosmtplib
 
 from app.config import settings
+from app.core.clock import utcnow
 from app.database import AsyncSessionLocal
 from app.models.ingest_queue import (
     IngestQueueItem,

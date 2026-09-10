@@ -8,28 +8,26 @@ Async screening logic is wrapped in sync context.
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import traceback
 import uuid
 from typing import Optional
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.agents.screening_agent import ScreeningAgent
 from app.config import settings
-from app.models.screening import (
-    ScreeningBatch,
-    ScreeningResult,
-    ScreeningBatchStatus,
-    RecruiterDecision,
-)
-from app.models.resume import Resume
-from app.models.position import Position
-from app.models.assessment import Assessment
 from app.models.audit import AuditTrail
 from app.models.decision import Decision
-from app.agents.screening_agent import ScreeningAgent
+from app.models.position import Position
+from app.models.resume import Resume
+from app.models.screening import (
+    RecruiterDecision,
+    ScreeningBatch,
+    ScreeningBatchStatus,
+    ScreeningResult,
+)
 from app.workers.celery_app import celery_app
 
 logger = logging.getLogger("truematch.screening_queue")

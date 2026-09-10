@@ -62,7 +62,7 @@ class AnalysisService:
         design = design.scalar_one_or_none()
 
         if not design:
-            raise ValueError(f"Assessment design not found")
+            raise ValueError("Assessment design not found")
 
         # Create analysis result record
         analysis = AnalysisResult(

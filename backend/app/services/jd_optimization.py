@@ -6,12 +6,11 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import and_, desc, select
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.jd_version import JDVersion
 from app.models.position import Position
-from app.models.user import User
 
 logger = logging.getLogger(__name__)
 

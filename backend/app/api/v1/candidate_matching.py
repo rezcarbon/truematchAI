@@ -9,11 +9,11 @@ from __future__ import annotations
 
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_user
-from app.models import MatchNotification, CandidateMatch, User
+from app.deps import get_current_user, get_db
+from app.models import CandidateMatch, MatchNotification, User
 
 router = APIRouter(prefix="/candidates/matches", tags=["candidate-matching"])
 
@@ -37,8 +37,7 @@ async def get_match_notifications(
         raise HTTPException(status_code=403, detail="Not authorized to view this match")
 
     # Get notifications sorted by timestamp
-    from sqlalchemy import select, desc
-    from app.models import MatchNotification
+    from sqlalchemy import desc, select
 
     stmt = select(MatchNotification).where(
         MatchNotification.candidate_match_id == match_id

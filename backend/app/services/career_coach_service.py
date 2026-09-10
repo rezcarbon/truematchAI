@@ -13,17 +13,17 @@ import asyncio
 import json
 import logging
 import uuid
-from dataclasses import dataclass, field, asdict
-from datetime import datetime, timedelta
-from typing import Optional, Any
+from dataclasses import asdict, dataclass, field
+from datetime import datetime
+from typing import Optional
 
 from anthropic import AsyncAnthropic
-from sqlalchemy import select, desc
+from sqlalchemy import desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.models.user import User
 from app.models.resume_version import ResumeVersion
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 

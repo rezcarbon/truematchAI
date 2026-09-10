@@ -1,10 +1,11 @@
 """Request and response schemas for CV analysis."""
 from __future__ import annotations
 
-from uuid import UUID
-from pydantic import BaseModel, Field, ConfigDict
-from pydantic.alias_generators import to_camel
 from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field
+from pydantic.alias_generators import to_camel
 
 from app.models.cv_analysis import CVAnalysisStatus, SeniorityLevel
 

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import uuid
 
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy import ForeignKey, Index, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
@@ -11,7 +12,6 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.database import Base
 from app.models._mixins import TimestampMixin, uuid_pk
 from app.models.cv_analysis import SeniorityLevel
-from sqlalchemy import Enum as SAEnum
 
 
 class CandidateArchetype(Base, TimestampMixin):

@@ -24,20 +24,22 @@ import json
 import logging
 import uuid
 from datetime import timedelta
-from app.core.clock import utcnow
 
 from fastapi import APIRouter, HTTPException, Query, WebSocket, WebSocketDisconnect, status
 from pydantic import BaseModel
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 
 from app.config import settings
+from app.core.clock import utcnow
 from app.deps import CurrentUser, DBSession
 from app.models.ingest_queue import IngestQueueItem, IngestStatus
 from app.models.position import Position
 from app.models.resume import Resume
 from app.schemas.agents import (
-    AgentStatusResponse,
     AgentsStatusResponse,
+    AgentStatusResponse,
+)
+from app.schemas.agents import (
     QueueItemDetail as QueueItemDetailSchema,
 )
 from app.websocket.agents_operator import get_operator_manager
@@ -214,8 +216,8 @@ async def trigger_assessment(
     position_id = payload.position_id
     # If no position_id but JD text is provided, create a self-assessment position.
     if position_id is None and payload.jd_text:
-        from app.engines.intake import analyze_jd
         from app.engines import reasoning
+        from app.engines.intake import analyze_jd
         from app.models.position import PositionStatus
         requirements = analyze_jd(payload.jd_text or "")
         review = reasoning.interrogate_jd(payload.jd_text or "")

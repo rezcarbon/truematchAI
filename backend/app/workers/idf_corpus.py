@@ -15,9 +15,10 @@ Key concepts:
 import logging
 import math
 from collections import defaultdict
-from dataclasses import dataclass, asdict
-from app.core.clock import utcnow
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional
+
+from app.core.clock import utcnow
 
 logger = logging.getLogger(__name__)
 

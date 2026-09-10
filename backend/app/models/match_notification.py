@@ -12,16 +12,18 @@ from uuid import UUID, uuid4
 from sqlalchemy import (
     Boolean,
     DateTime,
-    Enum as SQLEnum,
     ForeignKey,
     Index,
     Text,
 )
+from sqlalchemy import (
+    Enum as SQLEnum,
+)
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
 from app.models._mixins import TimestampMixin
+from app.models.base import Base
 
 
 class NotificationStatus(str, Enum):

@@ -21,7 +21,12 @@ from app.models.user import User
 from app.services.billing import entitlements as ent
 from app.services.billing import service as billing_service
 from app.services.billing.catalog import get_sku, public_catalog
-from app.services.billing.stripe_client import BillingError, construct_event, create_checkout_session, refund
+from app.services.billing.stripe_client import (
+    BillingError,
+    construct_event,
+    create_checkout_session,
+    refund,
+)
 
 logger = logging.getLogger("truematch.billing")
 router = APIRouter(prefix="/billing", tags=["billing"])

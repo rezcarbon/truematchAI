@@ -16,7 +16,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
 # Bumped whenever any prompt's wording changes, so an assessment's provenance
 # records exactly which prompt set produced it (regulatory reproducibility).
 PROMPT_REGISTRY_VERSION = "2026.06.19a"

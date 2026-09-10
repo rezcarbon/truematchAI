@@ -18,19 +18,19 @@ import logging
 import random
 import uuid
 from datetime import datetime
-from app.core.clock import utcnow
-from typing import Optional, Dict, List
+from typing import Dict, List, Optional
 
 from sqlalchemy import and_, select
+from sqlalchemy.exc import OperationalError, ProgrammingError
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import ProgrammingError, OperationalError
 
-from app.models.chat import ChatSession, ChatMessage
-from app.models.user import User
-from app.models.autonomous_settings import AutonomousSettings
-from app.models.governance_review import GovernanceReview, ReviewStatus
 from app.config import settings
+from app.core.clock import utcnow
+from app.models.autonomous_settings import AutonomousSettings
+from app.models.chat import ChatMessage, ChatSession
+from app.models.governance_review import GovernanceReview, ReviewStatus
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 

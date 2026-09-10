@@ -624,8 +624,9 @@ def _notify_admin_slack(
             ]
         }
 
-        import aiohttp
         import asyncio
+
+        import aiohttp
 
         async def _send():
             async with aiohttp.ClientSession() as session:

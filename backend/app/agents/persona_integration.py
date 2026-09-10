@@ -12,16 +12,14 @@ This layer:
 5. Adapts response tone and structure based on persona
 """
 
-from typing import Optional, Dict, List, Any, Tuple
-from datetime import datetime
 import logging
+from typing import Any, Dict, List, Optional, Tuple
 
 from .persona_system import (
-    PersonaSystem,
-    PersonaProfile,
-    ConversationContext,
     ConversationMode,
-    UserRole
+    PersonaProfile,
+    PersonaSystem,
+    UserRole,
 )
 
 logger = logging.getLogger(__name__)

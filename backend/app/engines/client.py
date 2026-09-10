@@ -18,8 +18,8 @@ from anthropic import Anthropic, APIConnectionError, APIStatusError, RateLimitEr
 
 from app.config import settings
 from app.core.resilience import CircuitBreaker
-from app.engines.providers import minimax
 from app.engines import gemini
+from app.engines.providers import minimax
 
 logger = logging.getLogger("truematch.claude")
 
@@ -73,7 +73,7 @@ def _create_with_retry(**kwargs: Any):
                 # Record token usage + cost + latency centrally (all
                 # non-streaming calls funnel through here).
                 try:
-                    from app.core.llm_usage import record_usage, record_latency
+                    from app.core.llm_usage import record_latency, record_usage
                     model = kwargs.get("model", "")
                     record_usage(model, getattr(response, "usage", None))
                     record_latency(model, time.monotonic() - _started)
@@ -270,7 +270,7 @@ def call_claude_with_tools(
     if minimax.is_configured():
         logger.warning("Primary LLM tool-use failed (%s) — failing over to MiniMax.", primary_exc)
         try:
-            result = minimax.complete_json(
+            minimax.complete_json(
                 system=system, user_content=user_content,
                 max_tokens=max_tokens, temperature=temperature,
             )

@@ -7,17 +7,17 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 
 from sqlalchemy import create_engine
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
 from app.core.governance import get_governance_config
 from app.engines import governance_engine
-from app.models.cv_analysis import CVAnalysisRequest, CVAnalysisStatus
-from app.models.governance_review import GovernanceReview, ReviewType, ReviewStatus
-from app.models.resume import Resume
-from app.engines.cv_analysis_engine import analyze_candidate_cv
 from app.engines.client import ClaudeClient
+from app.engines.cv_analysis_engine import analyze_candidate_cv
+from app.models.cv_analysis import CVAnalysisRequest, CVAnalysisStatus
+from app.models.governance_review import GovernanceReview, ReviewStatus, ReviewType
+from app.models.resume import Resume
 from app.workers.celery_app import celery_app
 from app.workers.realtime_progress import get_progress_tracker
 

@@ -19,24 +19,24 @@ Requirements:
 from __future__ import annotations
 
 import asyncio
+import logging
 import uuid
 from datetime import datetime, timedelta, timezone
-import logging
 
 import pytest
 from sqlalchemy import select
 
-from app.models.user import User
-from app.models.resume import Resume
-from app.models.position import Position, PositionStatus
-from app.models.assessment import Assessment, AssessmentStatus, DecisionType
-from app.models.interview import Interview, InterviewStatus
-from app.models.ingest_queue import IngestQueueItem, IngestSource, IngestStatus, IngestType
-from app.models.audit import AuditTrail
-from app.models.application import Application
-from app.core.security import create_access_token
 from app.agents.autonomous_loop import CostCalculator, DeadLetterQueue
+from app.core.security import create_access_token
 from app.engines.decision_engine import determine_decision_type
+from app.models.application import Application
+from app.models.assessment import Assessment, AssessmentStatus, DecisionType
+from app.models.audit import AuditTrail
+from app.models.ingest_queue import IngestQueueItem, IngestSource, IngestStatus, IngestType
+from app.models.interview import Interview, InterviewStatus
+from app.models.position import Position, PositionStatus
+from app.models.resume import Resume
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -320,12 +320,12 @@ class TestCompleteHiringWorkflow:
         """Test success criteria for complete workflow.
 
         Success criteria:
-        - Resume ingested and extracted 
-        - Assessment created with 3 scores (traditional, semantic, capability) 
-        - Decision type determined (approval/advisory/escalate) 
-        - Interview scheduled within 5 business days 
-        - Notification sent to candidate 
-        - All artifacts linked (queue → assessment → interview → audit) 
+        - Resume ingested and extracted
+        - Assessment created with 3 scores (traditional, semantic, capability)
+        - Decision type determined (approval/advisory/escalate)
+        - Interview scheduled within 5 business days
+        - Notification sent to candidate
+        - All artifacts linked (queue → assessment → interview → audit)
         """
         async with test_async_db() as session:
             # Create workflow artifacts

@@ -139,8 +139,8 @@ def process_submission(
     Mirrors the paid self-assessment flow: extract CV, read JD, create
     Resume + Position + Assessment, enqueue ``run_assessment``.
     """
-    from app.engines.extract import ExtractionError, extract_text
     from app.engines import intake
+    from app.engines.extract import ExtractionError, extract_text
 
     item = IngestQueueItem(
         source=IngestSource.cloud_drive,

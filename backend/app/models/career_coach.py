@@ -1,16 +1,17 @@
 """Career coaching models."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 
-from sqlalchemy import ForeignKey, Integer, String, Text, DateTime, Boolean, Enum as SQLEnum
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import Enum as SQLEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
 from app.models._mixins import TimestampMixin, UserScopedMixin
-from app.schemas.career_coach import CoachingArea, SessionStatus, GoalStatus
+from app.models.base import Base
+from app.schemas.career_coach import CoachingArea, GoalStatus, SessionStatus
 
 
 class CareerCoaching(Base, TimestampMixin, UserScopedMixin):

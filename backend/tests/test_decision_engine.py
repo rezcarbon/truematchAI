@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import uuid
 
-
 from app.engines.decision_engine import (
     apply_decision_to_assessment,
     determine_decision_type,

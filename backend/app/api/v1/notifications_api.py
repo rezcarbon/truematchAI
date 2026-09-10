@@ -4,18 +4,18 @@ Handles: in-app notifications, email notifications, preferences, history
 Production-ready implementation with database persistence
 """
 
+import logging
 from typing import List, Optional
 from uuid import UUID
-from app.core.clock import utcnow
-import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy import select, and_, desc, func
+from pydantic import BaseModel, Field
+from sqlalchemy import and_, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_user
+from app.core.clock import utcnow
+from app.deps import get_current_user, get_db
 from app.models import Notification, NotificationPreference
-from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
 

@@ -1,10 +1,12 @@
 """Chat message and conversation models."""
-from datetime import datetime
-from uuid import uuid4, UUID
-from sqlalchemy import Column, String, Text, DateTime, ForeignKey, Enum, Integer, text as sa_text
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
-from sqlalchemy.orm import relationship
 import enum
+from uuid import uuid4
+
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy import text as sa_text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+from sqlalchemy.orm import relationship
 
 from app.core.clock import utcnow
 from app.models.base import Base

@@ -14,14 +14,13 @@ from typing import Optional
 
 from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import selectinload
 
 from app.models import (
     AgentConfig,
-    AgentConfigVersion,
     AgentConfigAudit,
-    AgentConfigStatus,
     AgentConfigAuditAction,
+    AgentConfigStatus,
+    AgentConfigVersion,
     User,
 )
 

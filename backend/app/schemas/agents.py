@@ -5,11 +5,12 @@ Extends the queue item models with decision support fields and agent health metr
 from __future__ import annotations
 
 from datetime import datetime
-from app.core.clock import utcnow
-from uuid import UUID
 from typing import Optional
+from uuid import UUID
 
 from pydantic import BaseModel, Field
+
+from app.core.clock import utcnow
 
 
 class QueueItemDetail(BaseModel):

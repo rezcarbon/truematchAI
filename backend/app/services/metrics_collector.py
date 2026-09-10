@@ -7,15 +7,14 @@ actual hiring decisions (HiringOutcome.hiring_decision).
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime, timedelta
-from typing import Optional
+from datetime import date
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import utcnow
 from app.models.assessment import Assessment, AssessmentStatus, DecisionType
-from app.models.hiring_outcome import HiringOutcome, HiringDecision
+from app.models.hiring_outcome import HiringDecision, HiringOutcome
 from app.models.learning_metrics import AssessmentMetrics
 from app.models.position import Position
 

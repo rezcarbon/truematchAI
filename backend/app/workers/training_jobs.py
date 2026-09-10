@@ -4,7 +4,6 @@ Background job processor for training system.
 Handles asynchronous processing of training data uploads.
 """
 import asyncio
-from app.core.clock import utcnow
 import logging
 from uuid import UUID
 
@@ -12,9 +11,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from app.config import settings
-from app.engines.training_data_parser import TrainingDataParser
+from app.core.clock import utcnow
 from app.engines.training_auto_learner import TrainingAutoLearner
-from app.models.training_data import TrainingDataUpload, TrainingDataItem
+from app.engines.training_data_parser import TrainingDataParser
+from app.models.training_data import TrainingDataItem, TrainingDataUpload
 
 logger = logging.getLogger(__name__)
 

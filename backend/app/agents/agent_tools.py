@@ -13,8 +13,6 @@ from __future__ import annotations
 
 from typing import Any
 
-
-
 # ── Tool definitions (Anthropic tool-use schema) ─────────────────────────────
 
 _ANALYZE_TOOL = {

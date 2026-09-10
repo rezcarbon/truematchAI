@@ -1,12 +1,15 @@
 """Email notifications for agent configuration approvals."""
 from __future__ import annotations
 
+import logging
 from enum import Enum
 from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import User, AgentConfig, AgentConfigVersion
+from app.models import AgentConfig, User
+
+logger = logging.getLogger(__name__)
 
 
 class NotificationType(str, Enum):
@@ -52,7 +55,6 @@ class AgentConfigNotificationService:
         """Notify recruiter that their config was approved."""
         subject = f" Agent Config Approved: {config.name}"
 
-        feedback_section = f"<p><strong>Feedback:</strong></p><p>{feedback}</p>" if feedback else ""
 
         body = self._build_html_email(
             title="Your Agent Configuration Has Been Approved",

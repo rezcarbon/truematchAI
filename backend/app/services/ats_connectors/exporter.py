@@ -6,10 +6,7 @@ scorecards are synced back to the connected ATS.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from uuid import UUID
-
-import httpx
 
 logger = logging.getLogger(__name__)
 

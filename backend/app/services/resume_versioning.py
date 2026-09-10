@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import difflib
-import json
 import logging
 import uuid
 from datetime import datetime
@@ -11,9 +10,7 @@ from typing import Optional
 from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.resume import Resume
 from app.models.resume_version import ChangeType, ResumeVersion
-from app.models.user import User
 
 logger = logging.getLogger(__name__)
 

@@ -6,27 +6,26 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Annotated, Optional
-from datetime import datetime, timezone
+from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, status
-from sqlalchemy import select, and_, func
+from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, status
+from sqlalchemy import and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError, AuthorizationError, ValidationError
-from app.deps import get_current_user, get_db, CurrentUser, DBSession, require_role
+from app.core.exceptions import AuthorizationError, NotFoundError, ValidationError
+from app.deps import CurrentUser, DBSession, get_current_user, get_db
 from app.models.job_scraping import (
-    MassUploadBatch,
-    UploadType,
     BatchStatus,
+    MassUploadBatch,
     UploadFieldMapping,
+    UploadType,
 )
 from app.models.resume import Resume
-from app.models.resume_version import ResumeVersion, ChangeType
-from app.models.user import User, UserRole
+from app.models.resume_version import ChangeType, ResumeVersion
+from app.models.user import User
 from app.schemas.uploads import (
-    BatchUploadResponse,
     BatchStatusResponse,
+    BatchUploadResponse,
     CreateVersionRequest,
     FieldMappingResponse,
     ListFieldMappingsResponse,

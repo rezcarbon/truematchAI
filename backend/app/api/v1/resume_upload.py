@@ -3,18 +3,15 @@ from __future__ import annotations
 
 import logging
 import uuid
-from typing import Optional
 from io import BytesIO
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, status
+from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 
+from app.core.exceptions import NotFoundError
 from app.deps import CurrentUser, DBSession
 from app.models.resume import Resume
-from app.models.resume_version import ResumeVersion, ChangeType
-from app.schemas.resume import ResumeResponse, ResumeListResponse
-from app.core.clock import utcnow
-from app.core.exceptions import NotFoundError
+from app.schemas.resume import ResumeListResponse, ResumeResponse
 
 logger = logging.getLogger("truematch.resume_upload")
 

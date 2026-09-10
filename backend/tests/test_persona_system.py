@@ -1,14 +1,14 @@
 """Test suite for the Persona System."""
 import pytest
+
 from app.agents.persona_system import (
-    PersonaProfile,
-    PersonaLibrary,
-    PersonaDetector,
-    PersonaSystem,
-    UserRole,
     CandidateObjective,
-    RecruiterObjective,
     ConversationMode,
+    PersonaDetector,
+    PersonaLibrary,
+    PersonaSystem,
+    RecruiterObjective,
+    UserRole,
 )
 
 

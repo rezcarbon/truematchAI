@@ -2,10 +2,8 @@
 from __future__ import annotations
 
 import difflib
-import json
 import logging
 import uuid
-from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import and_, desc, select
@@ -120,7 +118,7 @@ class ResumVersioningService:
             await self.db.refresh(version)
 
             logger.info(
-                f"Resume version created",
+                "Resume version created",
                 extra={
                     "version_id": str(version.id),
                     "resume_id": str(resume_id),
@@ -166,7 +164,7 @@ class ResumVersioningService:
             versions = result.scalars().all()
 
             logger.info(
-                f"Retrieved resume version history",
+                "Retrieved resume version history",
                 extra={"resume_id": str(resume_id), "version_count": len(versions)},
             )
 
@@ -225,7 +223,7 @@ class ResumVersioningService:
                 await self.db.refresh(resume)
 
             logger.info(
-                f"Resume reverted to version",
+                "Resume reverted to version",
                 extra={
                     "resume_id": str(resume_id),
                     "target_version": target_version.version_number,
@@ -304,7 +302,7 @@ class ResumVersioningService:
                 )
 
             logger.info(
-                f"Computed diff between versions",
+                "Computed diff between versions",
                 extra={
                     "version1": version1_id,
                     "version2": version2_id,
@@ -391,7 +389,7 @@ class ResumVersioningService:
                     })
 
             logger.info(
-                f"Compared assessments between versions",
+                "Compared assessments between versions",
                 extra={
                     "version1": str(resume_version_1.id),
                     "version2": str(resume_version_2.id),
