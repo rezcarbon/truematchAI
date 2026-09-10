@@ -1,12 +1,12 @@
 """System Admin Agent for platform management and governance."""
 import logging
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.enhanced_agent import EnhancedBaseAgent
-from app.models.user import User
 from app.models.governance_review import GovernanceReview
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 

@@ -5,46 +5,46 @@ import json
 import logging
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
 from math import ceil
+from typing import Optional
 
-from fastapi import APIRouter, Query, status, HTTPException
-from sqlalchemy import select, desc, func
+from fastapi import APIRouter, HTTPException, Query, status
+from sqlalchemy import desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.exceptions import NotFoundError, AuthorizationError
+from app.core.exceptions import AuthorizationError, NotFoundError
 from app.deps import CurrentUser, DBSession
 from app.models.career_coach import (
     CareerCoaching,
     CareerGoal,
-    PersonalizedCareerPlan,
-    SkillAssessment,
-    InterviewPrepSession,
     CoachingSession,
     CoachQuestion,
-    CoachingProgressReport,
+    InterviewPrepSession,
+    PersonalizedCareerPlan,
+    SkillAssessment,
 )
 from app.schemas.career_coach import (
-    RequestCareerCoachingRequest,
-    CareerGoalRequest,
-    UpdateCareerGoalRequest,
-    PersonalizedPlanRequest,
-    SkillAssessmentRequest,
-    InterviewPrepSessionRequest,
-    CareerCoachingResponse,
-    CareerGoalResponse,
-    CareerGoalListResponse,
-    PersonalizedCareerPlan as PersonalizedCareerPlanSchema,
-    SkillAssessmentResult,
-    SkillAssessmentListResponse,
-    CoachingSessionResponse,
-    InterviewPrepSessionResponse,
     AskCoachQuestion,
-    CoachResponse,
-    CoachingProgressReport as CoachingProgressReportSchema,
-    ScheduleCoachingSessionRequest,
+    CareerGoalListResponse,
+    CareerGoalRequest,
+    CareerGoalResponse,
+    CoachingSessionResponse,
     GoalStatus,
+    InterviewPrepSessionRequest,
+    InterviewPrepSessionResponse,
+    PersonalizedPlanRequest,
+    ScheduleCoachingSessionRequest,
     SessionStatus,
+    SkillAssessmentListResponse,
+    SkillAssessmentRequest,
+    SkillAssessmentResult,
+    UpdateCareerGoalRequest,
+)
+from app.schemas.career_coach import (
+    CoachingProgressReport as CoachingProgressReportSchema,
+)
+from app.schemas.career_coach import (
+    PersonalizedCareerPlan as PersonalizedCareerPlanSchema,
 )
 from app.services.career_coach_service import CareerCoachService
 

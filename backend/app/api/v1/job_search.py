@@ -9,18 +9,18 @@ from fastapi import APIRouter, HTTPException, Query, status
 
 from app.deps import CurrentUser, DBSession
 from app.schemas.job_search import (
-    CreateJobSearchRequest,
-    UpdateJobSearchRequest,
-    JobSearchResponse,
-    JobSearchDetailResponse,
-    SearchResultsResponse,
-    SaveJobRequest,
-    SavedJobResponse,
-    SearchStatsResponse,
-    BulkSaveJobsRequest,
     AlertSettingsRequest,
     AlertSettingsResponse,
+    BulkSaveJobsRequest,
+    CreateJobSearchRequest,
+    JobSearchDetailResponse,
+    JobSearchResponse,
+    SavedJobResponse,
+    SaveJobRequest,
     SearchListResponse,
+    SearchResultsResponse,
+    SearchStatsResponse,
+    UpdateJobSearchRequest,
 )
 
 router = APIRouter(prefix="/candidates/job-search", tags=["job-search"])
@@ -46,11 +46,9 @@ async def create_job_search(
 ) -> JobSearchResponse:
     """Create a new job search with specified criteria."""
     try:
-        from app.core.clock import utcnow
-        from sqlalchemy.dialects.postgresql import JSONB
-        from sqlalchemy import Column, String, Integer, Boolean, DateTime, ForeignKey, UUID as PG_UUID
-        from sqlalchemy.orm import Session
         import uuid
+
+        from app.core.clock import utcnow
 
         # For now, create a simple dictionary-based record
         # In a real scenario, this would be a proper database model
@@ -148,7 +146,6 @@ async def list_job_searches(
 ) -> SearchListResponse:
     """List all job searches owned by the current user."""
     try:
-        from app.core.clock import utcnow
 
         # Placeholder implementation - return empty list
         logger.info(f"Listed job searches for user {user.id}")
@@ -244,7 +241,6 @@ async def execute_job_search(
 ) -> SearchResultsResponse:
     """Execute a job search and return results."""
     try:
-        from app.core.clock import utcnow
 
         logger.info(f"Executed job search {search_id} for user {user.id}")
 
@@ -314,9 +310,7 @@ async def save_job(
 ) -> SavedJobResponse:
     """Save a job from search results."""
     try:
-        from sqlalchemy import select
         from app.models.saved_job import SavedJob, SavedJobStatus
-        from app.core.clock import utcnow
 
         # Create saved job record
         saved_job = SavedJob(
@@ -364,8 +358,9 @@ async def bulk_save_jobs(
 ) -> None:
     """Save multiple jobs at once."""
     try:
-        from app.models.saved_job import SavedJob, SavedJobStatus
         import uuid
+
+        from app.models.saved_job import SavedJob, SavedJobStatus
 
         # Create saved job records for each job
         for job_id_str in payload.job_ids:
@@ -406,7 +401,8 @@ async def get_saved_jobs(
 ):
     """Get user's saved jobs."""
     try:
-        from sqlalchemy import select, func, desc
+        from sqlalchemy import desc, func, select
+
         from app.models.saved_job import SavedJob, SavedJobStatus
 
         # Query saved jobs
@@ -479,10 +475,12 @@ async def unsave_job(
 ) -> None:
     """Remove a job from saved list."""
     try:
-        from sqlalchemy import select
-        from app.models.saved_job import SavedJob, SavedJobStatus
-        from app.core.clock import utcnow
         import uuid
+
+        from sqlalchemy import select
+
+        from app.core.clock import utcnow
+        from app.models.saved_job import SavedJob, SavedJobStatus
 
         # Convert job_id to UUID if needed
         try:
@@ -734,9 +732,10 @@ async def export_search_results(
 ):
     """Export search results."""
     try:
-        from fastapi.responses import StreamingResponse
         import csv
         import io
+
+        from fastapi.responses import StreamingResponse
 
         logger.info(f"Exported search results for search {search_id} as {format}")
 
@@ -777,8 +776,9 @@ async def share_search_results(
     """Create a shareable link for search results."""
     try:
         import uuid
-        from app.core.clock import utcnow
         from datetime import timedelta
+
+        from app.core.clock import utcnow
 
         # Generate short-lived token
         share_token = str(uuid.uuid4())

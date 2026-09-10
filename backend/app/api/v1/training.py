@@ -10,35 +10,35 @@ This module provides admin-only endpoints to:
 Admin-only access required for all endpoints.
 """
 import logging
-from app.core.clock import utcnow
-from typing import Optional, List
+from typing import List, Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, and_, desc
+from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_session, get_current_user
+from app.core.clock import utcnow
+from app.deps import get_current_user, get_session
 from app.models import User, UserRole
 from app.models.training import (
-    TrainingFeedback,
     CapabilityMapping,
     CredentialMapping,
     SuccessPattern,
-    TrainingProgress,
+    TrainingFeedback,
     TrainingInsight,
+    TrainingProgress,
     VirtualBrainState,
 )
 from app.schemas.training import (
-    TrainingFeedbackCreate,
-    TrainingFeedbackResponse,
     CapabilityMappingResponse,
     CredentialMappingResponse,
     SuccessPatternResponse,
-    TrainingProgressResponse,
+    TrainingFeedbackCreate,
+    TrainingFeedbackResponse,
     TrainingInsightResponse,
-    VirtualBrainStateResponse,
+    TrainingProgressResponse,
     TrainingStatsResponse,
+    VirtualBrainStateResponse,
 )
 
 logger = logging.getLogger(__name__)

@@ -5,9 +5,8 @@ import enum
 import uuid
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, String, Text
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy import ForeignKey, Index, Integer, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -17,7 +16,7 @@ from app.models._mixins import TimestampMixin, uuid_pk
 from app.models._types import EncryptedJSON, EncryptedText
 
 if TYPE_CHECKING:
-    from app.models.analysis_result import AnalysisResult
+    pass
 
 
 class AssessmentStatus(str, enum.Enum):

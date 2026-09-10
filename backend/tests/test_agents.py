@@ -9,7 +9,6 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.models.ingest_queue import IngestStatus, IngestType
 
-
 # ── CV ingestion agent tests ──────────────────────────────────────────────────
 
 def test_poll_folder_creates_inbox_dir(tmp_path, monkeypatch):

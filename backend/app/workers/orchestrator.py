@@ -18,9 +18,17 @@ import logging
 from typing import Any, Callable, Optional
 
 from app.config import settings
-from app.workers.assessment_queue import get_assessment_queue, get_assessment_processor
-from app.workers.decision_engine import DecisionThresholds, configure_decision_thresholds, get_decision_engine
-from app.workers.email_ingestion import get_email_ingestor, start_email_ingestion, stop_email_ingestion
+from app.workers.assessment_queue import get_assessment_processor, get_assessment_queue
+from app.workers.decision_engine import (
+    DecisionThresholds,
+    configure_decision_thresholds,
+    get_decision_engine,
+)
+from app.workers.email_ingestion import (
+    get_email_ingestor,
+    start_email_ingestion,
+    stop_email_ingestion,
+)
 from app.workers.file_ingestion import get_file_monitor
 from app.workers.governance_gates import get_governance_validator
 from app.workers.notification_service import get_notification_dispatcher

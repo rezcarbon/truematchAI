@@ -6,12 +6,12 @@ import uuid
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_user
+from app.deps import get_current_user, get_db
 from app.models import User
-from app.services.agent_config_service import AgentConfigService
 from app.services.agent_config_export import AgentConfigExportService
-from app.services.agent_config_notifications import AgentConfigNotificationService
 from app.services.agent_config_governance import AgentConfigGovernance
+from app.services.agent_config_notifications import AgentConfigNotificationService
+from app.services.agent_config_service import AgentConfigService
 
 router = APIRouter(prefix="/agent-configs", tags=["agent_configs_extended"])
 

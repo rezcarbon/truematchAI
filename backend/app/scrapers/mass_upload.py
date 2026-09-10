@@ -10,8 +10,8 @@ from datetime import datetime
 from io import StringIO
 from typing import AsyncGenerator
 
-from app.scrapers.base import JobPosting
 from app.models.job_scraping import UploadType
+from app.scrapers.base import JobPosting
 
 
 class FieldMappingValidator:

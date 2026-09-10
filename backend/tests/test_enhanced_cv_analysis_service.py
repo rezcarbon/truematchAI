@@ -15,14 +15,14 @@ from app.models.cv_analysis import (
 )
 from app.models.resume_version import ResumeVersion
 from app.services.enhanced_cv_analysis_service import (
-    EnhancedCVAnalysisService,
-    SkillWithEvidence,
-    SkillGapWithLearning,
-    MarketCompetitiveness,
     ActionableRecommendation,
+    EnhancedCVAnalysisResult,
+    EnhancedCVAnalysisService,
     EvidenceLink,
     EvidenceSource,
-    EnhancedCVAnalysisResult,
+    MarketCompetitiveness,
+    SkillGapWithLearning,
+    SkillWithEvidence,
 )
 
 

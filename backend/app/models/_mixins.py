@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID

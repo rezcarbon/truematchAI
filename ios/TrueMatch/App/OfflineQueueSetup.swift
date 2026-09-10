@@ -185,7 +185,7 @@ final class OfflineQueueLifecycleManager: NSObject, ObservableObject {
         TrueMatchLogger.log(.info, "Offline queue maintenance completed")
     }
 
-    func deinit {
+    deinit {
         pauseAutoSync()
         cancellables.removeAll()
     }

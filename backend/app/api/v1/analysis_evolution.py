@@ -14,14 +14,14 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_user
+from app.deps import get_current_user, get_db
 from app.models.user import User, UserRole
-from app.schemas.analysis_result import AnalysisResultResponse, AnalysisInitiateRequest
-from app.schemas.candidate_match import CandidateMatchResponse, MatchInitiateRequest
-from app.schemas.hiring_outcome import HiringOutcomeResponse, HiringOutcomeRecordRequest
+from app.schemas.analysis_result import AnalysisInitiateRequest
+from app.schemas.candidate_match import MatchInitiateRequest
+from app.schemas.hiring_outcome import HiringOutcomeRecordRequest
 from app.services.analysis_service import AnalysisService
-from app.services.matching_service import MatchingService
 from app.services.evolution_service import EvolutionService
+from app.services.matching_service import MatchingService
 
 logger = logging.getLogger("truematch.analysis_evolution_api")
 

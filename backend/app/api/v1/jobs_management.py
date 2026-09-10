@@ -6,14 +6,14 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import select, and_, func, or_
 from pydantic import BaseModel
+from sqlalchemy import and_, func, or_, select
 
+from app.core.clock import utcnow
+from app.core.exceptions import AuthorizationError, NotFoundError
 from app.deps import CurrentUser, DBSession
 from app.models.position import Position, PositionStatus
 from app.models.saved_job import SavedJob
-from app.core.clock import utcnow
-from app.core.exceptions import NotFoundError, AuthorizationError
 
 logger = logging.getLogger("truematch.jobs")
 

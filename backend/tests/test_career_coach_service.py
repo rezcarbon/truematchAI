@@ -8,16 +8,16 @@ from unittest.mock import AsyncMock, MagicMock, patch
 import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
 from app.models.resume_version import ResumeVersion
+from app.models.user import User
 from app.services.career_coach_service import (
     CareerCoachService,
     CareerContext,
+    CoachingMessage,
+    ConversationSummary,
     LearningPath,
     LearningResource,
     SalaryData,
-    CoachingMessage,
-    ConversationSummary,
 )
 
 

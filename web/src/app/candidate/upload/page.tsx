@@ -9,7 +9,7 @@ import { PageHeader } from "@/components/shared/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { UploadZone } from "@/components/UploadZone";
+import UploadZone from "@/components/UploadZone";
 import { AlertCircle, Loader2, FileText } from "lucide-react";
 import { api } from "@/lib/api";
 
@@ -248,7 +248,13 @@ export default function UploadPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <UploadZone onFile={setFile} acceptedFormats=".pdf,.doc,.docx" />
+              <UploadZone
+                acceptedFormats={[".pdf", ".doc", ".docx"]}
+                onFileSelect={(selected) => setFile(selected)}
+                onUpload={async (selected) => {
+                  if (selected instanceof File) setFile(selected);
+                }}
+              />
 
               {file && (
                 <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-lg">

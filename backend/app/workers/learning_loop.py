@@ -8,9 +8,9 @@ Enables continuous system improvement from recruiter feedback.
 import logging
 from dataclasses import dataclass
 from datetime import datetime, timedelta
-from app.core.clock import utcnow
 from typing import Any, Dict, List, Optional
 
+from app.core.clock import utcnow
 
 logger = logging.getLogger(__name__)
 

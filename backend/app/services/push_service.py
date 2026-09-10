@@ -98,6 +98,7 @@ def _deliver(token: str, platform: str, title: str, body: str, data: dict) -> No
     # remaining step.
     try:
         import json
+
         import httpx  # noqa: F401 — used in the real path
 
         logger.info(

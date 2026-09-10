@@ -24,8 +24,8 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.models.decision import Decision, DecisionOutcome
 from app.models.assessment import Assessment
+from app.models.decision import Decision, DecisionOutcome
 from app.models.position import Position
 from app.models.training import SuccessPattern, TrainingFeedback
 

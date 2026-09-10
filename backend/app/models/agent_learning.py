@@ -23,12 +23,11 @@ Over time, this data enables:
 """
 
 from datetime import datetime
-from typing import List, Optional
 from uuid import UUID
 
-from sqlalchemy import Column, String, Integer, Float, DateTime, ForeignKey, JSON, Text
-from sqlalchemy.dialects.postgresql import ARRAY, UUID as PGUUID
-from sqlalchemy.orm import relationship
+from sqlalchemy import JSON, Column, DateTime, Float, ForeignKey, Integer, String, Text
+from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import UUID as PGUUID
 
 from app.models.base import Base
 

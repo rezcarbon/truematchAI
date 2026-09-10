@@ -7,35 +7,35 @@ Allows admins to:
 3. Track auto-learning progress
 """
 import logging
-from app.core.clock import utcnow
 from typing import Optional
-from uuid import uuid4, UUID
+from uuid import UUID, uuid4
 
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.deps import DBSession, CurrentAdmin
+from app.core.clock import utcnow
+from app.deps import CurrentAdmin, DBSession
+from app.models.training import TrainingFeedback
 from app.models.training_data import (
-    TrainingDataUpload,
-    TrainingDataItem,
     TrainingChatMessage,
+    TrainingDataItem,
+    TrainingDataUpload,
     TrainingLearningSession,
 )
-from app.models.training import TrainingFeedback
 from app.schemas.training_data import (
-    TrainingDataUploadSchema,
-    TrainingDataUploadDetailSchema,
-    UploadResultSchema,
-    TrainingChatRequestSchema,
-    TrainingChatResponseSchema,
+    CreateSessionRequestSchema,
+    LearningMetricsSchema,
+    LearningStatusSchema,
     TrainingChatHistorySchema,
     TrainingChatMessageSchema,
-    LearningStatusSchema,
-    LearningMetricsSchema,
+    TrainingChatRequestSchema,
+    TrainingChatResponseSchema,
+    TrainingDataUploadDetailSchema,
+    TrainingDataUploadSchema,
     TrainingLearningSessionSchema,
-    CreateSessionRequestSchema,
+    UploadResultSchema,
 )
 
 logger = logging.getLogger(__name__)
@@ -121,12 +121,14 @@ async def upload_training_data(
     # Using a simple background task system (can be replaced with Celery/RQ)
     try:
         import asyncio
+
         from app.workers.training_jobs import TrainingJobProcessor
 
         async def background_process():
             """Background task to process upload in a new session."""
             from sqlalchemy.ext.asyncio import create_async_engine
             from sqlalchemy.orm import sessionmaker
+
             from app.config import settings
 
             processor = TrainingJobProcessor()

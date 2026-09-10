@@ -1,12 +1,11 @@
 """Unit tests for agent configuration service."""
-import pytest
 from uuid import uuid4
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AgentConfig, AgentConfigVersion, AgentConfigAudit, User, UserRole
-from app.services.agent_config_service import AgentConfigService
 from app.models.agent_config import AgentConfigStatus
+from app.services.agent_config_service import AgentConfigService
 
 
 @pytest.mark.asyncio

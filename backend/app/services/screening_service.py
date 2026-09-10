@@ -5,19 +5,19 @@ import logging
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.screening_agent import ScreeningAgent
-from app.models.screening import (
-    ScreeningBatch,
-    ScreeningResult,
-    ScreeningBatchStatus,
-    RecruiterDecision,
-)
-from app.models.resume import Resume
-from app.models.position import Position
 from app.models.decision import Decision
+from app.models.position import Position
+from app.models.resume import Resume
+from app.models.screening import (
+    RecruiterDecision,
+    ScreeningBatch,
+    ScreeningBatchStatus,
+    ScreeningResult,
+)
 
 logger = logging.getLogger(__name__)
 

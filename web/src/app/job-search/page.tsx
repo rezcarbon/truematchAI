@@ -7,8 +7,15 @@
 export const dynamic = 'force-dynamic';
 
 import React from 'react';
-import { JobBrowser } from '@/components/job-search/JobBrowser';
+import nextDynamic from 'next/dynamic';
 import type { Skill } from '@/types/jobs';
+
+// The job browser is a fully client-side, stateful widget with no server data.
+// Render it client-only so the production build doesn't try to prerender it.
+const JobBrowser = nextDynamic(
+  () => import('@/components/job-search/JobBrowser').then((m) => m.JobBrowser),
+  { ssr: false },
+);
 
 export default function JobSearchPage() {
   // Mock user skills - in production, these would come from user profile

@@ -14,11 +14,12 @@ Enables:
 import asyncio
 import json
 import logging
-from dataclasses import dataclass, asdict
-from app.core.clock import utcnow
+from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set
 from uuid import uuid4
+
+from app.core.clock import utcnow
 
 logger = logging.getLogger(__name__)
 

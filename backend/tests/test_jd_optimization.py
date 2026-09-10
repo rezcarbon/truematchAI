@@ -1,6 +1,7 @@
 """Comprehensive tests for JD Optimization Service."""
 from __future__ import annotations
 
+import uuid
 from datetime import datetime
 from unittest.mock import AsyncMock, MagicMock
 

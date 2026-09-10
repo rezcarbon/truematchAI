@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 import logging
-from app.core.clock import utcnow
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select, update, desc
+from sqlalchemy import desc, select, update
 
+from app.core.clock import utcnow
 from app.deps import CurrentUser, DBSession
 from app.models import Notification
 

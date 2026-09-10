@@ -1,13 +1,13 @@
 """Tests for job search service."""
-import pytest
 import uuid
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.job_search_service import JobSearchService, JobWithMatch
 from app.models.position import Position, PositionStatus
 from app.models.resume import Resume, ResumeStatus
 from app.models.user import User
+from app.services.job_search_service import JobSearchService, JobWithMatch
 
 
 class TestJobSearchService:

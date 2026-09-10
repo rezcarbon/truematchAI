@@ -1,12 +1,12 @@
 """Notification service for creating and managing notifications."""
 import logging
 from datetime import datetime
-from app.core.clock import utcnow
 from uuid import UUID
 
 from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.clock import utcnow
 from app.models import Notification, NotificationPreference
 from app.websocket.manager import manager
 

@@ -15,11 +15,11 @@ from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.engines.client import ClaudeClient
+from app.models.training import VirtualBrainState
 from app.models.training_data import (
     TrainingDataItem,
     TrainingInsightBatch,
 )
-from app.models.training import VirtualBrainState
 
 logger = logging.getLogger(__name__)
 

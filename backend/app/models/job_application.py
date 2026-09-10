@@ -6,14 +6,16 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Index, String, Integer, Float, Boolean, DateTime, Text
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
+from sqlalchemy import DateTime, ForeignKey, Index, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.clock import utcnow
 from app.database import Base
 from app.models._mixins import TimestampMixin, uuid_pk
-from app.models._types import EncryptedJSON, EncryptedText
+from app.models._types import EncryptedText
+from app.models.application_timeline import ApplicationTimeline
 
 
 class ApplicationStatus(str, enum.Enum):
@@ -273,7 +275,6 @@ class JobApplication(Base, TimestampMixin):
             logger.info(f"Cannot transition: {error}")
         """
         current = self.status
-        reason = None
 
         # Can't transition from terminal states
         if current == ApplicationStatus.rejected:

@@ -7,11 +7,11 @@ import json
 import pytest
 
 from app.scrapers.mass_upload import (
+    DEFAULT_FIELD_MAPPINGS,
     CSVUploadProcessor,
+    FieldMappingValidator,
     JSONUploadProcessor,
     MassUploadProcessor,
-    FieldMappingValidator,
-    DEFAULT_FIELD_MAPPINGS,
 )
 
 

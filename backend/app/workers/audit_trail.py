@@ -6,11 +6,11 @@ Enables compliance (GDPR, SOC2) and legal discovery.
 """
 import json
 import logging
-from dataclasses import dataclass, asdict
-from app.core.clock import utcnow
+from dataclasses import asdict, dataclass
 from typing import Any, Dict, List, Optional
 from uuid import uuid4
 
+from app.core.clock import utcnow
 
 logger = logging.getLogger(__name__)
 

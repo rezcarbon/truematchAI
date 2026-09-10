@@ -7,9 +7,9 @@ from datetime import datetime, timezone
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Query, status
-from sqlalchemy import select, func, and_
+from sqlalchemy import func, select
 
-from app.core.exceptions import NotFoundError, AuthorizationError, ValidationError
+from app.core.exceptions import NotFoundError, ValidationError
 from app.deps import CurrentUser, DBSession, require_role
 from app.models.jd_simulation import JDSimulationRequest, JDSimulationResult, JDSimulationStatus
 from app.models.position import Position
@@ -21,7 +21,6 @@ from app.schemas.jd_simulation import (
     DetailedJDAnalysisRequest,
     DetailedJDAnalysisResponse,
     JDSimulationListItem,
-    JDSimulationResult as JDSimulationResultSchema,
     JDSimulationStartRequest,
     JDSimulationStartResponse,
     PaginatedJDSimulationList,
@@ -30,6 +29,9 @@ from app.schemas.jd_simulation import (
     SuggestionAcceptanceRequest,
     SuggestionAcceptanceResponse,
     WordingSuggestion,
+)
+from app.schemas.jd_simulation import (
+    JDSimulationResult as JDSimulationResultSchema,
 )
 
 router = APIRouter(prefix="/recruiters/jd-simulation", tags=["jd-simulation"])

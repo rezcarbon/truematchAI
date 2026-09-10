@@ -4,9 +4,8 @@ from __future__ import annotations
 import enum
 import uuid
 
-from sqlalchemy import Boolean
+from sqlalchemy import Boolean, ForeignKey, Index, Integer, UniqueConstraint
 from sqlalchemy import Enum as SAEnum
-from sqlalchemy import ForeignKey, Index, Integer, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column

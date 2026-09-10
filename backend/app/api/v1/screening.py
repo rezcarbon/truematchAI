@@ -12,26 +12,25 @@ All endpoints require authentication (recruiter role).
 from __future__ import annotations
 
 import logging
-from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_user
+from app.deps import get_current_user, get_db
 from app.models.user import User, UserRole
 from app.schemas.screening import (
     ScreeningBatchCreateRequest,
+    ScreeningBatchMetricsResponse,
+    ScreeningBatchPendingResponse,
     ScreeningBatchResponse,
     ScreeningBatchStatusResponse,
-    ScreeningResultDetailResponse,
-    ScreeningBatchPendingResponse,
-    ScreeningResultSummaryCard,
-    ScreeningDecisionRequest,
-    ScreeningDecisionResponse,
     ScreeningBulkDecisionRequest,
     ScreeningBulkDecisionResponse,
-    ScreeningBatchMetricsResponse,
+    ScreeningDecisionRequest,
+    ScreeningDecisionResponse,
+    ScreeningResultDetailResponse,
+    ScreeningResultSummaryCard,
 )
 from app.services.screening_service import ScreeningService
 from app.workers.screening_queue import process_screening_batch
@@ -93,8 +92,9 @@ async def create_screening_batch(
         service = ScreeningService(db)
 
         # Validate position exists
-        from app.models.position import Position
         from sqlalchemy import select
+
+        from app.models.position import Position
 
         position = await db.execute(
             select(Position).where(Position.id == request.position_id)
@@ -307,8 +307,9 @@ async def get_screening_details(
         404: Screening result not found
     """
     try:
-        from app.models.screening import ScreeningResult
         from sqlalchemy import select
+
+        from app.models.screening import ScreeningResult
 
         result = await db.execute(
             select(ScreeningResult).where(
@@ -392,8 +393,9 @@ async def record_recruiter_decision(
         409: Already decided
     """
     try:
-        from app.models.screening import ScreeningResult
         from sqlalchemy import select
+
+        from app.models.screening import ScreeningResult
 
         result = await db.execute(
             select(ScreeningResult).where(

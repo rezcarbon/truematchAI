@@ -3,11 +3,11 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import select, func
 from pydantic import BaseModel, Field
+from sqlalchemy import func, select
 
-from app.models.governance_review import GovernanceReview, ReviewStatus
 from app.deps import CurrentUser, DBSession
+from app.models.governance_review import GovernanceReview, ReviewStatus
 
 router = APIRouter(prefix="/governance-reviews", tags=["governance"])
 

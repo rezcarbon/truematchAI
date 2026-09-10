@@ -4,18 +4,18 @@ Captures daily model performance, accuracy metrics, and learning progression.
 """
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
     Date,
-    DateTime,
     Float,
     Index,
     Integer,
     String,
 )
-from sqlalchemy.dialects.postgresql import JSON, UUID as PG_UUID
+from sqlalchemy.dialects.postgresql import JSON
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base

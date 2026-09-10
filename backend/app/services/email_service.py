@@ -391,7 +391,7 @@ TrueMatch Team
         """Synchronous SendGrid implementation."""
         try:
             from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail, Email, To, Content
+            from sendgrid.helpers.mail import Content, Email, Mail, To
 
             # Create email
             mail = Mail(

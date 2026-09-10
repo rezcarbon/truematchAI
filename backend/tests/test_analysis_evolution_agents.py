@@ -1,14 +1,14 @@
 """Unit tests for Analysis, Matching, and Evolution Agents - Phases 3-5."""
-import pytest
 from uuid import uuid4
 
+import pytest
+
 from app.agents.analysis_agent import AnalysisAgent
-from app.agents.matching_agent import MatchingAgent
 from app.agents.evolution_agent import EvolutionAgent
+from app.agents.matching_agent import MatchingAgent
 from app.models.analysis_result import AnalysisResult
 from app.models.assessment import Assessment
 from app.models.assessment_design import AssessmentDesign
-from app.models.candidate_match import CandidateMatch
 from app.models.hiring_outcome import HiringOutcome
 from app.models.position import Position
 from app.models.resume import Resume

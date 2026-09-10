@@ -14,18 +14,16 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import utcnow
 from app.models.application import Application, PipelineStage
+from app.models.application_timeline import EventType
 from app.models.application_tracking import (
+    ActorType,
     ApplicationEvent,
     ApplicationEventType,
-    ActorType,
     ApplicationFeedback,
-    FeedbackRecommendation,
 )
-from app.models.application_timeline import ApplicationTimeline, EventType
 from app.models.position import Position
 from app.models.resume import Resume
 from app.models.saved_job import SavedJob, SavedJobStatus
-from app.models.user import User
 
 logger = logging.getLogger(__name__)
 

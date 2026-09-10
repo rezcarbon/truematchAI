@@ -3,15 +3,15 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from app.core.clock import utcnow
 from enum import Enum
 
-from sqlalchemy import DateTime, String, ForeignKey, Index, Text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import DateTime, ForeignKey, Index, String
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
+from app.core.clock import utcnow
 from app.models._types import EncryptedText
+from app.models.base import Base
 
 
 class PipelineStage(str, Enum):

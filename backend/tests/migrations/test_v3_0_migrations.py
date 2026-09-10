@@ -9,12 +9,11 @@ Tests verify:
 - Query performance is maintained
 """
 
-import pytest
-from sqlalchemy import inspect, text, MetaData, Table
-from sqlalchemy.pool import StaticPool
-
 import sys
 from pathlib import Path
+
+import pytest
+from sqlalchemy import inspect, text
 
 # Ensure alembic is in path
 sys.path.insert(0, str(Path(__file__).parent.parent.parent / "alembic"))
@@ -159,8 +158,8 @@ class TestSavedJobsV3:
             'ix_saved_jobs_lists_sort_order',
         }
 
-        assert saved_jobs_indices.issubset(saved_jobs_indexes), f"Missing saved_jobs indices"
-        assert lists_indices.issubset(lists_indexes), f"Missing saved_jobs_lists indices"
+        assert saved_jobs_indices.issubset(saved_jobs_indexes), "Missing saved_jobs indices"
+        assert lists_indices.issubset(lists_indexes), "Missing saved_jobs_lists indices"
 
     def test_saved_jobs_backup_tables_exist(self, db_session):
         """Verify backup tables were created during upgrade."""
@@ -226,7 +225,7 @@ class TestApplicationTimelineV3:
             'fk_assessments_previous_assessment_id',
         }
 
-        assert required_fks.issubset(foreign_keys), f"Missing foreign keys"
+        assert required_fks.issubset(foreign_keys), "Missing foreign keys"
 
     def test_assessments_indices_exist(self, db_session):
         """Verify all performance indices were created."""

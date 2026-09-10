@@ -13,13 +13,10 @@ from __future__ import annotations
 
 import logging
 from collections import defaultdict
-from typing import Optional
 
 from sqlalchemy.orm import Session
-from sqlalchemy import select
 
-from app.models.screening import ScreeningResult, ScreeningBatchStatus
-from app.models.disparate_impact import DisparateImpactFlag, DisparateImpactAnalysis
+from app.models.screening import ScreeningResult
 
 logger = logging.getLogger("truematch.screening_governance")
 

@@ -3,15 +3,15 @@ Recruiter metrics and performance analytics
 Tracks hiring performance, conversion rates, and efficiency metrics
 """
 
+import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-import logging
 
-from app.deps import get_db, get_current_recruiter
-from app.models import Application, User, Interview
+from app.deps import get_current_recruiter, get_db
+from app.models import Application, Interview, User
 
 logger = logging.getLogger(__name__)
 

@@ -4,15 +4,19 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select, and_
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_user
+from app.deps import get_current_user, get_db
+from app.models.chat import Conversation, ConversationStatus, Message, MessageRole
 from app.models.user import User
-from app.models.chat import Conversation, Message, ConversationStatus, MessageRole
 from app.schemas.chat import (
-    ConversationResponse, ConversationDetailResponse, ConversationCreate,
-    MessageResponse, MessageCreate, MessageListResponse
+    ConversationCreate,
+    ConversationDetailResponse,
+    ConversationResponse,
+    MessageCreate,
+    MessageListResponse,
+    MessageResponse,
 )
 
 logger = logging.getLogger("truematch.chat_api")
@@ -35,7 +39,7 @@ async def create_conversation(
         db.add(conversation)
         await db.flush()
         await db.commit()
-        
+
         logger.info(f"Conversation created: {conversation.id} for user {user.id}")
         return {
             "id": conversation.id,
@@ -64,10 +68,10 @@ async def list_conversations(
         stmt = select(Conversation).where(
             and_(Conversation.user_id == user.id, Conversation.status != ConversationStatus.closed)
         ).limit(limit).offset(offset).order_by(Conversation.updated_at.desc())
-        
+
         result = await db.scalars(stmt)
         conversations = list(result.all())
-        
+
         return [
             {
                 "id": c.id,
@@ -97,11 +101,11 @@ async def get_conversation(
         conversation = await db.get(Conversation, conversation_id)
         if not conversation or conversation.user_id != user.id:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
-        
+
         stmt = select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at.asc())
         messages_result = await db.scalars(stmt)
         messages = list(messages_result.all())
-        
+
         return {
             "id": conversation.id,
             "user_id": conversation.user_id,
@@ -144,7 +148,7 @@ async def send_message(
         conversation = await db.get(Conversation, conversation_id)
         if not conversation or conversation.user_id != user.id:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
-        
+
         message = Message(
             conversation_id=conversation_id,
             user_id=user.id,
@@ -156,7 +160,7 @@ async def send_message(
         conversation.message_count += 1
         await db.flush()
         await db.commit()
-        
+
         logger.info(f"Message created: {message.id} in conversation {conversation_id}")
         return {
             "id": message.id,
@@ -186,19 +190,19 @@ async def list_messages(
     """List messages with optional filtering."""
     try:
         offset = (page - 1) * limit
-        
+
         if conversation_id:
             conversation = await db.get(Conversation, conversation_id)
             if not conversation or conversation.user_id != user.id:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conversation not found")
-            
+
             stmt = select(Message).where(Message.conversation_id == conversation_id).order_by(Message.created_at.desc()).limit(limit).offset(offset)
         else:
             stmt = select(Message).where(Message.user_id == user.id).order_by(Message.created_at.desc()).limit(limit).offset(offset)
-        
+
         messages_result = await db.scalars(stmt)
         messages = list(messages_result.all())
-        
+
         return {
             "messages": [
                 {

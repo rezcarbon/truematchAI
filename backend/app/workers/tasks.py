@@ -21,7 +21,9 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
+from app.core import provenance, scoring
 from app.core.governance import GovernanceConfig, get_governance_config
+from app.core.timing import phase_timer
 from app.engines import (
     corpus,
     decision_engine,
@@ -33,11 +35,9 @@ from app.engines import (
     substitution,
     text_utils,
 )
-from app.core import provenance, scoring
-from app.core.timing import phase_timer
 from app.models.assessment import Assessment, AssessmentStatus
 from app.models.audit import AuditTrail
-from app.models.governance_log import GovernanceLog, GateName
+from app.models.governance_log import GateName, GovernanceLog
 from app.models.ingest_queue import IngestQueueItem, IngestSource, IngestStatus, IngestType
 from app.models.position import Position
 from app.models.resume import Resume

@@ -24,16 +24,16 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.models.chat import ChatSession, ChatMessage
-from app.models.user import User
-from app.models.autonomous_settings import AutonomousSettings
-from app.models.governance_review import GovernanceReview, ReviewStatus, ReviewType
 from app.agents.autonomous_loop import (
+    MAX_BATCH_SIZE,
     AutonomousLoopManager,
     CostCalculator,
     LoopMetrics,
-    MAX_BATCH_SIZE,
 )
+from app.models.autonomous_settings import AutonomousSettings
+from app.models.chat import ChatMessage, ChatSession
+from app.models.governance_review import GovernanceReview, ReviewStatus, ReviewType
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
