@@ -12,7 +12,6 @@ Analyzes candidate-to-position fit and:
 from __future__ import annotations
 
 import logging
-from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 

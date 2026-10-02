@@ -19,10 +19,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.clock import utcnow
 from app.models.assessment import Assessment, AssessmentStatus
-from app.models.hiring_outcome import HiringOutcome, HiringDecision
-from app.models.learning_metrics import AssessmentMetrics, CognitiveState, CognitiveEvolutionLog
+from app.models.hiring_outcome import HiringDecision, HiringOutcome
+from app.models.learning_metrics import AssessmentMetrics, CognitiveEvolutionLog, CognitiveState
 from app.models.position import Position
-from app.services.metrics_collector import MetricsCollector, HIRE_THRESHOLD
+from app.services.metrics_collector import HIRE_THRESHOLD, MetricsCollector
 
 logger = logging.getLogger("truematch.learning_pipeline")
 
@@ -189,7 +189,7 @@ class LearningPipeline:
         patterns["optimal_threshold"] = optimal_threshold
 
         # Estimate potential improvement
-        current_metrics = await self.db.get(AssessmentMetrics, None)
+        await self.db.get(AssessmentMetrics, None)
         # Get latest metrics for target_date
         stmt = select(AssessmentMetrics).where(
             AssessmentMetrics.metric_date == target_date

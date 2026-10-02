@@ -169,7 +169,7 @@ class DocumentFileEventHandler(FileSystemEventHandler):
     async def _extract_text(self, file_content: bytes, file_path: Path) -> str | None:
         """Extract text from document using intake engine."""
         try:
-            from app.engines.extract import extract_text, ExtractionError
+            from app.engines.extract import ExtractionError, extract_text
 
             file_ext = file_path.suffix.lower()
             if file_ext in {".pdf", ".docx", ".doc"}:

@@ -20,18 +20,16 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_user
+from app.deps import get_current_user, get_db
 from app.models.user import User, UserRole
 from app.schemas.assessment_design import (
-    AssessmentDesignCreateRequest,
-    AssessmentDesignResponse,
-    AssessmentDesignPendingResponse,
     AssessmentDesignApproveRequest,
+    AssessmentDesignCreateRequest,
+    AssessmentDesignPendingResponse,
     AssessmentDesignRequestChangesRequest,
     FairnessReportResponse,
 )
 from app.services.assessment_designer_service import AssessmentDesignerService
-from app.workers.assessment_design_queue import design_assessment
 
 logger = logging.getLogger("truematch.assessment_designs_api")
 
@@ -215,6 +213,7 @@ async def get_design_details(
     """
     try:
         from sqlalchemy import select
+
         from app.models.assessment_design import AssessmentDesign
 
         design = await db.execute(
@@ -298,6 +297,7 @@ async def approve_design(
 
         # Check design exists and is pending
         from sqlalchemy import select
+
         from app.models.assessment_design import AssessmentDesign
 
         design = await db.execute(
@@ -318,7 +318,7 @@ async def approve_design(
             )
 
         # Approve design
-        approved_design = await service.approve_design(
+        await service.approve_design(
             design_id=design_id,
             recruiter_id=recruiter.id,
             recruiter_notes=request.recruiter_notes,
@@ -380,6 +380,7 @@ async def request_design_changes(
 
         # Check design status
         from sqlalchemy import select
+
         from app.models.assessment_design import AssessmentDesign
 
         design = await db.execute(
@@ -400,7 +401,7 @@ async def request_design_changes(
             )
 
         # Request changes
-        updated_design = await service.request_changes(
+        await service.request_changes(
             design_id=design_id,
             recruiter_id=recruiter.id,
             feedback=request.feedback,
@@ -462,6 +463,7 @@ async def reject_design(
 
         # Check design status
         from sqlalchemy import select
+
         from app.models.assessment_design import AssessmentDesign
 
         design = await db.execute(
@@ -482,7 +484,7 @@ async def reject_design(
             )
 
         # Reject design
-        rejected_design = await service.reject_design(
+        await service.reject_design(
             design_id=design_id,
             recruiter_id=recruiter.id,
             reason=reason,

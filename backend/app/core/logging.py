@@ -81,7 +81,7 @@ class RequestContextMiddleware:
             return
 
         # Extract request ID from headers or generate one
-        headers = dict(scope.get("headers", []))
+        dict(scope.get("headers", []))
         rid = None
         for name, value in scope.get("headers", []):
             if name.lower() == b"x-request-id":

@@ -17,7 +17,7 @@ import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
-from app.core.email_service import EmailService, EmailTemplate, EmailServiceError
+from app.core.email_service import EmailService, EmailServiceError, EmailTemplate
 from app.models.notification import EmailLog
 from app.workers.candidate_notification import CandidateNotificationWorker
 

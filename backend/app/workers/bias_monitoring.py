@@ -17,12 +17,12 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import timedelta
-from app.core.clock import utcnow
 from typing import Any
 
 from sqlalchemy import and_, func, select
 from sqlalchemy.orm import Session
 
+from app.core.clock import utcnow
 from app.models.assessment import Assessment, AssessmentStatus
 from app.models.disparate_impact import (
     DisparateImpactAnalysis,

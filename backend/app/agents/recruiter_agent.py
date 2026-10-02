@@ -1,20 +1,20 @@
 """Recruiter Assistant Agent for hiring and candidate management."""
 import logging
-from typing import Optional, Dict, Any
+from typing import Any, Dict, Optional
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.enhanced_agent import EnhancedBaseAgent
-from app.agents.persona_system import PersonaSystem, UserRole
 from app.agents.persona_integration import (
-    PersonaEnhancedAgentMixin,
-    PersonaContextLoader,
     PersonaAnalytics,
+    PersonaContextLoader,
+    PersonaEnhancedAgentMixin,
 )
-from app.models.user import User
-from app.models.position import Position, PositionStatus
+from app.agents.persona_system import UserRole
 from app.models.application import Application, PipelineStage
+from app.models.position import Position, PositionStatus
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -298,7 +298,7 @@ Focus on helping with the above capabilities and referring to the loaded context
         }
 
         # Combine system prompt with context
-        full_prompt = system_prompt + "\n\nCOMPANY_CONTEXT:\n" + str(company_context)
+        system_prompt + "\n\nCOMPANY_CONTEXT:\n" + str(company_context)
 
         # This would normally call the actual Claude API or agent logic
         # For now, return a placeholder that will be handled by parent class

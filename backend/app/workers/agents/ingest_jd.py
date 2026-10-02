@@ -26,8 +26,8 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
 from app.engines import reasoning
-from app.engines.intake import analyze_jd
 from app.engines.client import call_claude_json, is_live
+from app.engines.intake import analyze_jd
 from app.models.ingest_queue import IngestQueueItem, IngestSource, IngestStatus, IngestType
 from app.models.user import User, UserRole
 from app.workers.celery_app import celery_app
@@ -132,8 +132,9 @@ def _process_jd(
 
 def _snapshot_version(db: Session, position_id: uuid.UUID, jd_text: str,
                        requirements: dict, jd_review: dict) -> None:
-    from app.models.jd_version import JDVersion
     from sqlalchemy import func
+
+    from app.models.jd_version import JDVersion
     count = db.scalar(
         select(func.count()).select_from(JDVersion).where(JDVersion.position_id == position_id)
     ) or 0

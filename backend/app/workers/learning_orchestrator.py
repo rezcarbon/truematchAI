@@ -17,8 +17,6 @@ import logging
 from datetime import date, timedelta
 from typing import Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from app.database import get_session
 from app.services.learning_pipeline import LearningPipeline
 from app.workers.celery_app import celery_app

@@ -8,14 +8,14 @@ Tests cover:
 - Feature flag synchronization
 - Audit logging
 """
-import pytest
-from uuid import uuid4
 from unittest.mock import patch
+from uuid import uuid4
 
+import pytest
 
-from app.models.user import User
+from app.core.feature_flags import FeatureFlag, FeatureFlagManager
 from app.models.autonomous_settings import AutonomousSettings
-from app.core.feature_flags import FeatureFlagManager, FeatureFlag
+from app.models.user import User
 
 
 @pytest.mark.asyncio

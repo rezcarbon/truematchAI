@@ -9,13 +9,13 @@ Tests cover:
 - Error handling and fallbacks
 """
 
-import pytest
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
+from unittest.mock import AsyncMock, Mock, patch
 from uuid import uuid4
-from datetime import datetime
 
-from app.agents.m_agent_wrapper import MAgentRecruiterWrapper
+import pytest
+
 from app.agents.base_agent import AgentResponse
+from app.agents.m_agent_wrapper import MAgentRecruiterWrapper
 from app.models.user import User
 
 
@@ -33,7 +33,7 @@ class TestMAgentWrapperInitialization:
     def test_m_agent_import_success(self, mock_import):
         """Test successful M Agent import."""
         mock_import.return_value = True
-        wrapper = MAgentRecruiterWrapper()
+        MAgentRecruiterWrapper()
         # Verify import was attempted
         assert mock_import.called
 

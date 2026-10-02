@@ -7,12 +7,11 @@ from __future__ import annotations
 
 from unittest.mock import MagicMock
 
-
-from app.workers.agents import ingest_drive
-from app.models.ingest_queue import IngestSource, IngestStatus
 from app.models.assessment import Assessment
+from app.models.ingest_queue import IngestSource, IngestStatus
 from app.models.position import Position
 from app.models.resume import Resume
+from app.workers.agents import ingest_drive
 
 FOLDER = "application/vnd.google-apps.folder"
 

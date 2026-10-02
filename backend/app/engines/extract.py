@@ -91,8 +91,8 @@ def _extract_docx_fallback(data: bytes) -> str:
     Handles corrupted or non-standard DOCX files by extracting text
     directly from the document.xml file without using python-docx.
     """
-    import zipfile
     import xml.etree.ElementTree as ET
+    import zipfile
 
     try:
         with zipfile.ZipFile(io.BytesIO(data)) as docx_zip:

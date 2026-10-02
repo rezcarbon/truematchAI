@@ -13,12 +13,12 @@ import logging
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.engines.client import ClaudeClient, is_live
-from app.models.resume import Resume
 from app.models.position import Position
+from app.models.resume import Resume
 
 logger = logging.getLogger(__name__)
 

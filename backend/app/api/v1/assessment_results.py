@@ -6,15 +6,15 @@ import uuid
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import select, func
 from pydantic import BaseModel
+from sqlalchemy import func, select
 
+from app.core.clock import utcnow
+from app.core.exceptions import AuthorizationError, NotFoundError
 from app.deps import CurrentUser, DBSession
 from app.models.assessment import Assessment
-from app.models.resume import Resume
 from app.models.position import Position
-from app.core.clock import utcnow
-from app.core.exceptions import NotFoundError, AuthorizationError
+from app.models.resume import Resume
 
 logger = logging.getLogger("truematch.assessment_results")
 

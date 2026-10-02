@@ -6,13 +6,23 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Index, String, Integer, Float, Boolean, DateTime, UniqueConstraint
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB, TEXT
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
+from sqlalchemy.dialects.postgresql import TEXT
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.clock import utcnow
 from app.database import Base
-from app.models._types import EncryptedJSON, EncryptedText
+from app.models._types import EncryptedJSON
 
 
 class SavedJobStatus(str, enum.Enum):
@@ -146,7 +156,6 @@ class SavedJob(Base):
             logger.info(f"Job is now {'saved' if is_saved else 'archived'}")
         """
         now = utcnow()
-        old_status = self.status
 
         if self.status == SavedJobStatus.saved:
             self.status = SavedJobStatus.archived

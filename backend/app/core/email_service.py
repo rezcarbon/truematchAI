@@ -17,13 +17,13 @@ Features:
 
 import asyncio
 import logging
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import jinja2
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 from app.config import settings
 
@@ -320,7 +320,7 @@ class EmailService:
         """
         try:
             from sendgrid import SendGridAPIClient
-            from sendgrid.helpers.mail import Mail, Email, To, Content
+            from sendgrid.helpers.mail import Content, Email, Mail, To
 
             message = Mail(
                 from_email=Email(

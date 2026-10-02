@@ -1,10 +1,11 @@
 """Unit tests for Assessment Designer Agent - Phase 2."""
-import pytest
 from uuid import uuid4
 
+import pytest
+
 from app.agents.assessment_designer_agent import AssessmentDesignerAgent
-from app.models.resume import Resume
 from app.models.position import Position
+from app.models.resume import Resume
 
 
 class TestAssessmentDesignerAgentAnalysis:
@@ -233,13 +234,6 @@ class TestAssessmentDesignerAgentFairness:
         """Gate validates assessment duration."""
         agent = AssessmentDesignerAgent(db_session)
 
-        interview_guidance_short = {
-            "estimated_duration_minutes": 20,
-            "time_breakdown": {},
-            "probe_areas": [],
-            "red_flags": [],
-            "growth_signals": [],
-        }
 
         interview_guidance_long = {
             "estimated_duration_minutes": 300,  # 5 hours

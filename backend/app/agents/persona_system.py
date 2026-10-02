@@ -11,11 +11,11 @@ Personas are dynamically loaded based on:
 4. Chat mode (general, career_coach, interview_prep, etc.)
 """
 
-from enum import Enum
-from dataclasses import dataclass, field
-from typing import Optional, Dict, List, Any
-from datetime import datetime
 import json
+from dataclasses import dataclass, field
+from datetime import datetime
+from enum import Enum
+from typing import Any, Dict, List, Optional
 
 
 class UserRole(str, Enum):

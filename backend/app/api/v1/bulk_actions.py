@@ -3,16 +3,16 @@ Bulk operations API endpoints for candidates
 Handles: stage updates, tag assignment, interview scheduling, rejections
 """
 
+import logging
 from typing import List
 from uuid import UUID
-from app.core.clock import utcnow
-import logging
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_recruiter
+from app.core.clock import utcnow
+from app.deps import get_current_recruiter, get_db
 from app.models import Application
 
 logger = logging.getLogger(__name__)

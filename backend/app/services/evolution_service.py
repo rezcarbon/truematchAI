@@ -9,8 +9,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.evolution_agent import EvolutionAgent
-from app.models.hiring_outcome import HiringOutcome, HiringDecision, PerformanceRating
 from app.models.candidate_match import CandidateMatch
+from app.models.hiring_outcome import HiringDecision, HiringOutcome, PerformanceRating
 
 logger = logging.getLogger("truematch.evolution_service")
 

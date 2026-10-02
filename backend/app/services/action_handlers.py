@@ -14,7 +14,6 @@ import logging
 import re
 import uuid
 from datetime import datetime
-from app.core.clock import utcnow
 from typing import Optional
 
 from pydantic import BaseModel, Field, validator
@@ -22,13 +21,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm.attributes import flag_modified
 
-from app.models.user import User
-from app.models.resume import Resume
-from app.models.position import Position
+from app.core.clock import utcnow
 from app.models.application import Application
-from app.models.interview import Interview
-from app.models.decision import Decision, DecisionOutcome
 from app.models.assessment import Assessment
+from app.models.decision import Decision, DecisionOutcome
+from app.models.interview import Interview
+from app.models.position import Position
+from app.models.resume import Resume
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 

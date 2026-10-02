@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Optional, Any
+from typing import Optional
 
 from app.engines import semantic_match, text_utils
 
@@ -116,7 +116,7 @@ class EnhancedMatcher:
         resume_text = candidate_profile.get("resume_text", "")
         candidate_skills = candidate_profile.get("skills", [])
         experience_years = candidate_profile.get("experience_years", 0)
-        candidate_title = candidate_profile.get("current_title", "")
+        candidate_profile.get("current_title", "")
 
         if not resume_text or not job_description:
             logger.warning("Missing resume_text or job_description for matching")

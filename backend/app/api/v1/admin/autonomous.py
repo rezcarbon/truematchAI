@@ -3,15 +3,15 @@ import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select, func
-from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel, Field, field_validator
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_current_user
+from app.core.feature_flags import FeatureFlag, FeatureFlagManager
 from app.database import get_session
-from app.models.user import User
+from app.deps import get_current_user
 from app.models.autonomous_settings import AutonomousSettings
-from app.core.feature_flags import FeatureFlagManager, FeatureFlag
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/autonomous", tags=["admin", "autonomous"])

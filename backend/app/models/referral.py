@@ -9,12 +9,12 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from app.core.clock import utcnow
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.clock import utcnow
 from app.database import Base
 from app.models._mixins import TimestampMixin, uuid_pk
 

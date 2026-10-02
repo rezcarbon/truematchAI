@@ -68,10 +68,40 @@ include = ["app*"]
 line-length = 100
 target-version = "py312"
 
+[tool.ruff.lint]
+# Explicit, pinned selection. Ruff's implicit default set has grown across
+# releases; without a `select` here a routine ruff upgrade silently turns the
+# lint gate red on thousands of stylistic findings. This set is scoped to
+# correctness and import hygiene:
+#   E4/E7/E9  import placement, statement-level mistakes, syntax errors
+#   F         pyflakes: undefined names, unused imports, f-string bugs
+#   W         whitespace
+#   I         import sorting (isort)
+# Stylistic/opinion rules (UP annotation rewrites, BLE001 blind-except,
+# B008 FastAPI Depends-in-defaults, datetime tz nits, …) are intentionally
+# NOT selected — they are tracked separately, not build-blocking.
+select = ["E4", "E7", "E9", "F", "W", "I"]
+ignore = [
+    # SQLAlchemy filter expressions require `== None` / `== True` to build the
+    # correct SQL (`IS NULL` / `= true`); `is None` / truthiness would change
+    # the generated query. This codebase uses that idiom throughout.
+    "E711",
+    "E712",
+]
+
 [tool.ruff.lint.per-file-ignores]
 # conftest sets environment variables before importing the app on purpose.
 "tests/conftest.py" = ["E402"]
+# Module is skipped at collection (job_search feature disabled); it still
+# references the not-yet-existing JobSearch model in dead helper code.
+"tests/test_phase1_endpoints.py" = ["F821"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 pythonpath = ["."]
+# Only the test suite is collected. `scripts/` holds standalone operational
+# scripts (not pytest modules) and must not be import-collected.
+testpaths = ["tests"]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+]

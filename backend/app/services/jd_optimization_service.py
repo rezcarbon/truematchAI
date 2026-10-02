@@ -206,7 +206,7 @@ class JDOptimizationService:
             fixes.append({
                 "priority": "high",
                 "action": "Make requirements more realistic",
-                "example": f'Reduce years required or mark as nice-to-have',
+                "example": 'Reduce years required or mark as nice-to-have',
                 "impact": "realism",
             })
         elif issue_type == "unclear":

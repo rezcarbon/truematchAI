@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.admin_agent import AdminAgent
 from app.agents.candidate_agent import CandidateAgent
 from app.agents.recruiter_agent import RecruiterAgent
-from app.models import AgentConfig, AgentConfigStatus
+from app.models import AgentConfig
 from app.services.agent_config_service import AgentConfigService
 
 logger = logging.getLogger(__name__)

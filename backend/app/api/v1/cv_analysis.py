@@ -5,7 +5,7 @@ import logging
 import uuid
 
 from fastapi import APIRouter, status
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 
 from app.core.exceptions import NotFoundError
 from app.deps import CurrentUser, DBSession
@@ -16,11 +16,13 @@ from app.schemas.cv_analysis import (
     CVAnalysisGapItem,
     CVAnalysisListItem,
     CVAnalysisRecommendation,
-    CVAnalysisResult as CVAnalysisResultSchema,
     CVAnalysisStartRequest,
     CVAnalysisStartResponse,
     JobFitMatch,
     PaginatedCVAnalysisList,
+)
+from app.schemas.cv_analysis import (
+    CVAnalysisResult as CVAnalysisResultSchema,
 )
 
 router = APIRouter(prefix="/candidates/cv-analysis", tags=["cv-analysis"])

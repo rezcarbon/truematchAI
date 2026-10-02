@@ -6,11 +6,11 @@ import uuid
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import ForeignKey, Index, String, Integer, Float, Boolean, DateTime
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.clock import utcnow
 from app.database import Base
 from app.models._mixins import TimestampMixin, uuid_pk
 from app.models._types import EncryptedJSON, EncryptedText

@@ -5,34 +5,32 @@ import logging
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import and_, func, select, or_
-from sqlalchemy.orm import selectinload
+from sqlalchemy import and_, func, or_, select
 
 from app.config import settings
+from app.core.clock import utcnow
 from app.deps import CurrentUser, DBSession
 from app.engines import corpus, jd_evolution, reasoning
 from app.engines.intake import analyze_jd
+from app.models.application import Application, PipelineStage
 from app.models.jd_version import JDVersion
 from app.models.position import Position
-from app.models.user import UserRole
 from app.models.saved_job import SavedJob, SavedJobStatus
-from app.models.application import Application, PipelineStage
+from app.models.user import UserRole
+from app.schemas.job_search import (
+    ApplicationRequest,
+    ApplicationResponse,
+    JobSearchResponse,
+    JobSearchResults,
+    SavedJobsList,
+    SaveJobRequest,
+    SaveJobResponse,
+)
 from app.schemas.position import (
     PositionCreate,
-    PositionList,
     PositionResponse,
     PositionUpdate,
 )
-from app.schemas.job_search import (
-    JobSearchResults,
-    JobSearchResponse,
-    SaveJobRequest,
-    SaveJobResponse,
-    SavedJobsList,
-    ApplicationRequest,
-    ApplicationResponse,
-)
-from app.core.clock import utcnow
 
 router = APIRouter()
 logger = logging.getLogger("truematch.positions")

@@ -8,13 +8,13 @@ import uuid
 from sqlalchemy import select
 
 from app.database import AsyncSession
+from app.engines.client import ClaudeClient
+from app.engines.intake import parse_resume
+from app.engines.semantic_match import semantic_score
 from app.models.cv_analysis import CVAnalysisRequest, CVAnalysisResult
 from app.models.position import Position
 from app.models.resume import Resume
 from app.models.user import User
-from app.engines.client import ClaudeClient
-from app.engines.intake import parse_resume
-from app.engines.semantic_match import semantic_score
 
 logger = logging.getLogger("truematch.cv_analysis")
 

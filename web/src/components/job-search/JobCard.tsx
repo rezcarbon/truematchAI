@@ -39,7 +39,7 @@ export function JobCard({
     }
   };
 
-  const topSkills = job.skillsAlignment.matchedSkills
+  const topSkills = [...(job.skillsAlignment?.matchedSkills ?? [])]
     .sort((a, b) => b.match - a.match)
     .slice(0, 3);
 

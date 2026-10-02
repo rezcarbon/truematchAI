@@ -1,8 +1,8 @@
 """JD evolution tests (Pillar 3). Deterministic drift + mock recommendations."""
 from __future__ import annotations
 
-from app.engines import jd_evolution
 from app.core import provenance
+from app.engines import jd_evolution
 
 
 def _v(version, desc, reqs, quality):

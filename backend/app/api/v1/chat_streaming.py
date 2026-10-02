@@ -3,7 +3,6 @@ import asyncio
 import json
 import logging
 import threading
-from app.core.clock import utcnow
 from typing import AsyncGenerator
 from uuid import UUID
 
@@ -13,9 +12,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.responses import StreamingResponse
 
 from app.config import settings
+from app.core.clock import utcnow
 from app.deps import get_current_user, get_db
-from app.models.user import User
 from app.models.chat import ChatMessage, ChatSession
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat", tags=["chat"])
@@ -62,7 +62,7 @@ async def stream_chat_message(
 
     # Build the same role-aware context the non-streaming path uses.
     from app.agents.agent_router import get_agent_for_user
-    from app.agents.agent_tools import tools_for_role, tool_calls_to_actions
+    from app.agents.agent_tools import tool_calls_to_actions, tools_for_role
     from app.engines.client import _build_system, get_client, is_live
 
     try:
@@ -103,7 +103,6 @@ async def stream_chat_message(
 
                 def worker() -> None:
                     nonlocal failover_used
-                    primary_failed = False
                     try:
                         # Try primary LLM (Anthropic)
                         with get_client().messages.stream(
@@ -129,7 +128,6 @@ async def stream_chat_message(
                             ]
                             loop.call_soon_threadsafe(queue.put_nowait, ("tools", calls))
                     except Exception as exc:  # noqa: BLE001
-                        primary_failed = True
                         logger.warning(f"Anthropic streaming failed, attempting MiniMax fallback: {exc}")
 
                         # Attempt fallback to MiniMax if configured

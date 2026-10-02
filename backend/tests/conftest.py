@@ -5,9 +5,13 @@ governance env overrides from the host shell do not leak into tests.
 """
 from __future__ import annotations
 
+import logging
 import os
-import pytest
 from uuid import uuid4
+
+import pytest
+
+logger = logging.getLogger(__name__)
 
 # Must be set before app.config is imported anywhere.
 os.environ.setdefault("LLM_FORCE_MOCK", "true")
@@ -23,22 +27,23 @@ for _k in (
 
 
 # Import after environment is set
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, exc
-from sqlalchemy.orm import sessionmaker, Session
-from sqlalchemy.ext.asyncio import (
-    create_async_engine,
-    AsyncSession,
-    async_sessionmaker,
-)
 import asyncio
 from typing import AsyncGenerator, Generator
 
-from app.main import app
-from app.database import get_session, Base
-from app.models.user import User
-from app.models.company import Company
+from fastapi.testclient import TestClient
+from sqlalchemy import create_engine, exc
+from sqlalchemy.ext.asyncio import (
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
+from sqlalchemy.orm import Session, sessionmaker
+
 from app.core.security import create_access_token
+from app.database import Base, get_session
+from app.main import app
+from app.models.company import Company
+from app.models.user import User
 
 
 @pytest.fixture(scope="session")
@@ -61,6 +66,7 @@ def sync_db_session() -> Generator[Session, None, None]:
     Uses the local PostgreSQL instance (expected at localhost:5432).
     """
     import time
+
     import psycopg
 
     # Generate a unique test database name with timestamp and random suffix
@@ -183,9 +189,10 @@ async def db_session() -> AsyncGenerator[AsyncSession, None]:
     Uses the local PostgreSQL instance (expected at localhost:5432), creating
     a unique test database for each test and cleaning it up afterward.
     """
-    import uuid
-    import asyncpg
     import time
+    import uuid
+
+    import asyncpg
 
     # Generate a unique test database name with timestamp and random suffix
     timestamp = str(int(time.time() * 1000000) % 1000000).zfill(6)

@@ -9,9 +9,10 @@ import asyncio
 import json
 import logging
 from typing import Set
-from app.core.clock import utcnow
 
 from fastapi import WebSocket
+
+from app.core.clock import utcnow
 
 logger = logging.getLogger("truematch.agents_websocket")
 

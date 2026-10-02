@@ -7,17 +7,14 @@ from __future__ import annotations
 import logging
 import uuid
 from typing import Optional
-from datetime import datetime
 
 from sqlalchemy import and_, desc, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.engines.matching.matcher import EnhancedMatcher, MatchType
 from app.models.position import Position, PositionStatus
-from app.models.saved_job import SavedJob
-from app.models.application import Application
 from app.models.resume import Resume, ResumeStatus
-from app.models.user import User
+from app.models.saved_job import SavedJob
 
 logger = logging.getLogger(__name__)
 

@@ -4,16 +4,16 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from pydantic import BaseModel
 
-from app.deps import get_current_user
-from app.database import get_session
-from app.models.user import User
-from app.models.chat import ChatMessage, ChatSession
 from app.agents.action_executor import ActionExecutor
 from app.agents.agent_tools import tools_for_role
+from app.database import get_session
+from app.deps import get_current_user
+from app.models.chat import ChatMessage, ChatSession
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/chat/actions", tags=["chat"])

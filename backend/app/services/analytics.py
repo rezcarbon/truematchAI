@@ -1,15 +1,15 @@
 """Analytics and metrics tracking for the TrueMatch system."""
 import logging
 from datetime import timedelta
-from app.core.clock import utcnow
 from typing import Optional
 
-from sqlalchemy import select, func
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.chat import ChatSession, ChatMessage
-from app.models.user import User
+from app.core.clock import utcnow
+from app.models.chat import ChatMessage, ChatSession
 from app.models.governance_review import GovernanceReview
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 

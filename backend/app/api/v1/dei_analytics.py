@@ -3,15 +3,15 @@ DEI (Diversity, Equity, Inclusion) Analytics
 Tracks diversity metrics, equity in hiring, and inclusion indicators
 """
 
-from uuid import UUID
-from app.core.clock import utcnow
 import logging
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.deps import get_db, get_current_recruiter
+from app.core.clock import utcnow
+from app.deps import get_current_recruiter, get_db
 from app.models import Application
 
 logger = logging.getLogger(__name__)
