@@ -15,6 +15,13 @@ interface ForecastData {
   recommendations: string[];
 }
 
+interface ChartDataPoint {
+  position: string;
+  daysToFill: number;
+  confidence: number;
+  positionId: string;
+}
+
 interface PipelineForecastChartProps {
   forecasts: ForecastData[];
   isLoading?: boolean;
@@ -22,7 +29,7 @@ interface PipelineForecastChartProps {
 }
 
 export function PipelineForecastChart({ forecasts, isLoading = false, onPositionClick }: PipelineForecastChartProps) {
-  const [chartData, setChartData] = useState<any[]>([]);
+  const [chartData, setChartData] = useState<ChartDataPoint[]>([]);
 
   useEffect(() => {
     if (forecasts && forecasts.length > 0) {
@@ -81,7 +88,7 @@ export function PipelineForecastChart({ forecasts, isLoading = false, onPosition
               }}
             />
             <Legend />
-            <Bar dataKey="daysToFill" fill="#3b82f6" onClick={(e: any) => onPositionClick?.(e.positionId)} />
+            <Bar dataKey="daysToFill" fill="#3b82f6" onClick={(e: ChartDataPoint) => onPositionClick?.(e.positionId)} />
           </BarChart>
         </ResponsiveContainer>
 
