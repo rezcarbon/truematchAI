@@ -1,0 +1,103 @@
+{
+  "components": [
+    {
+      "name": "forecasting/PipelineForecastChart.tsx",
+      "status": "\u2705",
+      "lines": 111
+    },
+    {
+      "name": "forecasting/PositionForecastCard.tsx",
+      "status": "\u2705",
+      "lines": 97
+    },
+    {
+      "name": "salary-benchmarking/SalaryBenchmarkCard.tsx",
+      "status": "\u2705",
+      "lines": 101
+    },
+    {
+      "name": "interview-intelligence/InterviewPrepPanel.tsx",
+      "status": "\u2705",
+      "lines": 171
+    },
+    {
+      "name": "retention-prediction/RetentionRiskCard.tsx",
+      "status": "\u2705",
+      "lines": 157
+    },
+    {
+      "name": "analytics-dashboard/AnalyticsDashboard.tsx",
+      "status": "\u2705",
+      "lines": 224
+    }
+  ],
+  "apis": [
+    {
+      "name": "forecastingApi.ts",
+      "status": "\u2705",
+      "lines": 70
+    },
+    {
+      "name": "salaryBenchmarkingApi.ts",
+      "status": "\u2705",
+      "lines": 86
+    },
+    {
+      "name": "interviewIntelligenceApi.ts",
+      "status": "\u2705",
+      "lines": 102
+    },
+    {
+      "name": "retentionPredictionApi.ts",
+      "status": "\u2705",
+      "lines": 119
+    }
+  ],
+  "hooks": [
+    {
+      "name": "useForecastingApi.ts",
+      "status": "\u2705",
+      "lines": 76
+    },
+    {
+      "name": "useInterviewIntelligenceApi.ts",
+      "status": "\u2705",
+      "lines": 69
+    },
+    {
+      "name": "useRetentionPredictionApi.ts",
+      "status": "\u2705",
+      "lines": 88
+    }
+  ],
+  "tests": [
+    {
+      "name": "components/forecasting.test.tsx",
+      "status": "\u2705",
+      "lines": 75
+    },
+    {
+      "name": "api/forecastingApi.test.ts",
+      "status": "\u2705",
+      "lines": 94
+    }
+  ],
+  "config": [
+    {
+      "name": "config/index.ts",
+      "status": "\u2705",
+      "lines": 55
+    }
+  ],
+  "summary": {
+    "total_components": 6,
+    "components_passed": 6,
+    "total_apis": 4,
+    "apis_passed": 4,
+    "total_hooks": 3,
+    "hooks_passed": 3,
+    "total_files": 22,
+    "total_lines_of_code": 2556,
+    "production_ready": true
+  }
+}
