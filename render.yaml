@@ -54,12 +54,10 @@ services:
         value: INFO
       - key: LOG_JSON
         value: "true"
-      - key: AWS_REGION
-        value: ap-southeast-1
-      - key: S3_BUCKET
-        value: truematch-staging-uploads
       - key: MAX_UPLOAD_BYTES
         value: "5000000"
+      # AWS/S3 disabled for staging - use Render-only infrastructure
+      # File uploads and external storage reserved for production
       - key: RATE_LIMIT_ENABLED
         value: "true"
       - key: RATE_LIMIT_PER_MINUTE
