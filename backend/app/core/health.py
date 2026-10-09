@@ -40,25 +40,16 @@ async def check_redis() -> bool:
         return False
 
 
-async def check_s3() -> bool:
-    """Check S3 bucket accessibility (if configured)."""
-    if not settings.s3_bucket:
-        # S3 not configured, skip check
-        return True
-
+async def check_storage() -> bool:
+    """Check Render Disk storage accessibility."""
     try:
-        import aioboto3
+        from app.services.storage import FileStorage
 
-        session = aioboto3.Session(
-            aws_access_key_id=settings.aws_access_key_id,
-            aws_secret_access_key=settings.aws_secret_access_key,
-            region_name=settings.aws_region,
-        )
-        async with session.client("s3") as s3:
-            await s3.head_bucket(Bucket=settings.s3_bucket)
-        return True
+        storage = FileStorage(settings.render_disk_path)
+        health = await storage.check_disk_health()
+        return health.get("available", False)
     except Exception as exc:  # noqa: BLE001
-        logger.warning("S3 readiness check failed: %s", exc)
+        logger.warning("Storage readiness check failed: %s", exc)
         return False
 
 
@@ -112,7 +103,7 @@ async def readiness() -> tuple[bool, dict[str, bool]]:
     components = {
         "database": await check_db(),
         "redis": await check_redis(),
-        "s3": await check_s3(),
+        "storage": await check_storage(),
         "llm": await check_llm(),
         "singpass": await check_singpass(),
     }

@@ -179,36 +179,23 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     refresh_token_expire_days: int = 7
 
-    # S3 / AWS
-    s3_bucket: str = "truematch-uploads"
-    aws_region: str = "ap-southeast-1"
-    aws_access_key_id: str = Field(
-        default="",
-        description="AWS access key ID. Never use 'placeholder' in production",
+    # Render Disk Storage (replaces AWS S3)
+    render_disk_path: str = Field(
+        default="/var/data",
+        description="Render persistent disk mount path for file storage",
     )
-    aws_secret_access_key: str = Field(
-        default="",
-        description="AWS secret access key",
-    )
-    # Optional KMS key for S3 server-side encryption. When set, objects use
-    # aws:kms; otherwise AES256 (SSE-S3). Uploads are always server-side encrypted.
-    s3_kms_key_id: str = ""
     max_upload_bytes: int = 5_000_000  # 5 MB cap on resume uploads
 
     @property
-    def s3_enabled(self) -> bool:
-        """Whether S3 file storage is enabled with valid credentials."""
-        return (
-            bool(self.aws_access_key_id)
-            and bool(self.aws_secret_access_key)
-            and self.aws_access_key_id != "placeholder"
-            and self.aws_secret_access_key != "placeholder"
-        )
+    def storage_enabled(self) -> bool:
+        """Whether file storage is enabled and writable (Render Disk)."""
+        from pathlib import Path
+        try:
+            path = Path(self.render_disk_path)
+            return path.exists() and path.is_dir()
+        except (OSError, ValueError):
+            return False
 
-    @property
-    def s3_configured(self) -> bool:
-        """Deprecated: use s3_enabled instead."""
-        return self.s3_enabled
 
     # Field-level encryption (PII at rest). Keys are base64-encoded and injected
     #   encryption_key       : 32-byte base64 AES-256 data-encryption key

@@ -43,7 +43,7 @@ class SecretValidator:
         logger.info("Starting configuration validation...")
 
         self.validate_encryption_keys()
-        self.validate_s3_credentials()
+        # S3 validation removed - using Render Disk instead
         self.validate_jwt_secret()
         self.validate_singpass_keys()
         self.validate_database_url()
@@ -148,54 +148,7 @@ class SecretValidator:
                     f"ENCRYPTION_INDEX_KEY is not valid base64 or hex: {e}"
                 )
 
-    def validate_s3_credentials(self) -> None:
-        """Validate AWS S3 credentials.
-
-        Checks:
-        - AWS_ACCESS_KEY_ID is not placeholder
-        - AWS_SECRET_ACCESS_KEY is not placeholder
-        - S3_BUCKET is set
-        - Warns if using moto (mock) vs real S3
-        """
-        access_key = self.settings.aws_access_key_id.strip()
-        secret_key = self.settings.aws_secret_access_key.strip()
-        bucket = self.settings.s3_bucket.strip()
-
-        # Check for placeholder values
-        if access_key == "placeholder" or secret_key == "placeholder":
-            if self.settings.is_production:
-                self.errors.append(
-                    "AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY contain 'placeholder'. "
-                    "These must be set to real AWS credentials in production."
-                )
-            else:
-                self.warnings.append(
-                    "AWS S3 credentials are using placeholder values. "
-                    "Set real AWS credentials for file uploads to work."
-                )
-            return
-
-        if not bucket:
-            if self.settings.is_production:
-                self.errors.append("S3_BUCKET must be set in production")
-            else:
-                self.warnings.append(
-                    "S3_BUCKET is not set. File uploads will fail."
-                )
-            return
-
-        # Check credentials are non-empty if not using placeholder
-        if not access_key or not secret_key:
-            if self.settings.is_production:
-                self.errors.append(
-                    "AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY are required in production"
-                )
-            else:
-                self.warnings.append(
-                    "AWS S3 credentials are incomplete. File uploads will fail."
-                )
-
-    def validate_jwt_secret(self) -> None:
+def validate_jwt_secret(self) -> None:
         """Validate JWT signing secret.
 
         Checks:
@@ -343,7 +296,7 @@ class SecretValidator:
                     "encryption_enabled": bool(
                         self.settings.encryption_key and self.settings.encryption_index_key
                     ),
-                    "s3_enabled": self.settings.s3_configured,
+                    "storage_enabled": self.settings.storage_configured,
                     "singpass_configured": self.settings.singpass_configured,
                     "environment": self.settings.environment,
                 },

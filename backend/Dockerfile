@@ -33,8 +33,6 @@ RUN pip install --upgrade pip && \
     'python-jose[cryptography]>=3.3' \
     'bcrypt>=4.1' \
     'python-multipart>=0.0.14' \
-    'boto3>=1.34' \
-    'aioboto3>=1.14' \
     'google-cloud-aiplatform>=1.0' \
     'pypdf>=4.2' \
     'python-docx>=1.1' \

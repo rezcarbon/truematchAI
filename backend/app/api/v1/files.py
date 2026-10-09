@@ -1,20 +1,20 @@
-"""File endpoints — multipart upload to S3 (boto3, stub credentials)."""
+"""File endpoints — multipart upload to Render Disk storage."""
 from __future__ import annotations
 
 import base64
 import logging
 import uuid
 
-import boto3
-from botocore.exceptions import BotoCoreError, ClientError
 from fastapi import APIRouter, File, HTTPException, UploadFile, status
 from pydantic import BaseModel
 from sqlalchemy import select
+from fastapi.responses import FileResponse
 
 from app.config import settings
 from app.deps import CurrentUser, DBSession
 from app.engines.extract import ExtractionError, extract_text
 from app.models.resume import Resume
+from app.services.storage import FileStorage, FileStorageError
 
 router = APIRouter()
 logger = logging.getLogger("truematch.files")
@@ -67,13 +67,9 @@ class UploadResponse(BaseModel):
     file_type: str
 
 
-def _s3_client():
-    return boto3.client(
-        "s3",
-        region_name=settings.aws_region,
-        aws_access_key_id=settings.aws_access_key_id,
-        aws_secret_access_key=settings.aws_secret_access_key,
-    )
+def _get_storage() -> FileStorage:
+    """Get FileStorage instance for Render Disk."""
+    return FileStorage(settings.render_disk_path)
 
 
 @router.post("/resume", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
@@ -97,14 +93,17 @@ async def upload_resume(
             detail=f"Unsupported file type. Supported: PDF, Word (.doc, .docx), TXT. Got: {file.content_type}",
         )
 
-    key = f"resumes/{user.id}/{uuid.uuid4()}-{file.filename}"
+    # Check file size before processing
+    # We need to peek at the file size, so read it first
     body = await file.read()
-
     if len(body) > settings.max_upload_bytes:
         raise HTTPException(
             status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
             detail=f"File exceeds the {settings.max_upload_bytes} byte limit",
         )
+
+    # Reset file pointer for later reading
+    await file.seek(0)
 
     # Extract text now so the binary is read once and the pipeline works from
     # persisted text. A document that yields no text (e.g. image-only scan) is
@@ -140,58 +139,53 @@ async def upload_resume(
             detail=str(exc),
         ) from exc
 
-    # Production MUST have real object storage configured; never silently accept
-    # a resume we cannot durably (and encrypted-at-rest) store.
-    if settings.environment == "production" and not settings.s3_configured:
+    # Production MUST have storage configured (Render Disk).
+    if settings.environment == "production" and not settings.storage_configured:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Object storage is not configured",
+            detail="File storage is not configured",
         )
 
-    # Upload to S3 with server-side encryption. When object storage isn't
-    # configured (local staging/dev), skip the call entirely — the resume's text
-    # is already extracted and encrypted in the DB, which is what the pipeline
-    # needs. The raw binary just isn't durably stored.
+    # Upload to Render Disk. When storage isn't configured (local dev),
+    # the resume's text is already extracted and encrypted in the DB,
+    # which is what the pipeline needs.
     uploaded = False
-    sse_args: dict = (
-        {"ServerSideEncryption": "aws:kms", "SSEKMSKeyId": settings.s3_kms_key_id}
-        if settings.s3_kms_key_id
-        else {"ServerSideEncryption": "AES256"}
-    )
-    if settings.s3_configured:
+    file_path = None
+    if settings.storage_configured:
         try:
-            _s3_client().put_object(
-                Bucket=settings.s3_bucket,
-                Key=key,
-                Body=body,
-                ContentType=file.content_type,
-                **sse_args,
-            )
+            storage = _get_storage()
+            # Reset file to beginning for storage
+            await file.seek(0)
+            file_path = await storage.save_file("resumes", str(user.id), file)
             uploaded = True
-        except (BotoCoreError, ClientError) as exc:
+            logger.info(f"File saved to disk: {file_path}")
+        except FileStorageError as exc:
             if settings.environment == "production":
-                logger.error("S3 upload failed in production: %s", exc)
+                logger.error(f"File storage failed in production: {exc}")
                 raise HTTPException(
                     status_code=status.HTTP_502_BAD_GATEWAY,
                     detail="Failed to store the uploaded file",
                 ) from exc
-            logger.warning("S3 upload failed: %s", exc)
+            logger.warning(f"File storage failed: {exc}")
     else:
-        logger.info("Object storage not configured; storing extracted text only (local mode).")
+        logger.info("File storage not configured; storing extracted text only.")
+
+    # Store file_path (relative path to Render Disk) or empty string if not uploaded
+    file_id = file_path or f"resumes/{user.id}/{uuid.uuid4()}-{file.filename}"
 
     resume = Resume(
         user_id=user.id,
-        file_id=key,
+        file_id=file_id,
         file_type=file_type,
         supplementary={
             "original_filename": file.filename,
-            "s3_uploaded": uploaded,
+            "storage_uploaded": uploaded,
             "extracted_text": extracted_text,
         },
     )
     db.add(resume)
     await db.flush()
-    return UploadResponse(resume_id=resume.id, file_id=key, file_type=file_type)
+    return UploadResponse(resume_id=resume.id, file_id=file_id, file_type=file_type)
 
 
 @router.post("/resume/image", response_model=UploadResponse, status_code=status.HTTP_201_CREATED)
@@ -367,18 +361,51 @@ async def list_resumes(user: CurrentUser, db: DBSession) -> ResumeListResponse:
 async def get_download_url(
     resume_id: uuid.UUID, user: CurrentUser, db: DBSession
 ) -> dict:
+    """Get download information for a resume file.
+
+    For Render Disk storage, returns metadata about the file.
+    The actual download is handled by a separate endpoint (/resume/{resume_id}/download).
+    """
     resume = await db.get(Resume, resume_id)
     if resume is None or resume.file_id is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
     if user.role.value == "candidate" and resume.user_id != user.id:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
+    # With Render Disk, return file metadata instead of presigned URL
+    return {
+        "resume_id": str(resume.id),
+        "file_id": resume.file_id,
+        "file_type": resume.file_type,
+        "download_path": f"/api/v1/files/resume/{resume_id}/download",
+        "storage_type": "render_disk",
+    }
+
+
+@router.get("/resume/{resume_id}/download")
+async def download_resume(
+    resume_id: uuid.UUID, user: CurrentUser, db: DBSession
+) -> FileResponse:
+    """Download resume file from Render Disk storage."""
+    resume = await db.get(Resume, resume_id)
+    if resume is None or resume.file_id is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="File not found")
+    if user.role.value == "candidate" and resume.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Forbidden")
+
     try:
-        url = _s3_client().generate_presigned_url(
-            "get_object",
-            Params={"Bucket": settings.s3_bucket, "Key": resume.file_id},
-            ExpiresIn=900,
+        storage = _get_storage()
+        file_content = await storage.get_file(resume.file_id)
+
+        # Return file with appropriate content type
+        return FileResponse(
+            content=file_content,
+            media_type=f"application/{resume.file_type}",
+            filename=f"resume.{resume.file_type}",
         )
-    except (BotoCoreError, ClientError) as exc:
-        logger.warning("Presign failed (likely stub credentials): %s", exc)
-        url = None
-    return {"resume_id": str(resume.id), "url": url, "key": resume.file_id}
+    except FileStorageError as exc:
+        logger.error(f"Failed to retrieve file {resume.file_id}: {exc}")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="File not found in storage",
+        ) from exc
