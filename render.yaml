@@ -29,6 +29,10 @@ services:
     region: oregon
     port: 8000
     healthCheckPath: /health
+    disk:
+      name: truematch-data
+      mountPath: /var/data
+      sizeGB: 10
     envVars:
       - key: ENVIRONMENT
         value: staging
