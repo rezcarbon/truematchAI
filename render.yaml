@@ -24,7 +24,7 @@ services:
     plan: starter
     previewPlan: starter
     buildCommand: "pip install -r requirements.txt"
-    startCommand: "bash -c 'alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port $PORT'"
+    startCommand: "uvicorn app.main:app --host 0.0.0.0 --port $PORT"
     rootDir: backend
     region: oregon
     port: 8000
@@ -75,7 +75,7 @@ services:
     env: node
     plan: starter
     previewPlan: starter
-    buildCommand: "npm install --legacy-peer-deps --no-audit && npm run build"
+    buildCommand: "npm install && npm run build"
     startCommand: "npm run start"
     rootDir: web
     region: oregon
@@ -88,8 +88,6 @@ services:
         value: https://truematch-web-staging.onrender.com
       - key: NODE_ENV
         value: production
-      - key: NODE_OPTIONS
-        value: "--max-old-space-size=1024"
 
 databases:
   - name: truematch-db-staging
