@@ -148,7 +148,7 @@ class SecretValidator:
                     f"ENCRYPTION_INDEX_KEY is not valid base64 or hex: {e}"
                 )
 
-def validate_jwt_secret(self) -> None:
+    def validate_jwt_secret(self) -> None:
         """Validate JWT signing secret.
 
         Checks:
