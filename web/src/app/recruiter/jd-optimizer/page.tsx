@@ -1,5 +1,3 @@
-'use client';
-
 import { JDOptimizer } from '@/components/JDOptimizer';
 import { Metadata } from 'next';
 
