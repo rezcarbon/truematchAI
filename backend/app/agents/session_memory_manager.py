@@ -6,8 +6,8 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.session_memory import SessionMemory
-from app.models.chat_memory import ChatSessionMemory
 from app.core.clock import utcnow
+from app.models.chat_memory import ChatSessionMemory
 
 logger = logging.getLogger(__name__)
 

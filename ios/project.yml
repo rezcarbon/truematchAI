@@ -22,6 +22,14 @@ targets:
       - path: TrueMatch
         excludes:
           - "Preview Content/**"
+          # Test sources import XCTest, which is not linkable into the app
+          # target. There is no test target defined here, so exclude them from
+          # the build entirely (add a dedicated test target to run them).
+          - "Tests/**"
+          - "UITests/**"
+          - "IntegrationTests/**"
+          - "**/*Tests.swift"
+          - "**/*Tests+Extended.swift"
       - path: TrueMatch/Preview Content
         buildPhase: sources
     settings:

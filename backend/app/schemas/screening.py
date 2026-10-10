@@ -7,7 +7,6 @@ from pydantic import BaseModel, Field
 
 from app.models.screening import RecruiterDecision, ScreeningRecommendation
 
-
 # ============================================================================
 # BATCH MANAGEMENT
 # ============================================================================

@@ -10,23 +10,23 @@ Tests cover:
 
 Phase 2 Production-Ready Testing
 """
-import pytest
 from uuid import uuid4
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
-from app.models.resume import Resume
-from app.models.position import Position
 from app.models.application import Application
 from app.models.assessment import Assessment
+from app.models.position import Position
+from app.models.resume import Resume
+from app.models.user import User
 from app.services.action_handlers import (
-    UploadActionHandler,
     AnalyzeActionHandler,
+    ApproveActionHandler,
     RankActionHandler,
     ScheduleActionHandler,
-    ApproveActionHandler,
     SendActionHandler,
+    UploadActionHandler,
     get_handler_for_action,
 )
 
@@ -209,7 +209,7 @@ class TestActionHandlers:
             "id": "upload_5",
             "type": "upload",
             "parameters": {
-                # Missing file_id 
+                # Missing file_id
                 "file_type": "resume",
                 "filename": "resume.pdf",
             },

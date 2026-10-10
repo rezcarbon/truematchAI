@@ -1,12 +1,13 @@
 """Request and response schemas for job applications."""
 from __future__ import annotations
 
-from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, Field, ConfigDict, EmailStr
-from pydantic.alias_generators import to_camel
-from typing import Optional
 from enum import Enum
+from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
+from pydantic.alias_generators import to_camel
 
 
 class ApplicationStatus(str, Enum):

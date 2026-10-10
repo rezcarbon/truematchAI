@@ -20,7 +20,7 @@ from sqlalchemy import select
 from app.core.clock import utcnow
 from app.core.exceptions import AuthorizationError, NotFoundError
 from app.deps import CurrentUser, DBSession
-from app.models.assessment import Assessment, DecisionType
+from app.models.assessment import Assessment
 from app.models.hiring_outcome import HiringDecision, HiringOutcome, PerformanceRating
 from app.models.learning_metrics import AssessmentMetrics
 from app.models.position import Position

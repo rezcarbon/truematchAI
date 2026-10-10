@@ -5,15 +5,14 @@ import logging
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.agents.assessment_designer_agent import AssessmentDesignerAgent
 from app.models.assessment_design import AssessmentDesign, AssessmentDesignReviewStatus
-from app.models.screening import ScreeningResult
 from app.models.position import Position
 from app.models.resume import Resume
-from app.models.user import User
-from app.agents.assessment_designer_agent import AssessmentDesignerAgent
+from app.models.screening import ScreeningResult
 
 logger = logging.getLogger("truematch.assessment_designer_service")
 
@@ -82,7 +81,7 @@ class AssessmentDesignerService:
             resume = resume.scalar_one_or_none()
 
             if not resume:
-                raise ValueError(f"Resume not found")
+                raise ValueError("Resume not found")
 
             # Run agent design
             design_result = await self.agent.design_assessment(
@@ -373,8 +372,5 @@ class AssessmentDesignerService:
                 "assessment_suitability": "needs_review",
             }
 
-
-# Import func for count query
-from sqlalchemy import func
 
 __all__ = ["AssessmentDesignerService"]

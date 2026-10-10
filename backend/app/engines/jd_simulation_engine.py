@@ -9,11 +9,11 @@ from typing import Optional
 from sqlalchemy import select
 
 from app.database import AsyncSession
+from app.engines.client import ClaudeClient
+from app.engines.intake import analyze_jd
 from app.models.candidate_archetype import CandidateArchetype
 from app.models.jd_simulation import JDSimulationRequest, JDSimulationResult
 from app.models.position import Position
-from app.engines.client import ClaudeClient
-from app.engines.intake import analyze_jd
 
 logger = logging.getLogger("truematch.jd_simulation")
 

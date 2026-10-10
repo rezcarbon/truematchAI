@@ -13,19 +13,19 @@ Tests cover:
 
 Phase 3 Production-Ready Testing
 """
-import pytest
-from uuid import uuid4
 import asyncio
+from uuid import uuid4
 
+import pytest
 
 from app.agents.autonomous_loop import (
+    MAX_BATCH_SIZE,
+    POLLING_INTERVAL_SECONDS,
+    POLLING_JITTER_SECONDS,
     AutonomousLoopManager,
     CostCalculator,
     DeadLetterQueue,
     LoopMetrics,
-    POLLING_INTERVAL_SECONDS,
-    POLLING_JITTER_SECONDS,
-    MAX_BATCH_SIZE,
 )
 
 

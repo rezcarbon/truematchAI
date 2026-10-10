@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import uuid
 
-
 from app.core.governance import (
     COHERENCE_THRESHOLD,
     CONSISTENCY_BOUND,

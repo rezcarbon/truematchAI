@@ -11,9 +11,13 @@ pytest.
 """
 from __future__ import annotations
 
+import logging
+
 from app.engines import intake, semantic_match
 from app.engines.prompts.registry import PROMPT_REGISTRY_VERSION
-from tests.eval.golden_fixtures import GOLDEN_PAIRS, EXPECTED_PROMPT_REGISTRY
+from tests.eval.golden_fixtures import EXPECTED_PROMPT_REGISTRY, GOLDEN_PAIRS
+
+logger = logging.getLogger(__name__)
 
 
 def _traditional(jd: str, resume: str) -> int:

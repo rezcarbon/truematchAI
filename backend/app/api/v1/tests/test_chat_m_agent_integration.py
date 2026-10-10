@@ -9,13 +9,11 @@ Tests end-to-end flow:
 6. Learning data logged
 """
 
-import pytest
-import json
-from unittest.mock import Mock, AsyncMock, patch, MagicMock
-from uuid import uuid4
 from datetime import datetime
+from unittest.mock import AsyncMock, Mock, patch
+from uuid import uuid4
 
-from fastapi.testclient import TestClient
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
 # Assuming FastAPI app structure
@@ -92,8 +90,8 @@ class TestChatEndpointWithMAgent:
     @pytest.mark.asyncio
     async def test_m_agent_response_format_compatibility(self, mock_db, recruiter_user):
         """Test M Agent response works with chat endpoint expectations."""
-        from app.agents.m_agent_wrapper import MAgentRecruiterWrapper
         from app.agents.base_agent import AgentResponse
+        from app.agents.m_agent_wrapper import MAgentRecruiterWrapper
 
         wrapper = MAgentRecruiterWrapper()
 
@@ -301,7 +299,7 @@ class TestChatEndpointWithMAgent:
             mock_db.add = Mock()
             mock_db.commit = AsyncMock()
 
-            response = await wrapper.respond(
+            await wrapper.respond(
                 message="Test query",
                 history=[],
                 user=recruiter_user,
@@ -353,9 +351,9 @@ class TestAgentRouterIntegration:
     @pytest.mark.asyncio
     async def test_router_returns_local_agents_for_other_roles(self):
         """Test router returns local agents for non-recruiter roles."""
+        from app.agents.admin_agent import AdminAgent
         from app.agents.agent_router import get_agent_for_user
         from app.agents.candidate_agent import CandidateAgent
-        from app.agents.admin_agent import AdminAgent
 
         # Test candidate
         candidate_agent = await get_agent_for_user(

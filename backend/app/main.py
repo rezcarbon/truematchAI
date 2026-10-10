@@ -21,7 +21,12 @@ from .core.exceptions import (
     TrueMatchError,
     problem_detail_from_exception,
 )
-from .core.logging import RequestContextMiddleware, SecurityHeadersMiddleware, configure_logging, get_request_id
+from .core.logging import (
+    RequestContextMiddleware,
+    SecurityHeadersMiddleware,
+    configure_logging,
+    get_request_id,
+)
 from .core.observability import init_sentry, setup_metrics
 from .core.ratelimit import RateLimitMiddleware
 

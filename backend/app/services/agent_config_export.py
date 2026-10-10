@@ -3,13 +3,12 @@ from __future__ import annotations
 
 import io
 from datetime import datetime
-from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import AgentConfig, AgentConfigVersion
-from app.services.agent_config_service import AgentConfigService
+from app.models import AgentConfig
 from app.services.agent_config_governance import AgentConfigGovernance
+from app.services.agent_config_service import AgentConfigService
 
 
 class AgentConfigExportService:
@@ -29,11 +28,17 @@ class AgentConfigExportService:
 
         Uses reportlab for PDF generation (lightweight, no external dependencies).
         """
-        from reportlab.lib.pagesizes import letter, A4
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.lib.units import inch
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, PageBreak
         from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import inch
+        from reportlab.platypus import (
+            Paragraph,
+            SimpleDocTemplate,
+            Spacer,
+            Table,
+            TableStyle,
+        )
 
         # Fetch config and validation
         config = await self.config_service.get_config_by_id(config_id)
@@ -44,7 +49,7 @@ class AgentConfigExportService:
             config_id, config.version_number
         )
         if not version:
-            raise ValueError(f"Version not found")
+            raise ValueError("Version not found")
 
         checklist = await self.governance.get_approval_checklist(config, version)
 

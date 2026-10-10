@@ -10,9 +10,7 @@ Graceful degradation when unconfigured or unavailable.
 """
 from __future__ import annotations
 
-import json
 import logging
-import time
 from typing import Any
 
 from app.config import settings
@@ -260,8 +258,9 @@ def transcribe_image(image_b64: str, media_type: str, max_tokens: int = 2048) ->
         raise GeminiError("Gemini is not configured")
 
     try:
-        from vertexai.generative_models import GenerativeModel, Part
         import base64
+
+        from vertexai.generative_models import GenerativeModel, Part
 
         model = GenerativeModel(settings.gemini_secondary_model)
 

@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import logging
 import uuid
-from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import and_, desc, select
@@ -15,9 +14,7 @@ from app.models.cv_analysis import (
     CVAnalysisStatus,
     SeniorityLevel,
 )
-from app.models.resume import Resume
 from app.models.resume_version import ResumeVersion
-from app.models.user import User
 
 logger = logging.getLogger(__name__)
 
@@ -260,7 +257,7 @@ class CVAnalysisService:
         # Extract data
         skills = parsed_resume.get("skills", [])
         experience = parsed_resume.get("work_experience", [])
-        education = parsed_resume.get("education", [])
+        parsed_resume.get("education", [])
         certifications = parsed_resume.get("certifications", [])
 
         # Calculate skill competitiveness

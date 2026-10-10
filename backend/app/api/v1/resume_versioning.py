@@ -5,36 +5,31 @@ import io
 import json
 import logging
 import uuid
-from datetime import datetime, timezone
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import FileResponse, StreamingResponse
-from sqlalchemy import and_, desc, select, func
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.responses import StreamingResponse
+from sqlalchemy import and_, desc, func, select
 
 from app.core.clock import utcnow
-from app.core.exceptions import NotFoundError, AuthorizationError, ValidationError
 from app.deps import CurrentUser, DBSession
 from app.models.resume import Resume
 from app.models.resume_version import ChangeType, ResumeVersion
-from app.models.user import User
 from app.schemas.resume_versioning import (
-    CreateResumeVersionRequest,
-    UpdateResumeVersionRequest,
-    TailorResumeRequest,
-    OptimizeForATSRequest,
-    ResumeVersionResponse,
-    ResumeVersionDetailResponse,
-    ResumeVersionListResponse,
+    BulkVersionActionRequest,
     CompareVersionsRequest,
     CompareVersionsResponse,
+    CreateResumeVersionRequest,
     DownloadResumeRequest,
-    BulkVersionActionRequest,
-    TailorResumeResponse,
+    OptimizeForATSRequest,
+    ResumeVersionDetailResponse,
+    ResumeVersionListResponse,
+    ResumeVersionResponse,
     ResumeVersionStatus,
     ResumeVersionType,
-    VersionHistoryItem,
+    TailorResumeRequest,
+    TailorResumeResponse,
+    UpdateResumeVersionRequest,
     VersionDifference,
 )
 from app.services.resume_versioning import ResumeVersioningService
@@ -127,7 +122,7 @@ async def create_resume_version(
         await db.refresh(new_version)
 
         logger.info(
-            f"Created resume version",
+            "Created resume version",
             extra={
                 "version_id": str(new_version.id),
                 "resume_id": str(payload.base_resume_id),
@@ -317,7 +312,7 @@ async def update_resume_version(
         await db.refresh(version)
 
         logger.info(
-            f"Updated resume version",
+            "Updated resume version",
             extra={"version_id": str(version.id), "user_id": str(user.id)},
         )
 
@@ -369,7 +364,7 @@ async def delete_resume_version(
         await db.flush()
 
         logger.info(
-            f"Deleted resume version",
+            "Deleted resume version",
             extra={"version_id": str(version.id), "user_id": str(user.id)},
         )
 
@@ -446,7 +441,7 @@ async def tailor_resume_for_job(
             tailored_version_id = new_version.id
 
         logger.info(
-            f"Tailored resume for job",
+            "Tailored resume for job",
             extra={
                 "version_id": str(version.id),
                 "user_id": str(user.id),
@@ -539,7 +534,7 @@ async def optimize_resume_for_ats(
         await db.refresh(version)
 
         logger.info(
-            f"Optimized resume for ATS",
+            "Optimized resume for ATS",
             extra={
                 "version_id": str(version.id),
                 "user_id": str(user.id),
@@ -618,7 +613,7 @@ async def compare_resume_versions(
         differences = _build_differences_list(diff, version1, version2)
 
         logger.info(
-            f"Compared resume versions",
+            "Compared resume versions",
             extra={
                 "version1": str(payload.version_id_1),
                 "version2": str(payload.version_id_2),
@@ -698,7 +693,7 @@ async def download_resume_version(
             )
 
         logger.info(
-            f"Downloaded resume version",
+            "Downloaded resume version",
             extra={
                 "version_id": str(version.id),
                 "user_id": str(user.id),
@@ -798,7 +793,7 @@ async def bulk_version_actions(
         await db.flush()
 
         logger.info(
-            f"Bulk action performed",
+            "Bulk action performed",
             extra={
                 "action": payload.action,
                 "version_count": len(versions),
@@ -854,7 +849,7 @@ async def get_version_history(
         history = await service.get_version_history(version.resume_id)
 
         logger.info(
-            f"Retrieved version history",
+            "Retrieved version history",
             extra={
                 "version_id": str(version.id),
                 "user_id": str(user.id),
@@ -921,7 +916,7 @@ async def get_resume_match_score(
         missing_skills = _extract_missing_skills(version.parsed_data or {}, job_description)
 
         logger.info(
-            f"Calculated match score",
+            "Calculated match score",
             extra={
                 "version_id": str(version.id),
                 "user_id": str(user.id),
@@ -985,7 +980,7 @@ async def get_resume_recommendations(
         recommendations = _generate_recommendations(version, target_role)
 
         logger.info(
-            f"Generated resume recommendations",
+            "Generated resume recommendations",
             extra={
                 "version_id": str(version.id),
                 "user_id": str(user.id),

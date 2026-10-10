@@ -1,9 +1,10 @@
 """Request and response schemas for JD simulation."""
 from __future__ import annotations
 
-from uuid import UUID
-from pydantic import BaseModel, Field
 from typing import Optional
+from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 from app.models.jd_simulation import JDSimulationStatus, SimulationType
 

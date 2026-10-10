@@ -17,9 +17,9 @@ from app.deps import get_current_user, get_db
 from app.models.job_scraping import JobScrapingConfig, JobSourceType, ScrapingRun
 from app.models.user import User
 from app.schemas.scrapers import (
-    ScraperConfigResponse,
-    ScraperConfigCreateRequest,
     ListScrapersResponse,
+    ScraperConfigCreateRequest,
+    ScraperConfigResponse,
 )
 
 logger = logging.getLogger("truematch.scrapers")

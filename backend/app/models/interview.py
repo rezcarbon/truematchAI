@@ -3,16 +3,16 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from app.core.clock import utcnow
 from enum import Enum
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, String, Text, Boolean, ARRAY, ForeignKey, Index
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy import ARRAY, Boolean, DateTime, ForeignKey, Index, String, Text
+from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
+from app.core.clock import utcnow
 from app.models._types import EncryptedText
+from app.models.base import Base
 
 if TYPE_CHECKING:
     from app.models.application import Application

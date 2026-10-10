@@ -5,18 +5,18 @@ import logging
 import uuid
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import and_, func, select
+from sqlalchemy import func, select
 
 from app.config import settings
 from app.core.clock import utcnow
 from app.core.exceptions import AuthorizationError, NotFoundError
 from app.core.scoring import classify_match
-from app.engines import reasoning
 from app.deps import CurrentUser, DBSession
+from app.engines import reasoning
+from app.models.application_timeline import ApplicationTimeline, EventType
 from app.models.assessment import Assessment
 from app.models.position import Position, PositionStatus
 from app.models.resume import Resume
-from app.models.application_timeline import ApplicationTimeline, EventType
 from app.schemas.assessment import (
     AssessmentCreate,
     AssessmentDetail,
@@ -32,10 +32,10 @@ from app.schemas.assessment import (
 from app.schemas.job_search import (
     AssessmentFeedback,
     AssessmentTimeline,
-    TimelineEvent,
+    FeedbackItem,
     InterviewPrepResponse,
     InterviewPrepTopic,
-    FeedbackItem,
+    TimelineEvent,
 )
 
 logger = logging.getLogger("truematch.assessments")

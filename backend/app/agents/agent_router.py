@@ -5,8 +5,8 @@ from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.agents.base_agent import BaseAgent
 from app.agents.agent_factory import AgentFactory
+from app.agents.base_agent import BaseAgent
 
 logger = logging.getLogger(__name__)
 

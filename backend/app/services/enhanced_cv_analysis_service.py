@@ -13,26 +13,22 @@ import json
 import logging
 import re
 import uuid
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum
-from typing import Optional, Any
+from typing import Optional
 
 import httpx
-from anthropic import Anthropic, AsyncAnthropic
-from sqlalchemy import and_, desc, select
+from anthropic import AsyncAnthropic
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import settings
 from app.models.cv_analysis import (
     CVAnalysisRequest,
-    CVAnalysisResult,
-    CVAnalysisStatus,
     SeniorityLevel,
 )
-from app.models.resume import Resume
 from app.models.resume_version import ResumeVersion
-from app.models.user import User
 
 logger = logging.getLogger(__name__)
 

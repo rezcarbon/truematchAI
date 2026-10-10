@@ -13,18 +13,16 @@ leveraging M Agent's advanced reasoning capabilities.
 """
 
 import logging
-import asyncio
-from uuid import UUID
-from typing import Optional, Callable, Awaitable
 from datetime import datetime
+from typing import Awaitable, Callable, Optional
+from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.user import User
-from app.models.chat import ChatMessage
 from app.agents.base_agent import AgentResponse
 from app.agents.recruiter_agent import RecruiterAgent
 from app.core.clock import utcnow
+from app.models.user import User
 
 logger = logging.getLogger("truematch.agents.m_agent")
 
@@ -65,9 +63,7 @@ class MAgentRecruiterWrapper:
         """
         try:
             # Try importing M Agent components
-            from m_agent_hackathon.backend.app.agents.m_agent_recruiter import (
-                run_recruiter_agent
-            )
+            from m_agent_hackathon.backend.app.agents.m_agent_recruiter import run_recruiter_agent
             self.run_recruiter_agent = run_recruiter_agent
             self.m_agent_imported = True
             self.logger.info("[M Agent]  Import successful - M Agent Layer 1 & 2 active")
@@ -128,7 +124,7 @@ class MAgentRecruiterWrapper:
         }
 
         self.logger.info(
-            f"[M Agent] Request initiated",
+            "[M Agent] Request initiated",
             extra=execution_context
         )
 
@@ -177,7 +173,7 @@ class MAgentRecruiterWrapper:
             m_agent_history = self._prepare_history(history)
 
             self.logger.debug(
-                f"[M Agent] Context prepared",
+                "[M Agent] Context prepared",
                 extra={
                     **execution_context,
                     "prepared_history_length": len(m_agent_history),
@@ -222,7 +218,7 @@ class MAgentRecruiterWrapper:
             }
 
             self.logger.info(
-                f"[M Agent] Execution complete",
+                "[M Agent] Execution complete",
                 extra=execution_data
             )
 
@@ -481,7 +477,7 @@ class MAgentRecruiterWrapper:
             await db.commit()
 
             self.logger.debug(
-                f"[M Agent] Learning data logged",
+                "[M Agent] Learning data logged",
                 extra={
                     "user_id": str(user_id),
                     "session_id": str(session_id),
@@ -507,8 +503,9 @@ class MAgentRecruiterWrapper:
             Dict with usage stats
         """
         try:
+            from sqlalchemy import func, select
+
             from app.models.agent_learning import AgentLearningLog
-            from sqlalchemy import select, func
 
             # Query learning logs
             result = await db.execute(

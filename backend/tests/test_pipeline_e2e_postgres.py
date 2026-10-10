@@ -13,10 +13,9 @@ import uuid
 import pytest
 
 testcontainers = pytest.importorskip("testcontainers.postgres")
-from testcontainers.postgres import PostgresContainer  # noqa: E402
-
 from sqlalchemy import create_engine  # noqa: E402
 from sqlalchemy.orm import sessionmaker  # noqa: E402
+from testcontainers.postgres import PostgresContainer  # noqa: E402
 
 
 @pytest.fixture(scope="module")

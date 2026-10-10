@@ -10,29 +10,25 @@ from typing import TYPE_CHECKING
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
-    Enum as SQLEnum,
-    Float,
     ForeignKey,
     Index,
     Integer,
-    String,
     Text,
-    JSON,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
 from app.models._mixins import TimestampMixin
+from app.models.base import Base
 
 if TYPE_CHECKING:
-    from app.models.assessment_design import AssessmentDesign
-    from app.models.assessment import Assessment
-    from app.models.candidate_match import CandidateMatch
-    from app.models.position import Position
-    from app.models.user import User
+    pass
 
 
 class AnalysisStatus(str, Enum):

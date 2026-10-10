@@ -4,14 +4,14 @@ Training Data Models - For autonomous AI-native training system.
 Tracks uploads, chat interactions, and auto-learning results.
 """
 from datetime import datetime
-from app.core.clock import utcnow
 from typing import Optional
 from uuid import UUID
 
-from sqlalchemy import JSON, String, Text, DateTime, Integer, Float, Boolean, ForeignKey
+from sqlalchemy import JSON, Boolean, DateTime, Float, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.clock import utcnow
 from app.database import Base, uuid_pk
 
 

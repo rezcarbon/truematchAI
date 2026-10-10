@@ -5,9 +5,9 @@ import uuid
 from datetime import datetime
 from enum import Enum
 
-from sqlalchemy import DateTime
-from sqlalchemy import ForeignKey, Index, String, Text, Float, Integer, Boolean
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID, JSONB
+from sqlalchemy import Boolean, DateTime, Float, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base

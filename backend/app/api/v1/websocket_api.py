@@ -5,15 +5,15 @@ Handles: pipeline updates, interview notifications, presence tracking
 
 import logging
 from uuid import UUID
-from app.core.clock import utcnow
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query, status
+from fastapi import APIRouter, Query, WebSocket, WebSocketDisconnect, status
 from sqlalchemy import update
 
-from app.websocket.manager import manager
+from app.core.clock import utcnow
 from app.core.security import verify_token_from_websocket
 from app.database import AsyncSessionLocal
 from app.models import Notification
+from app.websocket.manager import manager
 
 logger = logging.getLogger(__name__)
 

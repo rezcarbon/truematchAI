@@ -11,9 +11,12 @@ import logging
 import traceback
 from uuid import UUID
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.agents.analysis_agent import AnalysisAgent
+from app.agents.evolution_agent import EvolutionAgent
+from app.agents.matching_agent import MatchingAgent
 from app.config import settings
 from app.models.analysis_result import AnalysisResult
 from app.models.assessment import Assessment
@@ -22,9 +25,6 @@ from app.models.candidate_match import CandidateMatch
 from app.models.hiring_outcome import HiringOutcome
 from app.models.position import Position
 from app.models.resume import Resume
-from app.agents.analysis_agent import AnalysisAgent
-from app.agents.matching_agent import MatchingAgent
-from app.agents.evolution_agent import EvolutionAgent
 from app.workers.celery_app import celery_app
 
 logger = logging.getLogger("truematch.analysis_evolution_queue")

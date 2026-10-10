@@ -20,15 +20,14 @@ from sqlalchemy.orm import sessionmaker
 from app.core.clock import utcnow
 from app.database import Base
 from app.models.assessment import Assessment, AssessmentStatus, DecisionType
+from app.models.company import Company
 from app.models.hiring_outcome import HiringDecision, HiringOutcome
-from app.models.learning_metrics import AssessmentMetrics, CognitiveState, CognitiveEvolutionLog
+from app.models.learning_metrics import CognitiveState
 from app.models.position import Position
 from app.models.resume import Resume
 from app.models.user import User, UserRole
-from app.models.company import Company
-from app.services.metrics_collector import MetricsCollector, HIRE_THRESHOLD
 from app.services.learning_pipeline import LearningPipeline
-
+from app.services.metrics_collector import MetricsCollector
 
 # ─────────────────────────────────────────────────────────────────
 # Fixtures: In-Memory Database
@@ -479,7 +478,7 @@ async def test_learning_pipeline_updates_cognitive_state(
     await test_db.commit()
 
     pipeline = LearningPipeline(test_db)
-    result = await pipeline.run_nightly_learning(date.today())
+    await pipeline.run_nightly_learning(date.today())
 
     # Cognitive state should be updated
     from sqlalchemy import select

@@ -10,8 +10,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.agents.matching_agent import MatchingAgent
 from app.models.analysis_result import AnalysisResult
 from app.models.candidate_match import CandidateMatch, MatchStatus
-from app.models.position import Position
-from app.models.resume import Resume
 
 logger = logging.getLogger("truematch.matching_service")
 

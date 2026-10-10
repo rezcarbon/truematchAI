@@ -1,17 +1,15 @@
 """Tests for application tracking service."""
-import pytest
 import uuid
-from datetime import datetime
 
+import pytest
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.services.application_tracking_service import ApplicationTrackingService
-from app.models.application import Application, PipelineStage
+from app.models.application import PipelineStage
 from app.models.position import Position, PositionStatus
 from app.models.resume import Resume, ResumeStatus
+from app.models.saved_job import SavedJobStatus
 from app.models.user import User
-from app.models.saved_job import SavedJob, SavedJobStatus
-from app.core.clock import utcnow
+from app.services.application_tracking_service import ApplicationTrackingService
 
 
 class TestApplicationTrackingService:
@@ -107,7 +105,7 @@ class TestApplicationTrackingService:
         test_position: Position,
     ):
         """Test applying with resume from different user."""
-        other_user = User(
+        User(
             email=f"other_{uuid.uuid4().hex}@example.com",
             password_hash="dummy",
         )
@@ -393,7 +391,7 @@ class TestApplicationTrackingService:
         db: AsyncSession,
     ):
         """Test retrieving saved jobs filtered by status."""
-        saved_job = await service.save_job(
+        await service.save_job(
             user_id=test_user.id,
             position_id=test_position.id,
         )

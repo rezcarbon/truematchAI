@@ -17,7 +17,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.assessment import Assessment
 from app.models.assessment_design import AssessmentDesign
-from app.models.analysis_result import AnalysisResult, AnalysisStatus
 
 logger = logging.getLogger("truematch.analysis_agent")
 

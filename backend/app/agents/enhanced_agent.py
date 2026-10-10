@@ -11,15 +11,14 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agents.action_executor import ActionExecutor
-from app.agents.agent_tools import tools_for_role, tool_calls_to_actions
-from app.agents.base_agent import _DASHBOARD_PROTOCOL
-from app.agents.base_agent import BaseAgent, AgentResponse
+from app.agents.agent_tools import tool_calls_to_actions, tools_for_role
+from app.agents.base_agent import _DASHBOARD_PROTOCOL, AgentResponse, BaseAgent
 from app.agents.session_memory import SessionMemory
 from app.agents.session_memory_manager import SessionMemoryManager
+from app.core.feature_flags import FeatureFlag, FeatureFlagManager
 from app.engines.client import call_claude_with_tools, is_live
-from app.models.user import User
 from app.models.autonomous_settings import AutonomousSettings
-from app.core.feature_flags import FeatureFlagManager, FeatureFlag
+from app.models.user import User
 
 logger = logging.getLogger(__name__)
 

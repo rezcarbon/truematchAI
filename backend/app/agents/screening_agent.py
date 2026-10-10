@@ -13,23 +13,18 @@ Core Principle - Conscience by Design:
 """
 from __future__ import annotations
 
-import json
 import logging
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.assessment import Assessment
-from app.models.resume import Resume
 from app.models.position import Position
+from app.models.resume import Resume
 from app.models.screening import (
-    ScreeningResult,
     ScreeningRecommendation,
-    RecruiterDecision,
+    ScreeningResult,
 )
-from app.models._types import EncryptedJSON, EncryptedText
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +87,6 @@ class ScreeningAgent:
                 resume_text = resume.raw_narrative or ""
 
             # Extract position requirements
-            position_title = position.title
             jd_text = position.description or ""
             jd_requirements = position.metadata.get("requirements", {}) if position.metadata else {}
 

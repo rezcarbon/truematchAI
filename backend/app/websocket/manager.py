@@ -3,11 +3,12 @@ WebSocket connection manager for real-time updates
 Handles: pipeline updates, interview notifications, scorecard notifications, presence
 """
 
-from typing import Dict, Set
 import logging
-from app.core.clock import utcnow
+from typing import Dict, Set
 
 from fastapi import WebSocket
+
+from app.core.clock import utcnow
 
 logger = logging.getLogger("truematch.websocket")
 

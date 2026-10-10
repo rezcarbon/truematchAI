@@ -3,14 +3,14 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from app.core.clock import utcnow
 from enum import Enum
 from typing import Optional
 
-from sqlalchemy import DateTime, String, ForeignKey, JSON, Index, Boolean
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, Index, String
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
+from app.core.clock import utcnow
 from app.models.base import Base
 
 

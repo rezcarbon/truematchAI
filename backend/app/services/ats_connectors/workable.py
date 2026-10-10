@@ -6,7 +6,6 @@ This connector uses Workable's REST API for importing jobs and candidates.
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 import httpx
 

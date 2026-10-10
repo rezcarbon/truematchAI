@@ -17,13 +17,13 @@ from __future__ import annotations
 import logging
 import uuid
 from datetime import datetime
-from app.core.clock import utcnow
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, Field
 
 from app.config import settings
+from app.core.clock import utcnow
 from app.deps import CurrentUser, DBSession
 from app.models.assessment import Assessment
 from app.models.ingest_queue import IngestQueueItem

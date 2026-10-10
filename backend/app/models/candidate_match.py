@@ -9,21 +9,22 @@ from enum import Enum
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
-    Enum as SQLEnum,
-    Float,
     ForeignKey,
     Index,
     Integer,
-    JSON,
     Text,
+)
+from sqlalchemy import (
+    Enum as SQLEnum,
 )
 from sqlalchemy.dialects.postgresql import UUID as PG_UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.models.base import Base
 from app.models._mixins import TimestampMixin
+from app.models.base import Base
 
 # Persona-aware matching - integrates AI agent personas for intelligent candidate matching
 PERSONA_ICONS = {

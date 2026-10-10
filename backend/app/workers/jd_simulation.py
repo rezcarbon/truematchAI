@@ -10,10 +10,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.config import settings
-from app.models.jd_simulation import JDSimulationRequest, JDSimulationStatus
-from app.models.audit import AuditTrail
-from app.engines.jd_simulation_engine import simulate_job_description
 from app.engines.client import ClaudeClient
+from app.engines.jd_simulation_engine import simulate_job_description
+from app.models.audit import AuditTrail
+from app.models.jd_simulation import JDSimulationRequest, JDSimulationStatus
 from app.workers.celery_app import celery_app
 
 logger = logging.getLogger("truematch.jd_simulation_tasks")

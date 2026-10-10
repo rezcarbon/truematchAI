@@ -10,14 +10,14 @@ import logging
 import traceback
 from uuid import UUID
 
-from sqlalchemy import create_engine, select
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.agents.assessment_designer_agent import AssessmentDesignerAgent
 from app.config import settings
 from app.models.assessment_design import AssessmentDesign
-from app.models.resume import Resume
 from app.models.position import Position
-from app.agents.assessment_designer_agent import AssessmentDesignerAgent
+from app.models.resume import Resume
 from app.workers.celery_app import celery_app
 
 logger = logging.getLogger("truematch.assessment_design_queue")
@@ -174,7 +174,7 @@ def batch_design_assessments(
 
                 # Run agent
                 agent = AssessmentDesignerAgent(db)
-                result = agent.design_assessment(resume, position, design_id)
+                agent.design_assessment(resume, position, design_id)
 
                 successful += 1
 

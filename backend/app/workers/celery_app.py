@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import logging
+
 from celery import Celery
 
 from app.config import settings

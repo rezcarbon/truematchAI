@@ -3,13 +3,14 @@
 Tests the core agent logic including conscience checks, scoring,
 recommendations, and summary generation.
 """
-import pytest
 from uuid import uuid4
 
+import pytest
+
 from app.agents.screening_agent import ScreeningAgent
-from app.models.screening import ScreeningRecommendation
-from app.models.resume import Resume
 from app.models.position import Position
+from app.models.resume import Resume
+from app.models.screening import ScreeningRecommendation
 
 
 class TestScreeningAgentConscience:
@@ -384,7 +385,6 @@ class TestScreeningAgentIntegration:
         agent = ScreeningAgent(db_session)
 
         # Create minimal resume with no text
-        from app.models.resume import Resume
         resume = Resume(
             id=uuid4(),
             user_id=uuid4(),
@@ -404,7 +404,6 @@ class TestScreeningAgentIntegration:
         agent = ScreeningAgent(db_session)
 
         # Create minimal position
-        from app.models.position import Position
         position = Position(
             id=uuid4(),
             company_id=uuid4(),
@@ -430,7 +429,6 @@ class TestScreeningAgentIntegration:
 @pytest.fixture
 def sample_resume():
     """Sample resume for testing."""
-    from app.models.resume import Resume
 
     return Resume(
         id=uuid4(),
@@ -458,7 +456,6 @@ def sample_resume():
 @pytest.fixture
 def sample_position():
     """Sample position for testing."""
-    from app.models.position import Position
 
     return Position(
         id=uuid4(),
