@@ -1,16 +1,12 @@
-import * as React from "react"
 import { cn } from "@/lib/utils"
 
-type ButtonVariant = "default" | "outline" | "ghost"
-type ButtonSize = "default" | "sm" | "lg"
-
-const variants: Record<ButtonVariant, string> = {
+const variants = {
   default: "bg-blue-600 text-white hover:bg-blue-700",
   outline: "border border-gray-300 bg-white hover:bg-gray-50",
   ghost: "hover:bg-gray-100",
 }
 
-const sizes: Record<ButtonSize, string> = {
+const sizes = {
   default: "px-4 py-2",
   sm: "px-3 py-1 text-sm",
   lg: "px-6 py-3 text-lg",
@@ -21,9 +17,6 @@ export function Button({
   variant = "default",
   size = "default",
   ...props
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
-  variant?: ButtonVariant
-  size?: ButtonSize
 }) {
   return (
     <button
@@ -37,4 +30,3 @@ export function Button({
     />
   )
 }
-// Updated Sun Oct 11 02:59:33 +08 2026
