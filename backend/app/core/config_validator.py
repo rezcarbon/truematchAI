@@ -296,7 +296,7 @@ class SecretValidator:
                     "encryption_enabled": bool(
                         self.settings.encryption_key and self.settings.encryption_index_key
                     ),
-                    "storage_enabled": self.settings.storage_configured,
+                    "storage_enabled": self.settings.storage_enabled,
                     "singpass_configured": self.settings.singpass_configured,
                     "environment": self.settings.environment,
                 },
