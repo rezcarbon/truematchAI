@@ -3,8 +3,8 @@
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
+import { Button } from "@/components/auth-components";
 import { Loader2, AlertCircle } from "lucide-react";
 
 // Singpass (OIDC) callback. The browser only relays the `code` + `state` to the

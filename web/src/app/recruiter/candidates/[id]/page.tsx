@@ -15,9 +15,9 @@ import { GovernanceBadges } from "@/components/assessment/GovernanceBadges";
 import { DecisionPanel } from "@/components/recruiter/DecisionPanel";
 import { JDQualityCard } from "@/components/recruiter/JDQualityCard";
 import { mockAssessment } from "@/lib/mock";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/auth-components";
 import {
   CheckCircle2, XCircle, ExternalLink, Calendar,
   Shield, FileText, Clock, ArrowLeft

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { PageHeader } from "@/components/shared/AppShell";
 import { JDQualityCard } from "@/components/recruiter/JDQualityCard";
 import { PipelineKanban } from "@/components/recruiter/PipelineKanban";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/auth-components";
 import { api } from "@/lib/api";
 import { LayoutList, Kanban, Plus } from "lucide-react";
 

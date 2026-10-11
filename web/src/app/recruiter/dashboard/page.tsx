@@ -9,8 +9,8 @@ import {
   ArrowRight, Plus
 } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
+import { Button } from "@/components/auth-components";
 import { ScoreTrio } from "@/components/shared/ScoreTrio";
 import { GovernanceBadge } from "@/components/shared/GovernanceBadge";
 import { JDSimulationWidget } from "@/components/recruiter/JDSimulationWidget";

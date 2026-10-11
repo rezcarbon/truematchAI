@@ -10,9 +10,9 @@ import { ScoreTrio } from "@/components/shared/ScoreTrio";
 import { GapMatrix } from "@/components/shared/GapMatrix";
 import { MatchTypeBadge } from "@/components/shared/MatchTypeBadge";
 import { GovernanceBadge } from "@/components/shared/GovernanceBadge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/auth-components";
 import { api } from "@/lib/api";
 import { mockPipeline } from "@/lib/mock";
 import {

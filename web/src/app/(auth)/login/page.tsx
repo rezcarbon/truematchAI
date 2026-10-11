@@ -4,8 +4,8 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn, getSession } from "next-auth/react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
+import { Button } from "@/components/auth-components";
 
 function homeForRole(_role?: string): string {
   // Land on the AI Assistant (chat) by default — it's the role-aware front door.

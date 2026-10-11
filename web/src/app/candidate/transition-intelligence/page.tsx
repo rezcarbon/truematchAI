@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { PageHeader } from "@/components/shared/AppShell";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
 import { FileUpload } from "@/components/shared/FileUpload";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/auth-components";
 import { api } from "@/lib/api";
 import { Compass } from "lucide-react";
 

@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 import Link from "next/link";
 import { PageHeader } from "@/components/shared/AppShell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
 import { StatusBadge } from "@/components/shared/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { api } from "@/lib/api";

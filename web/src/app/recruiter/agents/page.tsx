@@ -9,8 +9,8 @@ import {
   AlertTriangle, Clock, Zap, TrendingUp, Upload, Plus,
   RefreshCw, ChevronRight
 } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
+import { Button } from "@/components/auth-components";
 import { Badge } from "@/components/ui/badge";
 import type { IngestQueueItem } from "@/lib/api";
 

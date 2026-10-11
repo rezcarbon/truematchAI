@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { PageHeader } from "@/components/shared/AppShell";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
 import { api, type TransitionMetrics } from "@/lib/api";
 import { Loader2, TrendingUp, Users, Target, GraduationCap } from "lucide-react";
 

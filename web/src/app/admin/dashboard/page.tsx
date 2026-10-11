@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { PageHeader } from "@/components/shared/AppShell";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/auth-components";
 import { Loader2 } from 'lucide-react';
 import { OutcomeAnalytics, type OutcomePoint } from "@/components/admin/OutcomeAnalytics";
 import { GovernanceConfig } from "@/components/admin/GovernanceConfig";

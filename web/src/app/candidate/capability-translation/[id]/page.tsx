@@ -3,8 +3,8 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
+import { Button } from "@/components/auth-components";
 import { Badge } from "@/components/ui/badge";
 import { CapabilityGap } from "@/components/shared/CapabilityGap";
 import { LanguageBadge, languageName } from "@/components/shared/LanguageBadge";

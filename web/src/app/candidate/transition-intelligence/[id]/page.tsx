@@ -3,10 +3,10 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
-import { Card, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
 import { LanguageBadge, languageName } from "@/components/shared/LanguageBadge";
 import { TransitionPathways } from "@/components/shared/TransitionPathways";
-import { Button } from "@/components/ui/button";
+import { Button } from "@/components/auth-components";
 import { api, type TransitionResult } from "@/lib/api";
 import { Loader2, Compass, CalendarClock, Check } from "lucide-react";
 

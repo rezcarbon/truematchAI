@@ -8,7 +8,7 @@ import { ScoreTrio } from "@/components/shared/ScoreTrio";
 import { GovernanceBadge } from "@/components/shared/GovernanceBadge";
 import { api } from "@/lib/api";
 import { mockPipeline } from "@/lib/mock";
-import { Card } from "@/components/ui/card";
+import { Card } from "@/components/auth-components";
 import { Badge } from "@/components/ui/badge";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
 
