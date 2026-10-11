@@ -1,101 +1,57 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
-import { Button } from "@/components/auth-components";
-import { Loader2, AlertCircle } from "lucide-react";
+import { signIn } from "next-auth/react";
+import { cn } from "@/lib/utils";
 
-// Singpass (OIDC) callback. The browser only relays the `code` + `state` to the
-// backend via the BFF proxy; the authorization-code exchange, ID-token
-// decryption, and verification all happen server-side. No identity tokens are
-// processed in the browser.
-//
-// NOTE (Web track B): persisting the returned tokens into the NextAuth session
-// is handled where auth is wired. Here we perform the exchange and surface
-// success/error; on success we hand off to the dashboard.
-type Phase = "working" | "success" | "error";
-
-export default function SingpassCallbackPage() {
-  return (
-    <Suspense fallback={null}>
-      <SingpassCallback />
-    </Suspense>
-  );
+function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("rounded-lg border border-gray-200 bg-white shadow-sm", className)} {...props} />;
+}
+function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("flex flex-col space-y-1.5 p-6", className)} {...props} />;
+}
+function CardTitle({ className, ...props }: React.HTMLAttributes<HTMLHeadingElement>) {
+  return <h2 className={cn("text-2xl font-semibold", className)} {...props} />;
+}
+function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("p-6 pt-0", className)} {...props} />;
 }
 
-function SingpassCallback() {
+export default function SingpassCallbackPage() {
   const router = useRouter();
-  const params = useSearchParams();
-  const [phase, setPhase] = useState<Phase>("working");
-  const [message, setMessage] = useState<string>("");
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const code = params.get("code");
-    const state = params.get("state");
+    const code = searchParams.get("code");
+    const state = searchParams.get("state");
+
     if (!code || !state) {
-      setPhase("error");
-      setMessage("Missing authorization code or state.");
+      setError("Missing authentication parameters");
       return;
     }
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await fetch("/api/proxy/auth/singpass/callback", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, state }),
-        });
-        if (!res.ok) throw new Error(`Exchange failed (${res.status})`);
-        if (cancelled) return;
-        setPhase("success");
-        // Land on the AI Assistant (chat) by default, consistent with password login.
+
+    // Handle callback
+    signIn("singpass", { code, state, redirect: false }).then((result) => {
+      if (result?.error) {
+        setError(result.error);
+      } else if (result?.ok) {
         router.replace("/chat");
-      } catch (err) {
-        if (cancelled) return;
-        setPhase("error");
-        setMessage(err instanceof Error ? err.message : "Sign-in failed.");
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [params, router]);
+    });
+  }, [router, searchParams]);
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          {phase === "error" ? (
-            <AlertCircle className="h-5 w-5 text-destructive" />
-          ) : (
-            <Loader2 className="h-5 w-5 animate-spin text-primary" />
-          )}
-          {phase === "error" ? "Sign-in could not be completed" : "Completing Singpass sign-in"}
-        </CardTitle>
-        <CardDescription>
-          {phase === "error"
-            ? "Your identity could not be verified."
-            : "We're verifying your identity and setting up your session."}
-        </CardDescription>
+        <CardTitle>Authenticating with Singpass</CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {phase === "error" && (
-          <>
-            <p className="text-sm text-destructive">{message}</p>
-            <Link href="/login">
-              <Button className="w-full" variant="outline">
-                Back to sign in
-              </Button>
-            </Link>
-          </>
-        )}
-        {phase !== "error" && (
-          <p className="text-sm text-muted-foreground">
-            The authorization-code exchange is handled server-side; no identity tokens are
-            processed in the browser.
-          </p>
+      <CardContent>
+        {error ? (
+          <p className="text-red-600">{error}</p>
+        ) : (
+          <p>Please wait while we authenticate you...</p>
         )}
       </CardContent>
     </Card>
