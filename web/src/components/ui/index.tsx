@@ -1,0 +1,12 @@
+// UI Components Index - explicit re-exports for webpack module resolution
+export * from './card.js'
+export * from './button.js'
+export * from './alert-dialog'
+export * from './badge'
+export * from './dialog'
+export * from './gauge'
+export * from './input'
+export * from './progress'
+export * from './select'
+export * from './tabs'
+export * from './textarea'
