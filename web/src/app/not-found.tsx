@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Button } from "@/components/auth-components";
+import { Button } from "../../../components/auth-components";
 
 export default function NotFound() {
   return (

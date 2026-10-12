@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import { AppShell, type NavItem } from "@/components/shared/AppShell";
+import { AppShell, type NavItem } from "../../components/shared/AppShell";
 
 const nav: NavItem[] = [
   { href: "/admin/dashboard", label: "Dashboard" },

@@ -3,10 +3,10 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
-import { Button } from "@/components/auth-components";
-import { Badge } from "@/components/ui/badge";
-import { api, type CatalogItem, type BillingSummary, type FoundingTier } from "@/lib/api";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/auth-components";
+import { Button } from "../../components/auth-components";
+import { Badge } from "../../components/ui/badge";
+import { api, type CatalogItem, type BillingSummary, type FoundingTier } from "../../lib/api";
 import { Check, Zap, Loader2 } from "lucide-react";
 
 function price(amount: number, currency: string, mode: string): string {

@@ -3,10 +3,10 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { ApplicationPipeline, ApplicationCard, TimelineView } from '@/components/candidate';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageHeader } from '../components/shared/PageHeader';
+import { ApplicationPipeline, ApplicationCard, TimelineView } from '../components/candidate';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { AlertCircle, Loader2, CheckCircle2, Clock, XCircle } from 'lucide-react';
 
 interface Application {

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import "@/styles/globals.css";
-import { Providers } from "@/components/providers";
+import { Providers } from "../../../components/providers";
 
 export const metadata: Metadata = {
   title: "TrueMatch: AI-Powered Hiring Assessment | Capability-First Recruiting",
