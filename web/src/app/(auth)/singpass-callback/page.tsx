@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { cn } from "@/lib/utils";
+
+function cn(...classes: (string | undefined | null | boolean | Record<string, any>)[]): string {
+  return classes.filter(Boolean).join(" ");
+}
 
 function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return <div className={cn("rounded-lg border border-gray-200 bg-white shadow-sm", className)} {...props} />;
@@ -32,7 +35,6 @@ export default function SingpassCallbackPage() {
       return;
     }
 
-    // Handle callback
     signIn("singpass", { code, state, redirect: false }).then((result) => {
       if (result?.error) {
         setError(result.error);

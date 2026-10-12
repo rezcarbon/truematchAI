@@ -4,7 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { signIn, getSession } from "next-auth/react";
-import { cn } from "@/lib/utils";
+
+// Inline cn utility
+function cn(...classes: (string | undefined | null | boolean | Record<string, any>)[]): string {
+  return classes.filter(Boolean).join(" ");
+}
 
 // Inline Card components
 function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
@@ -28,7 +32,7 @@ function CardContent({ className, ...props }: React.HTMLAttributes<HTMLDivElemen
 }
 
 // Inline Button component
-function Button({ className, variant = "default", size = "default", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "default" | "outline" | "ghost"; size?: "default" | "sm" | "lg" }) {
+function Button({ className, variant = "default", size = "default", ...props }: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: string; size?: string }) {
   const variantClass = variant === "default" ? "bg-blue-600 text-white hover:bg-blue-700" : variant === "outline" ? "border border-gray-300 bg-white hover:bg-gray-50" : "hover:bg-gray-100";
   const sizeClass = size === "sm" ? "px-3 py-1 text-sm" : size === "lg" ? "px-6 py-3 text-lg" : "px-4 py-2";
   return <button className={cn("inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none", variantClass, sizeClass, className)} {...props} />;
