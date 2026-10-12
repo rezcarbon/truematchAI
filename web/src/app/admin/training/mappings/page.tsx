@@ -4,13 +4,13 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
-import { getCapabilityMappings, CapabilityMapping } from '@/lib/api/training';
+import { PageHeader } from '../../../components/shared/AppShell';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Badge } from '../../../components/ui/badge';
+import { Progress } from '../../../components/ui/progress';
+import { getCapabilityMappings, CapabilityMapping } from '../../../lib/api/training';
 import { AlertCircle, Zap, TrendingUp, Eye, EyeOff, ThumbsUp, ThumbsDown } from 'lucide-react';
-import { input as inputClass } from '@/components/ui/input';
+import { input as inputClass } from '../../../components/ui/input';
 
 export default function CapabilityMappingsPage() {
   const { data: session } = useSession();

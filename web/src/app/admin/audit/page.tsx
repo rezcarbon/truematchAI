@@ -1,22 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '../components/shared/AppShell';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Card, CardContent } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { Loader2, Search, Download } from 'lucide-react';
-import { adminApi } from '@/lib/api-admin';
-import { AuditEvent } from '@/types/admin';
-import { formatDate } from '@/lib/utils';
+import { adminApi } from '../lib/api-admin';
+import { AuditEvent } from '../types/admin';
+import { formatDate } from '../lib/utils';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '../components/ui/select';
 
 export default function AuditPage() {
   const [events, setEvents] = useState<AuditEvent[]>([]);

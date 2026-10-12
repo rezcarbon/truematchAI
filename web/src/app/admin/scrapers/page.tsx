@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { ScraperConfiguration } from '@/components/admin/ScraperConfiguration';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { PageHeader } from '../../../components/shared/AppShell';
+import { ScraperConfiguration } from '../../../components/admin/ScraperConfiguration';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Button } from '../../../components/ui/button';
 import { AlertCircle, Loader2, Plus } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api } from '../../../lib/api';
 
 interface Scraper {
   id: string;

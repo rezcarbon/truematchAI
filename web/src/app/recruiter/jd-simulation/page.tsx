@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { JDSimulationForm } from '@/components/recruiter/JDSimulationForm';
-import { JDSimulationResults } from '@/components/recruiter/JDSimulationResults';
-import { Card, CardContent } from '@/components/ui/card';
+import { PageHeader } from '../components/shared/PageHeader';
+import { JDSimulationForm } from '../components/recruiter/JDSimulationForm';
+import { JDSimulationResults } from '../components/recruiter/JDSimulationResults';
+import { Card, CardContent } from '../components/ui/card';
 import { AlertCircle, Loader2 } from 'lucide-react';
 
 interface SimulationData {

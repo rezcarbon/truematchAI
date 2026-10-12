@@ -1,11 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { PageHeader } from '../components/shared/PageHeader';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import {
   HorizontalPipeline,
   ApplicationCard,
@@ -14,8 +14,8 @@ import {
   InterviewPrepWidget,
   TimelineView,
   OfferDetailsCard,
-} from '@/components/applications-tracker';
-import type { HorizontalPipeline as Pipeline } from '@/components/applications-tracker/types';
+} from '../components/applications-tracker';
+import type { HorizontalPipeline as Pipeline } from '../components/applications-tracker/types';
 import {
   Search,
   Filter,
@@ -24,7 +24,7 @@ import {
   Loader2,
   AlertCircle,
 } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { cn } from '../lib/utils';
 
 // Mock data
 const mockApplications: Pipeline.Application[] = [

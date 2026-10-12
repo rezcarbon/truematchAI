@@ -4,10 +4,10 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { getTrainingFeedback, TrainingFeedback } from '@/lib/api/training';
+import { PageHeader } from '../../../components/shared/AppShell';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Badge } from '../../../components/ui/badge';
+import { getTrainingFeedback, TrainingFeedback } from '../../../lib/api/training';
 import { AlertCircle, Calendar, MessageSquare, Star, TrendingUp } from 'lucide-react';
 
 const FEEDBACK_TYPE_COLORS: Record<string, { bg: string; text: string }> = {

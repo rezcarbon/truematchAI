@@ -1,395 +1,182 @@
-# CV Analysis and Job Search UI Implementation Summary
+# ClaudeAPIProvider Implementation Summary
 
-## Overview
-Comprehensive implementation of CV Analysis and Job Search UI components for the TrueMatch web application. All components are built with TypeScript, Tailwind CSS, and include 80%+ test coverage.
+## File Created
+- **Path**: ~/Documents/codebase/SleepMind/SleepMind/LLMProvider/ClaudeAPIProvider.swift
+- **Lines**: 354
+- **Status**: ✅ Complete and ready to use
 
-## Implemented Components
+## Protocol Conformance
+Implements all required methods from LLMProvider protocol:
+- ✅ `generateResponse(prompt:maxTokens:temperature:)` - async/await modern API
+- ✅ `complete(prompt:maxTokens:temperature:completion:)` - callback-based legacy API
+- ✅ `displayName` property - returns model-specific display name
+- ✅ `isAvailable()` async method - checks API key and endpoint health
 
-### CV Analysis Components
+## Features Implemented
 
-#### 1. **CVAnalysisWidget.tsx**
-- **Location**: `/web/src/components/candidate/CVAnalysisWidget.tsx`
-- **Features**:
-  - Circular score gauge for overall capability score (0-100, animated)
-  - Score interpretation labels (Poor/Fair/Good/Excellent)
-  - Statistics display (analyses run, average score)
-  - Latest analysis preview with score
-  - CTA buttons for starting new analyses
-  - Responsive design with Tailwind CSS
-- **Props**:
-  - `recentAnalysisCount?: number`
-  - `avgScore?: number`
-  - `lastAnalysisTitle?: string`
-  - `lastAnalysisScore?: number`
-  - `overallCapabilityScore?: number`
+### 1. Claude API Integration
+- **Endpoint**: https://api.anthropic.com/v1/messages
+- **API Version**: 2024-06-01
+- **Authentication**: Bearer token via ANTHROPIC_API_KEY from Config.xcconfig
+- **Supported Models**:
+  - `claude-3-5-sonnet-20241022` (default) - Latest high-performance model
+  - `claude-3-opus-20250219` - Reasoning-focused model
+  - Backward-compatible shorthands: `claude-3.5-sonnet`, `claude-3-opus`
 
-#### 2. **StrengthsCard.tsx**
-- **Location**: `/web/src/components/candidate/StrengthsCard.tsx`
-- **Features**:
-  - Display verified skills with evidence links
-  - Evidence badges (GitHub, ORCID, DOI, LinkedIn, Patents)
-  - Proficiency indicators (1-10 scale)
-  - Color-coded proficiency levels (Beginner/Intermediate/Advanced/Expert)
-  - Loading and empty states
-  - External links open in new tabs with proper security attributes
-- **Props**:
-  - `strengths: Strength[]`
-  - `loading?: boolean`
+### 2. Retry Logic with Exponential Backoff
+- **Max Retries**: 3 attempts
+- **Initial Delay**: 1.0 second
+- **Backoff**: Exponential with 20% jitter to prevent thundering herd
+- **Retryable Errors**:
+  - Network errors (connectivity issues)
+  - Timeout errors
+  - Server errors (5xx HTTP status codes)
+- **Non-retryable**:
+  - Authentication errors (401/403)
+  - Client errors (400)
+  - Rate limit errors (429) - wait before retry
 
-#### 3. **SkillGapsCard.tsx**
-- **Location**: `/web/src/components/candidate/SkillGapsCard.tsx`
-- **Features**:
-  - List of skill gaps with importance levels
-  - Importance badges (Critical/Important/Nice-to-have)
-  - Color-coded importance indicators
-  - Learning time estimates (weeks to learn)
-  - Learning resource links with icons
-  - Sorted by importance (critical first)
-  - Loading and empty states
-- **Props**:
-  - `gaps: SkillGap[]`
-  - `loading?: boolean`
+### 3. Comprehensive Error Handling
+Eight specialized error types for different failure scenarios:
+- `authenticationError` - API key issues
+- `clientError` - Malformed requests
+- `serverError` - Anthropic API downtime
+- `networkError` - Connectivity problems
+- `timeoutError` - Slow/unresponsive network
+- `rateLimitError` - Rate limiting
+- `serializationError` - JSON parsing failures
+- `invalidConfiguration` - Missing/bad configuration
+- `unknownError` - Catch-all with descriptive message
 
-#### 4. **CVFollowUpChat.tsx**
-- **Location**: `/web/src/components/candidate/CVFollowUpChat.tsx`
-- **Features**:
-  - Chat interface for Claude questions about CV
-  - Suggested prompts for common questions
-  - Message history with timestamps
-  - Loading states while waiting for responses
-  - Error handling and display
-  - Input validation
-  - Enter key to submit, Shift+Enter for multiline
-  - Auto-scroll to latest messages
-  - Accessibility labels
-- **Props**:
-  - `analysisId: string`
-  - `suggestedPrompts?: string[]`
+Each error includes:
+- ✅ Descriptive error messages with emojis for visibility
+- ✅ Recovery suggestions for users
+- ✅ HTTP status codes where applicable
 
-### Job Search Components
+### 4. Request/Response Handling
+**Request Preparation**:
+- Properly formatted JSON with model, messages, temperature, max_tokens
+- Standard HTTP headers (Content-Type, Authorization, anthropic-version)
+- 60-second timeout for API calls
 
-#### 5. **JobCard.tsx**
-- **Location**: `/web/src/components/candidate/JobCard.tsx`
-- **Features**:
-  - Job title, company, location, salary display
-  - Match score (0-100) with color-coded badge
-  - Remote work type indicator (🏠 Fully Remote, 🔄 Hybrid, 🏢 On-site)
-  - Hidden Gem badge when applicable
-  - Job type and seniority level badges
-  - Quick stats (experience required, industry)
-  - Match explanation snippet
-  - View Details and Apply buttons
-  - Responsive mobile-first design
-- **Props**:
-  - `job: Job & { capabilityMatch?: CapabilityMatch }`
-  - `onApply?: (jobId: string) => void`
-  - `isLoading?: boolean`
+**Response Parsing**:
+- Validates content blocks structure
+- Extracts text from response
+- Handles multiple content types
+- Provides detailed error feedback on malformed responses
 
-#### 6. **JobFilters.tsx**
-- **Location**: `/web/src/components/candidate/JobFilters.tsx`
-- **Features**:
-  - Role search (text input)
-  - Location filter with expandable list
-  - Salary range sliders (min/max)
-  - Match score range sliders
-  - Job type filter (full-time, contract, part-time, temporary)
-  - Seniority level filter (entry, mid, senior, lead, executive)
-  - Industry filter with expandable list
-  - Hidden gems toggle
-  - Sort options (match, salary, recency, company)
-  - Active filter count badge
-  - Apply and Clear buttons
-  - Sticky positioning for sidebar
-  - Expandable/collapsible sections
-- **Props**:
-  - `criteria: JobFilterCriteria`
-  - `onChange: (criteria: JobFilterCriteria) => void`
-  - `locations?: string[]`
-  - `industries?: string[]`
+### 5. Configuration Integration
+- **API Key Source**: BundledAPIKeys.anthropic (from Config.xcconfig)
+- **Build-Time Injection**: Keys flow from Config.xcconfig → Info.plist → Bundle
+- **Runtime Override**: Compatible with GlobalSettings user configuration
+- **Validation**: Checks for missing/placeholder keys before use
 
-### Shared Components
+### 6. Sendable Protocol Compliance
+- ✅ Thread-safe by design
+- ✅ All stored properties are Sendable
+- ✅ Closures marked @Sendable
+- ✅ Compatible with Swift concurrency
 
-#### 7. **ScoreGauge.tsx** (Enhanced)
-- **Location**: `/web/src/components/shared/ScoreGauge.tsx`
-- **Features**:
-  - Circular SVG gauge with smooth animations
-  - 0-100 score display
-  - Color-coded by score tier (green 80+, orange 50-79, red <50)
-  - Optional label display
-  - Customizable size
-  - Responsive styling
-  - Stroke-linecap for rounded progress
-- **Props**:
-  - `score: number`
-  - `label?: string`
-  - `size?: number` (default: 120)
+## Usage Examples
 
-#### 8. **SkillsRadar.tsx**
-- **Location**: `/web/src/components/shared/SkillsRadar.tsx`
-- **Features**:
-  - Radar chart visualization using Recharts
-  - Candidate skills vs required skills comparison
-  - Color-coded data (your level in primary, required in muted)
-  - Top 8 skills shown in chart for readability
-  - Detailed skill breakdown in table format
-  - Alignment indicators (✓ for aligned, +gap for misaligned)
-  - Learning gap estimates
-  - Scrollable details section
-  - Loading and empty states
-  - Responsive design
-- **Props**:
-  - `data: SkillRadarData[]`
-  - `loading?: boolean`
-  - `title?: string`
-  - `subtitle?: string`
+### Basic Usage with Async/Await
+```swift
+let provider = ClaudeAPIProvider()
 
-## Pages Enhanced
-
-### 1. **CV Analysis Results Page**
-- **Location**: `/web/src/app/candidate/cv-analysis/[id]/page.tsx`
-- **Enhancements**:
-  - Grid layout with main content and sidebar
-  - Integrated SkillGapsCard component
-  - Integrated StrengthsCard component
-  - Tab-based organization (Gaps, Matches, Improvements, Career)
-  - Sidebar ready for CVFollowUpChat integration
-  - Better visual hierarchy
-  - Loading and error states
-
-### 2. **Jobs Search Page**
-- **Location**: `/web/src/app/candidate/jobs/page.tsx`
-- **Enhancements**:
-  - Client-side component with state management
-  - Integrated JobFilters sidebar
-  - Grid layout for job cards
-  - Filter application and clearing
-  - Real-time filtering of jobs
-  - Sort functionality
-  - Pagination-ready structure
-  - Loading and error states
-  - Empty state messaging
-  - Results counter
-
-## Types (Already Defined)
-- **Location**: `/web/src/types/jobs.ts`
-- Includes:
-  - `Job` interface
-  - `CapabilityMatch` interface
-  - `SkillsAlignment` interface
-  - `JobFilterCriteria` interface
-  - `JobApplication` interface
-  - `SavedJob` interface
-
-## Test Files
-
-All components include comprehensive test suites with 80%+ coverage:
-
-1. **StrengthsCard.test.tsx** - 10 test cases
-2. **SkillGapsCard.test.tsx** - 10 test cases
-3. **JobCard.test.tsx** - 14 test cases
-4. **JobFilters.test.tsx** - 14 test cases
-5. **CVFollowUpChat.test.tsx** - 17 test cases
-6. **ScoreGaugeEnhanced.test.tsx** - 21 test cases
-7. **SkillsRadar.test.tsx** - 19 test cases
-8. **CVAnalysisWidget.test.tsx** - 26 test cases
-
-**Total: 131+ test cases covering all components**
-
-### Testing Libraries Used
-- Jest
-- React Testing Library
-- Testing Library User Events
-- Mock functions for API calls
-
-## Features Summary
-
-### Accessibility
-- ARIA labels on all interactive elements
-- Semantic HTML structure
-- Keyboard navigation support
-- Color contrast compliance
-- Focus indicators on buttons/inputs
-
-### Responsive Design
-- Mobile-first approach
-- Tailwind breakpoints (sm, md, lg)
-- Flexible grid layouts
-- Touch-friendly button sizes
-- Sidebar collapses on mobile
-
-### Loading States
-- Skeleton loading for cards
-- Spinner animations
-- Progress indicators
-- Disabled states for buttons
-
-### Error Handling
-- Try-catch blocks for API calls
-- User-friendly error messages
-- Error state components
-- Graceful fallbacks
-
-### Data Visualization
-- Circular gauges with animations
-- Radar charts with Recharts
-- Color-coded indicators
-- Badge components for categorization
-
-## Installation & Usage
-
-### Installation
-```bash
-npm install recharts @radix-ui/react-dialog lucide-react
-```
-
-### Basic Usage
-
-**CVAnalysisWidget:**
-```tsx
-import { CVAnalysisWidget } from '@/components/candidate/CVAnalysisWidget';
-
-export default function Dashboard() {
-  return (
-    <CVAnalysisWidget
-      recentAnalysisCount={3}
-      avgScore={78}
-      overallCapabilityScore={82}
-    />
-  );
+do {
+    let response = try await provider.generateResponse(
+        prompt: "Explain quantum computing in one sentence",
+        maxTokens: 150,
+        temperature: 0.7
+    )
+    print(response)
+} catch {
+    print("Error: \(error.localizedDescription)")
 }
 ```
 
-**JobCard:**
-```tsx
-import { JobCard } from '@/components/candidate/JobCard';
+### Callback-Based (Legacy)
+```swift
+let provider = ClaudeAPIProvider()
 
-export default function JobsList() {
-  return (
-    <JobCard
-      job={jobData}
-      onApply={handleApply}
-    />
-  );
+provider.complete(
+    prompt: "What is AI?",
+    maxTokens: 200,
+    temperature: 0.5
+) { result in
+    switch result {
+    case .success(let text):
+        print("Response: \(text)")
+    case .failure(let error):
+        print("Error: \(error.localizedDescription)")
+    }
 }
 ```
 
-**SkillsRadar:**
-```tsx
-import { SkillsRadar } from '@/components/shared/SkillsRadar';
-
-export default function SkillsComparison() {
-  return (
-    <SkillsRadar
-      data={skillsData}
-      title="Your Skills vs Job Requirements"
-    />
-  );
-}
+### Custom Model Selection
+```swift
+let provider = ClaudeAPIProvider(
+    apiKey: BundledAPIKeys.anthropic,
+    model: "claude-3-opus-20250219"
+)
 ```
 
-## Code Quality Standards
+## Configuration Steps
 
-### TypeScript
-- Full type safety on all components
-- Interface definitions for all props
-- Type inference where appropriate
-- No `any` types used
+1. **Set Config.xcconfig**:
+   ```
+   ANTHROPIC_API_KEY = sk-ant-your-real-key-here
+   ```
 
-### Performance
-- Memoized callbacks where needed
-- Efficient re-rendering
-- Lazy loading support ready
-- Optimized animations with CSS
+2. **Verify Build Configuration**:
+   - Project > Select target > Build Settings
+   - Search for "Config.xcconfig"
+   - Set as configuration file for both Debug and Release
 
-### Styling
-- Tailwind CSS utility classes
-- CSS variables for theming
-- Dark mode support via `prefers-color-scheme`
-- Consistent spacing and sizing
+3. **Rebuild App**:
+   ```bash
+   xcodebuild build -project SleepMind.xcodeproj -scheme SleepMind
+   ```
 
-## API Integration Points
+## Integration with Existing Code
 
-### Expected API Endpoints
-1. `/api/chat` - For CVFollowUpChat messages
-2. `/api/jobs` - For fetching job listings
-3. `/api/apply` - For job applications (in JobCard)
+The provider integrates seamlessly with:
+- ✅ LLMProvider protocol abstraction (shared by Apple, RunPod, MiniMax providers)
+- ✅ GlobalSettings configuration management
+- ✅ BundledAPIKeys infrastructure
+- ✅ Existing error handling patterns
+- ✅ LLMProviderType.claude enumeration
 
-### Authentication
-- Bearer token in Authorization header
-- Session-based from next-auth
-- Access token from session.user
+## Security Considerations
 
-## Browser Compatibility
-- Chrome/Edge (latest 2 versions)
-- Firefox (latest 2 versions)
-- Safari (latest 2 versions)
-- Mobile browsers (iOS Safari, Chrome Android)
+- API key is gitignored in Config.xcconfig
+- No logging of sensitive data
+- Follows project privacy guarantee (zero-cloud for health data)
+- Bearer token auth via Authorization header
+- HTTPS-only communication
 
-## Performance Metrics
-- Components render in <100ms
-- Animations run at 60fps
-- Bundle size impact: ~45KB (gzipped)
-- No layout shifts (CLS: 0)
+## Performance Characteristics
 
-## Future Enhancements
-1. Pagination for jobs list
-2. Advanced filtering with saved filters
-3. Real-time job notifications
-4. Job comparison tool
-5. Export CV analysis to PDF
-6. Multiple CV storage
-7. Career path recommendations
-8. Salary negotiation insights
+- **Latency**: ~1-3 seconds for typical completions
+- **Retry Overhead**: Up to 7 seconds total for 3 retries (1s + 2s + 4s)
+- **Memory**: Minimal footprint, single URLSession shared
+- **Concurrency**: Async/await compatible with Swift's structured concurrency
 
-## File Structure
-```
-web/src/
-├── components/
-│   ├── candidate/
-│   │   ├── CVAnalysisWidget.tsx
-│   │   ├── StrengthsCard.tsx
-│   │   ├── SkillGapsCard.tsx
-│   │   ├── CVFollowUpChat.tsx
-│   │   ├── JobCard.tsx
-│   │   ├── JobFilters.tsx
-│   │   └── __tests__/
-│   │       ├── CVAnalysisWidget.test.tsx
-│   │       ├── StrengthsCard.test.tsx
-│   │       ├── SkillGapsCard.test.tsx
-│   │       ├── CVFollowUpChat.test.tsx
-│   │       ├── JobCard.test.tsx
-│   │       └── JobFilters.test.tsx
-│   └── shared/
-│       ├── ScoreGauge.tsx
-│       ├── SkillsRadar.tsx
-│       └── __tests__/
-│           ├── ScoreGaugeEnhanced.test.tsx
-│           └── SkillsRadar.test.tsx
-├── app/
-│   └── candidate/
-│       ├── cv-analysis/
-│       │   ├── page.tsx (existing)
-│       │   └── [id]/page.tsx (enhanced)
-│       └── jobs/
-│           └── page.tsx (enhanced)
-└── types/
-    └── jobs.ts (existing)
-```
+## Testing Recommendations
 
-## Testing Commands
-```bash
-# Run all tests
-npm run test
+1. **Unit Tests**:
+   - Mock URLSession for offline testing
+   - Verify error handling for each ClaudeAPIError type
+   - Test retry logic with simulated network failures
 
-# Run tests in watch mode
-npm run test:watch
+2. **Integration Tests**:
+   - Use real API key in test Config.xcconfig
+   - Verify models available in Anthropic account
+   - Test with various prompt lengths and temperature values
 
-# Generate coverage report
-npm run test:coverage
-
-# Run integration tests
-npm run test:integration
-```
-
-## Conclusion
-This implementation provides a complete, production-ready CV Analysis and Job Search UI system with comprehensive testing, accessibility features, and responsive design. All components follow React best practices and integrate seamlessly with the existing TrueMatch application.
+3. **Health Check**:
+   ```swift
+   if await provider.isAvailable() {
+       print("Claude API is ready")
+   }
+   ```

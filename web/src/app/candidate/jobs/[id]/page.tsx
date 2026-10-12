@@ -1,7 +1,7 @@
-import { PageHeader } from "@/components/shared/AppShell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
-import { Button } from "@/components/auth-components";
-import { api } from "@/lib/api";
+import { PageHeader } from "../../../components/shared/AppShell";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/auth-components";
+import { Button } from "../../../components/auth-components";
+import { api } from "../../../lib/api";
 
 export default async function JobDetailPage({ params }: { params: { id: string } }) {
   const positions = await api.getPositions();

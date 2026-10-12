@@ -7,11 +7,11 @@ import { MultiMethodUpload } from "../components/resume/MultiMethodUpload";
 import { VersionTimeline } from "../components/resume/VersionTimeline";
 import { VersionComparison } from "../components/resume/VersionComparison";
 import { AnnotationModal } from "../components/resume/AnnotationModal";
-import { useResumeVersioning } from "@/hooks/useResumeVersioning";
+import { useResumeVersioning } from '../hooks/useResumeVersioning";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/auth-components";
 import { Button } from "../components/auth-components";
 import { AlertCircle, CheckCircle } from "lucide-react";
-import type { ResumeUploadMethod, VersionComparison as VersionComparisonType } from "@/types/resume";
+import type { ResumeUploadMethod, VersionComparison as VersionComparisonType } from '../types/resume";
 
 type ModalState = "none" | "compare" | "annotate";
 

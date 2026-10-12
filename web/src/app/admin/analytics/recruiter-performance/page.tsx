@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '../../../components/shared/PageHeader';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Badge } from '../../../components/ui/badge';
 import { Loader2, TrendingUp, TrendingDown } from 'lucide-react';
-import { adminApi } from '@/lib/api-admin';
+import { adminApi } from '../../../lib/api-admin';
 
 interface RecruiterMetrics {
   recruiterId: string;

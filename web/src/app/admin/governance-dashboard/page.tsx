@@ -2,12 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { PageHeader } from '../components/shared/PageHeader';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
+import { Button } from '../components/ui/button';
 import { AlertCircle, CheckCircle2, Clock, X, Loader2 } from 'lucide-react';
-import { adminApi } from '@/lib/api-admin';
+import { adminApi } from '../lib/api-admin';
 
 interface GovernanceReview {
   id: string;

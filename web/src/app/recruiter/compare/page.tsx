@@ -4,17 +4,17 @@ export const dynamic = 'force-dynamic';
 
 import { useState } from "react";
 import Link from "next/link";
-import type { PipelineCandidate } from "@/lib/types";
-import { PageHeader } from "@/components/shared/AppShell";
-import { ScoreTrio } from "@/components/shared/ScoreTrio";
-import { GapMatrix } from "@/components/shared/GapMatrix";
-import { MatchTypeBadge } from "@/components/shared/MatchTypeBadge";
-import { GovernanceBadge } from "@/components/shared/GovernanceBadge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/auth-components";
-import { api } from "@/lib/api";
-import { mockPipeline } from "@/lib/mock";
+import type { PipelineCandidate } from '../lib/types";
+import { PageHeader } from '../components/shared/AppShell";
+import { ScoreTrio } from '../components/shared/ScoreTrio";
+import { GapMatrix } from '../components/shared/GapMatrix";
+import { MatchTypeBadge } from '../components/shared/MatchTypeBadge";
+import { GovernanceBadge } from '../components/shared/GovernanceBadge";
+import { Card, CardContent, CardHeader, CardTitle } from '../components/auth-components";
+import { Badge } from '../components/ui/badge";
+import { Button } from '../components/auth-components";
+import { api } from '../lib/api";
+import { mockPipeline } from '../lib/mock";
 import {
   X, ArrowRight, Award, TrendingUp, Users
 } from "lucide-react";

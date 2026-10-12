@@ -1,15 +1,15 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from "@/components/shared/AppShell";
-import { Card, CardContent } from "@/components/auth-components";
+import { PageHeader } from '../components/shared/AppShell";
+import { Card, CardContent } from '../components/auth-components";
 import { Loader2 } from 'lucide-react';
-import { OutcomeAnalytics, type OutcomePoint } from "@/components/admin/OutcomeAnalytics";
-import { GovernanceConfig } from "@/components/admin/GovernanceConfig";
-import { DataSourceStats } from "@/components/shared/DataSourceStats";
-import { ScraperHealthCard } from "@/components/shared/ScraperHealthCard";
-import { adminApi } from '@/lib/api-admin';
-import { AnalyticsResponse } from '@/types/admin';
+import { OutcomeAnalytics, type OutcomePoint } from '../components/admin/OutcomeAnalytics";
+import { GovernanceConfig } from '../components/admin/GovernanceConfig";
+import { DataSourceStats } from '../components/shared/DataSourceStats";
+import { ScraperHealthCard } from '../components/shared/ScraperHealthCard";
+import { adminApi } from '../lib/api-admin';
+import { AnalyticsResponse } from '../types/admin';
 
 const defaultOutcomes: OutcomePoint[] = [
   { month: "Jan", traditionalHires: 8, capabilityHires: 5 },

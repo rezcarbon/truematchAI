@@ -4,9 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '../../../components/shared/AppShell';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Badge } from '../../../components/ui/badge';
 import { Send, Bot, User, Lightbulb, TrendingUp, Sparkles } from 'lucide-react';
 
 // Generate a valid UUID v4

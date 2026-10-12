@@ -4,9 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '../../../components/shared/AppShell';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Badge } from '../../../components/ui/badge';
 import { AlertCircle, Upload, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 
 interface UploadItem {

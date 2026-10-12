@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '../../../components/shared/PageHeader';
+import { Card, CardContent } from '../../../components/ui/card';
+import { Badge } from '../../../components/ui/badge';
 import { Loader2, AlertCircle } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../../components/ui/tabs';
 
 interface CVAnalysisGapItem {
   capability: string;

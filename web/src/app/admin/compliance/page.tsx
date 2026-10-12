@@ -1,16 +1,16 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '../components/shared/AppShell';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Badge } from '../components/ui/badge';
 import { Loader2, Download } from 'lucide-react';
-import { adminApi } from '@/lib/api-admin';
-import { ComplianceReportResponse } from '@/types/admin';
-import { formatDate } from '@/lib/utils';
-import { ComplianceReport, type ComplianceItem } from '@/components/admin/ComplianceReport';
-import { BiasReport, type BiasMetric } from '@/components/admin/BiasReport';
+import { adminApi } from '../lib/api-admin';
+import { ComplianceReportResponse } from '../types/admin';
+import { formatDate } from '../lib/utils';
+import { ComplianceReport, type ComplianceItem } from '../components/admin/ComplianceReport';
+import { BiasReport, type BiasMetric } from '../components/admin/BiasReport';
 
 const statusColors = {
   pass: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200',

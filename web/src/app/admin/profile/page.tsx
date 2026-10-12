@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { PageHeader } from '../../../components/shared/PageHeader';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Button } from '../../../components/ui/button';
 import { AlertCircle, Loader2, CheckCircle2 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { adminApi } from '@/lib/api-admin';
+import { Badge } from '../../../components/ui/badge';
+import { adminApi } from '../../../lib/api-admin';
 
 interface UserProfile {
   id: string;

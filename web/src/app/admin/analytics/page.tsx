@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { PageHeader } from '../components/shared/AppShell';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Button } from '../components/ui/button';
 import { Loader2, TrendingUp } from 'lucide-react';
-import { adminApi } from '@/lib/api-admin';
-import { AnalyticsResponse } from '@/types/admin';
+import { adminApi } from '../lib/api-admin';
+import { AnalyticsResponse } from '../types/admin';
 import Link from 'next/link';
 
 export default function AnalyticsDashboardPage() {

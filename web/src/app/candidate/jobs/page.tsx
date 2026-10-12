@@ -5,7 +5,7 @@ import { PageHeader } from "../components/shared/PageHeader";
 import { JobCard } from "../components/candidate/JobCard";
 import { JobFilters } from "../components/candidate/JobFilters";
 import { Card, CardContent } from "../components/auth-components";
-import { JobFilterCriteria, Job } from "@/types/jobs";
+import { JobFilterCriteria, Job } from '../types/jobs";
 import { Loader2, AlertCircle } from "lucide-react";
 
 export default function JobsPage() {

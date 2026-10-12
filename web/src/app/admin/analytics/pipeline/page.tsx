@@ -1,22 +1,22 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { PageHeader } from '../../../components/shared/AppShell';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Button } from '../../../components/ui/button';
+import { Badge } from '../../../components/ui/badge';
 import { Loader2, Download } from 'lucide-react';
-import { adminApi } from '@/lib/api-admin';
-import { AnalyticsResponse, PipelineMetric } from '@/types/admin';
-import { formatDate } from '@/lib/utils';
+import { adminApi } from '../../../lib/api-admin';
+import { AnalyticsResponse, PipelineMetric } from '../../../types/admin';
+import { formatDate } from '../../../lib/utils';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
+} from '../../../components/ui/select';
+import { Input } from '../../../components/ui/input';
 
 export default function PipelineAnalyticsPage() {
   const [analytics, setAnalytics] = useState<AnalyticsResponse | null>(null);

@@ -1,12 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { FileUpload } from '@/components/shared/FileUpload';
-import { Button } from '@/components/ui/button';
+import { PageHeader } from '../components/shared/PageHeader';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
+import { FileUpload } from '../components/shared/FileUpload';
+import { Button } from '../components/ui/button';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api } from '../lib/api';
 
 export default function RecruiterUploadResumePage() {
   const [file, setFile] = useState<File | null>(null);

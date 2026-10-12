@@ -4,10 +4,10 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { PageHeader } from '../../../components/shared/AppShell';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../components/ui/card';
+import { Badge } from '../../../components/ui/badge';
+import { Progress } from '../../../components/ui/progress';
 import {
   getTrainingInsights,
   getTrainingProgress,
@@ -15,7 +15,7 @@ import {
   TrainingInsight,
   TrainingProgress,
   SuccessPattern,
-} from '@/lib/api/training';
+} from '../../../lib/api/training';
 import { AlertCircle, Brain, TrendingUp, Target, Lightbulb } from 'lucide-react';
 
 export default function InsightsAnalyticsPage() {

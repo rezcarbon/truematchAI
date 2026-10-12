@@ -2,11 +2,11 @@
 
 export const dynamic = 'force-dynamic';
 
-import { PageHeader } from "@/components/shared/AppShell";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
-import { Badge } from "@/components/ui/badge";
-import { api } from "@/lib/api";
-import { mockDecisions } from "@/lib/mock";
+import { PageHeader } from '../components/shared/AppShell";
+import { Card, CardContent, CardHeader, CardTitle } from '../components/auth-components";
+import { Badge } from '../components/ui/badge";
+import { api } from '../lib/api";
+import { mockDecisions } from '../lib/mock";
 import {
   AlertTriangle, CheckCircle2, TrendingUp, BarChart3,
   Filter, Download, Calendar

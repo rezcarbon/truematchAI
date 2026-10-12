@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { JDSimulationForm } from '@/components/recruiter/JDSimulationForm';
+import { PageHeader } from '../../../components/shared/PageHeader';
+import { JDSimulationForm } from '../../../components/recruiter/JDSimulationForm';
 
 export default function AdminJDSimulationPage() {
   const [loading, setLoading] = useState(false);

@@ -1,14 +1,14 @@
-import { PageHeader } from "@/components/shared/AppShell";
-import { DualScoreCard } from "@/components/assessment/DualScoreCard";
-import { CapabilityNarrative } from "@/components/assessment/CapabilityNarrative";
-import { TrajectoryChart } from "@/components/assessment/TrajectoryChart";
-import { GapAnalysis } from "@/components/assessment/GapAnalysis";
-import { CounterRecommendation } from "@/components/assessment/CounterRecommendation";
-import { SignalProgression } from "@/components/assessment/SignalProgression";
-import { GovernanceBadges } from "@/components/assessment/GovernanceBadges";
-import { DeltaVisualization } from "@/components/assessment/DeltaVisualization";
-import { LanguageBadge, languageName } from "@/components/shared/LanguageBadge";
-import { api } from "@/lib/api";
+import { PageHeader } from "../../../components/shared/AppShell";
+import { DualScoreCard } from "../../../components/assessment/DualScoreCard";
+import { CapabilityNarrative } from "../../../components/assessment/CapabilityNarrative";
+import { TrajectoryChart } from "../../../components/assessment/TrajectoryChart";
+import { GapAnalysis } from "../../../components/assessment/GapAnalysis";
+import { CounterRecommendation } from "../../../components/assessment/CounterRecommendation";
+import { SignalProgression } from "../../../components/assessment/SignalProgression";
+import { GovernanceBadges } from "../../../components/assessment/GovernanceBadges";
+import { DeltaVisualization } from "../../../components/assessment/DeltaVisualization";
+import { LanguageBadge, languageName } from "../../../components/shared/LanguageBadge";
+import { api } from "../../../lib/api";
 
 export default async function AssessmentPage({ params }: { params: { id: string } }) {
   const a = await api.getAssessment(params.id);

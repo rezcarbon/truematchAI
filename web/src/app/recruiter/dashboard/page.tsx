@@ -9,13 +9,13 @@ import {
   ArrowRight, Plus
 } from "lucide-react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
-import { Button } from "@/components/auth-components";
-import { ScoreTrio } from "@/components/shared/ScoreTrio";
-import { GovernanceBadge } from "@/components/shared/GovernanceBadge";
-import { JDSimulationWidget } from "@/components/recruiter/JDSimulationWidget";
-import { api } from "@/lib/api";
-import { mockPipeline, mockPositions } from "@/lib/mock";
+import { Card, CardContent, CardHeader, CardTitle } from '../components/auth-components";
+import { Button } from '../components/auth-components";
+import { ScoreTrio } from '../components/shared/ScoreTrio";
+import { GovernanceBadge } from '../components/shared/GovernanceBadge";
+import { JDSimulationWidget } from '../components/recruiter/JDSimulationWidget";
+import { api } from '../lib/api";
+import { mockPipeline, mockPositions } from '../lib/mock";
 
 /* ── helpers ────────────────────────────────────────────────────────────── */
 

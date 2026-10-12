@@ -5,30 +5,30 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '@/components/shared/AppShell';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { StatusBadge } from '@/components/shared/StatusBadge';
+import { PageHeader } from '../../../components/shared/AppShell';
+import { Button } from '../../../components/ui/button';
+import { Input } from '../../../components/ui/input';
+import { Card, CardContent } from '../../../components/ui/card';
+import { Badge } from '../../../components/ui/badge';
+import { StatusBadge } from '../../../components/shared/StatusBadge';
 import { Loader2, Plus, Search, Trash2, Edit2, Mail } from 'lucide-react';
-import { adminApi } from '@/lib/api-admin';
-import { User, UserRole, UserStatus } from '@/types/admin';
-import { formatDate } from '@/lib/utils';
+import { adminApi } from '../../../lib/api-admin';
+import { User, UserRole, UserStatus } from '../../../types/admin';
+import { formatDate } from '../../../lib/utils';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@/components/ui/dialog';
+} from '../../../components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
+} from '../../../components/ui/select';
 
 const roleColors: Record<UserRole, string> = {
   admin: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200',

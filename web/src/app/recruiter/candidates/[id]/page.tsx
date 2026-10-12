@@ -1,23 +1,23 @@
 'use client';
 
-import { api } from "@/lib/api";
-import { PageHeader } from "@/components/shared/AppShell";
-import { ScoreTrio } from "@/components/shared/ScoreTrio";
-import { CounterRecCard } from "@/components/shared/CounterRecCard";
-import { GovernanceBadge } from "@/components/shared/GovernanceBadge";
-import { LanguageBadge, languageName } from "@/components/shared/LanguageBadge";
-import { SubstitutionPanel } from "@/components/recruiter/SubstitutionPanel";
-import { SignalProgression } from "@/components/assessment/SignalProgression";
-import { CapabilityNarrative } from "@/components/assessment/CapabilityNarrative";
-import { TrajectoryChart } from "@/components/assessment/TrajectoryChart";
-import { GapAnalysis } from "@/components/assessment/GapAnalysis";
-import { GovernanceBadges } from "@/components/assessment/GovernanceBadges";
-import { DecisionPanel } from "@/components/recruiter/DecisionPanel";
-import { JDQualityCard } from "@/components/recruiter/JDQualityCard";
-import { mockAssessment } from "@/lib/mock";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/auth-components";
+import { api } from "../../../lib/api";
+import { PageHeader } from "../../../components/shared/AppShell";
+import { ScoreTrio } from "../../../components/shared/ScoreTrio";
+import { CounterRecCard } from "../../../components/shared/CounterRecCard";
+import { GovernanceBadge } from "../../../components/shared/GovernanceBadge";
+import { LanguageBadge, languageName } from "../../../components/shared/LanguageBadge";
+import { SubstitutionPanel } from "../../../components/recruiter/SubstitutionPanel";
+import { SignalProgression } from "../../../components/assessment/SignalProgression";
+import { CapabilityNarrative } from "../../../components/assessment/CapabilityNarrative";
+import { TrajectoryChart } from "../../../components/assessment/TrajectoryChart";
+import { GapAnalysis } from "../../../components/assessment/GapAnalysis";
+import { GovernanceBadges } from "../../../components/assessment/GovernanceBadges";
+import { DecisionPanel } from "../../../components/recruiter/DecisionPanel";
+import { JDQualityCard } from "../../../components/recruiter/JDQualityCard";
+import { mockAssessment } from "../../../lib/mock";
+import { Card, CardContent, CardHeader, CardTitle } from "../../../components/auth-components";
+import { Badge } from "../../../components/ui/badge";
+import { Button } from "../../../components/auth-components";
 import {
   CheckCircle2, XCircle, ExternalLink, Calendar,
   Shield, FileText, Clock, ArrowLeft
