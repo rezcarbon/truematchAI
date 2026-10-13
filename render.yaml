@@ -75,7 +75,7 @@ services:
     env: node
     plan: starter
     previewPlan: starter
-    buildCommand: "npm install --production=false && npx next build"
+    buildCommand: "NODE_ENV=development npm install && npx next build"
     startCommand: "npm run start"
     rootDir: web
     region: oregon
