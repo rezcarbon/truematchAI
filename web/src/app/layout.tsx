@@ -1,29 +1,26 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
-import "../styles/globals.css";
-import { Providers } from "../../../components/providers";
+import { getServerSession } from "next-auth/next";
 
 export const metadata: Metadata = {
-  title: "TrueMatch: AI-Powered Hiring Assessment | Capability-First Recruiting",
-  description:
-    "Find exceptional candidates traditional ATS overlook. Evidence-based assessment. Governed by 6 fairness gates. Regulatory-ready.",
-  openGraph: {
-    title: "Discover exceptional candidates beyond keywords",
-    description: "Resume keywords aren't capability. We score both — then show you the difference. That's where great hiring happens.",
-    type: "website",
-  },
-  icons: {
-    icon: [
-      { url: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><defs><linearGradient id='grad' x1='0%' y1='0%' x2='100%' y2='100%'><stop offset='0%' style='stop-color:%231E40AF;stop-opacity:1' /><stop offset='100%' style='stop-color:%2314B8A6;stop-opacity:1' /></linearGradient></defs><rect width='100' height='100' fill='url(%23grad)'/><text x='50' y='60' font-size='60' font-weight='bold' fill='white' text-anchor='middle'>T</text></svg>" },
-    ],
-  },
+  title: "TrueMatch - AI-Powered Job Matching",
+  description: "Find the perfect match between candidates and opportunities",
 };
 
-export default function RootLayout({ children }: { children: ReactNode }) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const session = await getServerSession();
+
   return (
     <html lang="en">
+      <head>
+        <meta charSet="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+      </head>
       <body>
-        <Providers>{children}</Providers>
+        <main>{children}</main>
       </body>
     </html>
   );
