@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '../components/shared/AppShell';
-import { Button } from '../components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card';
-import { Input } from '../components/ui/input';
+import { PageHeader } from '../components/shared/AppShell.tsx';
+import { Button } from '../components/ui/button.ts';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/ui/card.ts';
+import { Input } from '../components/ui/input.tsx';
 import { Loader2 } from 'lucide-react';
-import { adminApi } from '../lib/api-admin';
+import { adminApi } from '../lib/api-admin.ts';
 
 export default function ConfigurationPage() {
   const [config, setConfig] = useState<Record<string, unknown> | null>(null);

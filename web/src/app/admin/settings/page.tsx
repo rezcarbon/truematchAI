@@ -3,13 +3,13 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
-import { PageHeader } from '../components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
+import { PageHeader } from '../components/shared/PageHeader.tsx';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.ts';
+import { Button } from '../components/ui/button.ts';
 import { AlertCircle, Loader2, Eye, EyeOff, CheckCircle2 } from 'lucide-react';
-import { Badge } from '../components/ui/badge';
+import { Badge } from '../components/ui/badge.tsx';
 import { ThemeToggle } from '../components/shared/ThemeToggle';
-import { adminApi } from '../lib/api-admin';
+import { adminApi } from '../lib/api-admin.ts';
 
 export default function SettingsPage() {
   const [loading, setLoading] = useState(false);

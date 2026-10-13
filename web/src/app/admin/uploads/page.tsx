@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '../components/shared/AppShell';
+import { PageHeader } from '../components/shared/AppShell.tsx';
 import { MassUpload } from '../components/admin/MassUpload';
 import { UploadBatchTracker } from '../components/admin/UploadBatchTracker';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.ts';
 import { AlertCircle, Loader2 } from 'lucide-react';
-import { Button } from '../components/ui/button';
+import { Button } from '../components/ui/button.ts';
 import { api } from '../lib/api';
 
 interface FieldMapping {

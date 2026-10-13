@@ -8,8 +8,8 @@ import { OutcomeAnalytics, type OutcomePoint } from '../components/admin/Outcome
 import { GovernanceConfig } from '../components/admin/GovernanceConfig";
 import { DataSourceStats } from '../components/shared/DataSourceStats";
 import { ScraperHealthCard } from '../components/shared/ScraperHealthCard";
-import { adminApi } from '../lib/api-admin';
-import { AnalyticsResponse } from '../types/admin';
+import { adminApi } from '../lib/api-admin.ts';
+import { AnalyticsResponse } from '../types/admin.ts';
 
 const defaultOutcomes: OutcomePoint[] = [
   { month: "Jan", traditionalHires: 8, capabilityHires: 5 },

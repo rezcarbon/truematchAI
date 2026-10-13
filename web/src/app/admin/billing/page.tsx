@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '../components/shared/AppShell';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
+import { PageHeader } from '../components/shared/AppShell.tsx';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.ts';
+import { Button } from '../components/ui/button.ts';
+import { Badge } from '../components/ui/badge.tsx';
 import { Loader2, Download, CreditCard } from 'lucide-react';
-import { adminApi } from '../lib/api-admin';
-import { Subscription, Invoice, SubscriptionStatus } from '../types/admin';
-import { formatDate } from '../lib/utils';
+import { adminApi } from '../lib/api-admin.ts';
+import { Subscription, Invoice, SubscriptionStatus } from '../types/admin.ts';
+import { formatDate } from '../lib/utils.ts';
 import { StatusBadge } from '../components/shared/StatusBadge';
 
 const subscriptionStatusMap: Record<SubscriptionStatus, 'success' | 'warning' | 'error' | 'default'> = {
