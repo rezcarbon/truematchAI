@@ -4,11 +4,11 @@ export const dynamic = 'force-dynamic';
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { PageHeader } from '../components/shared/AppShell.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.ts';
-import { Badge } from '../components/ui/badge.tsx';
+import { PageHeader } from '@/components/shared/AppShell';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { getTrainingStats, getVirtualBrainState, TrainingStats, VirtualBrainState } from '../lib/api/training';
+import { getTrainingStats, getVirtualBrainState, TrainingStats, VirtualBrainState } from '@/lib/api/training';
 import { AlertCircle, TrendingUp, Brain, Database, CheckCircle2 } from 'lucide-react';
 
 export default function TrainingSystemDashboard() {

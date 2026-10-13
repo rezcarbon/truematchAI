@@ -1,29 +1,29 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '../components/shared/AppShell.tsx';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card.ts';
-import { Button } from '../components/ui/button.ts';
-import { Input } from '../components/ui/input.tsx';
-import { Badge } from '../components/ui/badge.tsx';
+import { PageHeader } from '@/components/shared/AppShell';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { Loader2, Plus, Edit2, Trash2, Mail, Eye } from 'lucide-react';
-import { adminApi } from '../lib/api-admin.ts';
-import { EmailTemplate, CreateEmailTemplateRequest, UpdateEmailTemplateRequest } from '../types/admin.ts';
-import { formatDate } from '../lib/utils.ts';
+import { adminApi } from '@/lib/api-admin';
+import { EmailTemplate, CreateEmailTemplateRequest, UpdateEmailTemplateRequest } from '@/types/admin';
+import { formatDate } from '@/lib/utils';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '../components/ui/dialog.tsx';
+} from '@/components/ui/dialog';
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '../components/ui/select.tsx';
+} from '@/components/ui/select';
 
 export default function EmailTemplatesPage() {
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
