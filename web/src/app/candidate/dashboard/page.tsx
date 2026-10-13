@@ -1,349 +1,212 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useSession } from 'next-auth/react';
-import { PageHeader } from '@/components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import {
-  AssessmentSummary,
-  ActivityFeed,
-  StatCards,
-} from '@/components/candidate';
-import { Loader2, AlertCircle, X, FileText, Briefcase, TrendingUp } from 'lucide-react';
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-interface DashboardData {
-  assessmentCount: number;
-  averageScore: number;
-  activeApplications: number;
-  lastAssessment?: {
-    id: string;
-    positionTitle: string;
-    score: number;
-    date: string;
-  };
-  recentActivity: Array<{
-    id: string;
-    type: 'assessment' | 'message' | 'application' | 'update';
-    title: string;
-    description: string;
-    timestamp: string;
-  }>;
+// Inline utility
+function cn(...classes: (string | undefined | null | boolean)[]): string {
+  return classes.filter(Boolean).join(" ");
+}
+
+// Inline Card components
+function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "rounded-lg border border-gray-200 bg-white shadow-sm",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn("flex flex-col space-y-1.5 p-6 border-b", className)}
+      {...props}
+    />
+  );
+}
+
+function CardTitle({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLHeadingElement>) {
+  return (
+    <h2
+      className={cn(
+        "text-2xl font-semibold leading-none tracking-tight",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+function CardContent({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("p-6", className)} {...props} />;
 }
 
 export default function CandidateDashboard() {
-  const { data: session } = useSession();
-  const [showProfileBanner, setShowProfileBanner] = useState(false);
-  const [profileIncomplete, setProfileIncomplete] = useState(false);
-  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { data: session, status } = useSession();
+  const router = useRouter();
 
   useEffect(() => {
-    if (session?.user) {
-      checkProfileCompletion();
-      loadDashboardData();
+    if (status === "unauthenticated") {
+      router.push("/auth/login");
     }
-  }, [session]);
+  }, [status, router]);
 
-  const checkProfileCompletion = async () => {
-    try {
-      const accessToken = (session?.user as { accessToken?: string })?.accessToken;
-      if (!accessToken) return;
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-      const response = await fetch(`${apiUrl}/api/v1/profile/user/me`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const profile = await response.json();
-        const isIncomplete = !profile.display_name || profile.display_name.trim() === '';
-        setProfileIncomplete(isIncomplete);
-        setShowProfileBanner(isIncomplete);
-      }
-    } catch (error) {
-      console.error('Failed to check profile:', error);
-    }
-  };
-
-  const loadDashboardData = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-
-      const accessToken = (session?.user as { accessToken?: string })?.accessToken;
-      if (!accessToken) {
-        throw new Error('Not authenticated');
-      }
-
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-      const response = await fetch(`${apiUrl}/api/v1/candidates/dashboard`, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setDashboardData(data);
-      } else {
-        throw new Error('Failed to load dashboard data');
-      }
-    } catch (err) {
-      console.error('Error loading dashboard:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard');
-
-      // Mock data for demo
-      setDashboardData({
-        assessmentCount: 3,
-        averageScore: 84,
-        activeApplications: 2,
-        lastAssessment: {
-          id: 'asm_001',
-          positionTitle: 'Senior Backend Engineer',
-          score: 88,
-          date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        },
-        recentActivity: [
-          {
-            id: '1',
-            type: 'assessment',
-            title: 'Assessment completed',
-            description: 'You completed the assessment for Senior Backend Engineer',
-            timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          },
-          {
-            id: '2',
-            type: 'application',
-            title: 'Application submitted',
-            description: 'You applied to Platform Engineer at TechCorp',
-            timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-          },
-          {
-            id: '3',
-            type: 'message',
-            title: 'New message from recruiter',
-            description: 'Jocelyn Tan sent you a message about your application',
-            timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000).toISOString(),
-          },
-        ],
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const quickActions = [
-    {
-      icon: FileText,
-      label: 'Upload Resume',
-      description: 'Add a new resume version',
-      href: '/candidate/upload',
-      color: 'bg-blue-50 text-blue-600',
-    },
-    {
-      icon: Briefcase,
-      label: 'Browse Jobs',
-      description: 'Explore job opportunities',
-      href: '/candidate/jobs',
-      color: 'bg-green-50 text-green-600',
-    },
-    {
-      icon: TrendingUp,
-      label: 'CV Analysis',
-      description: 'Analyze your resume',
-      href: '/candidate/cv-analysis',
-      color: 'bg-purple-50 text-purple-600',
-    },
-  ];
-
-  if (loading) {
+  if (status === "loading") {
     return (
-      <div className="space-y-6">
-        <PageHeader
-          title="Your Dashboard"
-          subtitle="A capability-first view of how you match open roles"
-          icon="LayoutDashboard"
-        />
-
-        <div className="container mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="flex items-center justify-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-primary mr-2" />
-              <p className="text-muted-foreground">Loading your dashboard...</p>
-            </CardContent>
-          </Card>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <PageHeader
-        title="Your Dashboard"
-        subtitle="A capability-first view of how you match open roles"
-        icon="LayoutDashboard"
-      />
-
-      <div className="container mx-auto px-4 py-8 space-y-6">
-        {/* Profile Completion Banner */}
-        {showProfileBanner && profileIncomplete && (
-          <div className="flex items-start gap-3 rounded-lg bg-amber-50/60 border border-amber-200/60 p-4">
-            <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
-            <div className="flex-1">
-              <p className="text-sm font-medium text-amber-900">Complete your profile</p>
-              <p className="text-xs text-amber-700 mt-1">
-                Add your name and professional details to unlock all features and appear more credible to recruiters.
-              </p>
-              <div className="mt-3 flex gap-2">
-                <Link href="/candidate/profile">
-                  <Button size="sm" variant="default" className="h-8">
-                    Complete now
-                  </Button>
-                </Link>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8"
-                  onClick={() => setShowProfileBanner(false)}
-                >
-                  Dismiss
-                </Button>
-              </div>
-            </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">TrueMatch</h1>
+            <p className="text-sm text-gray-600">Candidate Dashboard</p>
+          </div>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-700">
+              Welcome, {session?.user?.name || "User"}
+            </span>
             <button
-              onClick={() => setShowProfileBanner(false)}
-              className="text-amber-600 hover:text-amber-700 flex-shrink-0"
+              onClick={() => router.push("/api/auth/signout")}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
             >
-              <X className="h-4 w-4" />
+              Sign Out
             </button>
           </div>
-        )}
+        </div>
+      </header>
 
-        {/* Error Banner */}
-        {error && !dashboardData && (
-          <Card className="border-amber-200/60 bg-amber-50/30">
-            <CardContent className="flex items-start gap-3 pt-6">
-              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
-              <p className="text-sm text-amber-600">{error} (showing demo data)</p>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome to TrueMatch
+          </h2>
+          <p className="text-lg text-gray-600">
+            Discover opportunities that match your skills and aspirations
+          </p>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid md:grid-cols-3 gap-6 mb-8">
+          {[
+            { label: "Profile Completeness", value: "85%", color: "bg-blue-100" },
+            { label: "Matches This Week", value: "12", color: "bg-green-100" },
+            { label: "Applications", value: "5", color: "bg-purple-100" },
+          ].map((stat) => (
+            <Card key={stat.label} className={stat.color}>
+              <CardContent className="text-center">
+                <div className="text-3xl font-bold text-gray-900 mb-1">
+                  {stat.value}
+                </div>
+                <div className="text-sm text-gray-600">{stat.label}</div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* Main Cards */}
+        <div className="grid md:grid-cols-2 gap-6">
+          {/* Recent Matches */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Recent Matches</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  {
+                    title: "Senior Software Engineer",
+                    company: "TechCorp",
+                    match: "92%",
+                  },
+                  {
+                    title: "Full Stack Developer",
+                    company: "StartupXYZ",
+                    match: "87%",
+                  },
+                  {
+                    title: "Tech Lead",
+                    company: "InnovateCo",
+                    match: "84%",
+                  },
+                ].map((job, i) => (
+                  <div key={i} className="flex items-start justify-between pb-4 border-b last:border-b-0">
+                    <div>
+                      <h4 className="font-semibold text-gray-900">{job.title}</h4>
+                      <p className="text-sm text-gray-600">{job.company}</p>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-green-600">{job.match}</div>
+                      <p className="text-xs text-gray-500">match</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </CardContent>
           </Card>
-        )}
 
-        {dashboardData && (
-          <>
-            {/* Stats Cards */}
-            <StatCards
-              assessmentCount={dashboardData.assessmentCount}
-              averageScore={dashboardData.averageScore}
-              activeApplications={dashboardData.activeApplications}
-            />
-
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {quickActions.map((action) => {
-                const Icon = action.icon;
-                return (
-                  <Link key={action.href} href={action.href}>
-                    <Card className="h-full hover:shadow-lg transition-shadow cursor-pointer">
-                      <CardContent className="flex items-center gap-3 pt-6">
-                        <div className={`p-2 rounded-lg ${action.color}`}>
-                          <Icon className="h-5 w-5" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium">{action.label}</p>
-                          <p className="text-xs text-muted-foreground">{action.description}</p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
-
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-              {/* Left Column: Assessment & History */}
-              <div className="lg:col-span-2 space-y-6">
-                {/* Latest Assessment */}
-                {dashboardData.lastAssessment && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle>Latest Assessment</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <p className="font-medium">{dashboardData.lastAssessment.positionTitle}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {new Date(dashboardData.lastAssessment.date).toLocaleDateString()}
-                          </p>
-                        </div>
-                        <div className="text-center">
-                          <p className="text-3xl font-bold text-primary">
-                            {dashboardData.lastAssessment.score}
-                          </p>
-                          <p className="text-xs text-muted-foreground">Score</p>
-                        </div>
-                      </div>
-                      <Button className="w-full mt-4">View Assessment</Button>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Assessment Summary */}
-                <AssessmentSummary
-                  totalAssessments={dashboardData.assessmentCount}
-                  averageScore={dashboardData.averageScore}
-                  bestScore={95}
-                  lowestScore={72}
-                />
+          {/* Next Steps */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Next Steps</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-600">
+                    1
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Complete Your Profile</h4>
+                    <p className="text-sm text-gray-600">Add more details to improve matches</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-600">
+                    2
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Review Matches</h4>
+                    <p className="text-sm text-gray-600">Browse personalized opportunities</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center text-sm font-semibold text-blue-600">
+                    3
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-900">Apply & Interview</h4>
+                    <p className="text-sm text-gray-600">Take the next step in your career</p>
+                  </div>
+                </div>
               </div>
-
-              {/* Right Column: Recent Activity & Stats */}
-              <div className="space-y-6">
-                {/* Recent Activity */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Recent Activity</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ActivityFeed activities={dashboardData.recentActivity} />
-                  </CardContent>
-                </Card>
-
-                {/* Applications Status */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="text-base">Applications</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Active</span>
-                      <Badge variant="default">{dashboardData.activeApplications}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm">Total</span>
-                      <Badge variant="outline">12</Badge>
-                    </div>
-                    <Link href="/candidate/history">
-                      <Button variant="outline" className="w-full mt-2">
-                        View All
-                      </Button>
-                    </Link>
-                  </CardContent>
-                </Card>
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
     </div>
   );
 }

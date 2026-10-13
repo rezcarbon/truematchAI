@@ -1,288 +1,338 @@
-'use client';
+"use client";
 
-export const dynamic = 'force-dynamic';
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
-import {
-  Users, Briefcase, Calendar, FileText,
-  Inbox, AlertTriangle, CheckCircle2,
-  TrendingUp, Zap, Activity, Clock,
-  ArrowRight, Plus
-} from "lucide-react";
-import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/auth-components";
-import { Button } from '@/components/auth-components";
-import { ScoreTrio } from '@/components/shared/ScoreTrio";
-import { GovernanceBadge } from '@/components/shared/GovernanceBadge";
-import { JDSimulationWidget } from '@/components/recruiter/JDSimulationWidget";
-import { api } from '@/lib/api";
-import { mockPipeline, mockPositions } from '@/lib/mock";
+// Inline utility
+function cn(...classes: (string | undefined | null | boolean)[]): string {
+  return classes.filter(Boolean).join(" ");
+}
 
-/* ── helpers ────────────────────────────────────────────────────────────── */
-
-function TaskChip({
-  icon: Icon, label, count, color, href,
-}: { icon: React.ElementType; label: string; count: number; color: string; href: string }) {
-  if (count === 0) return null;
+// Inline Card components
+function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
-    <Link href={href}>
-      <div className={`flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors hover:opacity-90 ${color} shrink-0`}>
-        <Icon className="h-4 w-4" />
-        <span className="tabular-nums font-bold">{count}</span>
-        <span className="hidden sm:inline">{label}</span>
-      </div>
-    </Link>
+    <div
+      className={cn(
+        "rounded-lg border border-gray-200 bg-white shadow-sm",
+        className
+      )}
+      {...props}
+    />
   );
 }
 
-function HealthDot({ status }: { status: "on-track" | "at-risk" | "stalled" }) {
-  const colors = { "on-track": "bg-emerald-400", "at-risk": "bg-amber-400", "stalled": "bg-red-400" };
-  return <span className={`inline-block h-2.5 w-2.5 rounded-full shrink-0 ${colors[status]}`} />;
+function CardHeader({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn("flex flex-col space-y-1.5 p-6 border-b", className)}
+      {...props}
+    />
+  );
 }
 
-function WorkCard({ c }: { c: (typeof mockPipeline)[0] }) {
-  const priority = c.delta > 40 ? "red" : c.delta > 15 ? "amber" : "slate";
-  const borderColor = { red: "border-l-red-400", amber: "border-l-amber-400", slate: "border-l-slate-300" }[priority];
+function CardTitle({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLHeadingElement>) {
   return (
-    <Link href={`/recruiter/candidates/${c.id}`}>
-      <div className={`group flex cursor-pointer items-start gap-3 rounded-lg border border-l-4 bg-card p-4 transition-all hover:shadow-md ${borderColor}`}>
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-bold text-primary">
-          {c.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+    <h2
+      className={cn(
+        "text-2xl font-semibold leading-none tracking-tight",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+function CardContent({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return <div className={cn("p-6", className)} {...props} />;
+}
+
+// Inline Button
+function Button({
+  className,
+  disabled,
+  ...props
+}: React.ButtonHTMLAttributes<HTMLButtonElement>) {
+  return (
+    <button
+      className={cn(
+        "inline-flex items-center justify-center rounded-md px-4 py-2 font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50",
+        className
+      )}
+      disabled={disabled}
+      {...props}
+    />
+  );
+}
+
+// Inline Badge
+function Badge({
+  className,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement>) {
+  return (
+    <div
+      className={cn(
+        "inline-flex items-center rounded-full px-3 py-1 text-xs font-medium bg-blue-100 text-blue-800",
+        className
+      )}
+      {...props}
+    />
+  );
+}
+
+export default function RecruiterDashboard() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/login");
+    }
+  }, [status, router]);
+
+  if (status === "loading") {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
+          <p className="text-gray-600">Loading...</p>
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center justify-between gap-2">
-            <p className="truncate text-sm font-semibold">{c.name}</p>
-            <GovernanceBadge status={c.governanceStatus} label={c.governanceStatus === "review" ? "Review" : ""} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900">TrueMatch</h1>
+            <p className="text-sm text-gray-600">Recruiter Dashboard</p>
           </div>
-          <p className="truncate text-xs text-muted-foreground">{c.appliedFor}</p>
-          {priority === "red" && <p className="mt-0.5 text-[11px] font-medium text-red-600">Scorecard needed</p>}
-          <div className="mt-2">
-            <ScoreTrio traditional={c.traditionalScore} capability={c.capabilityScore} delta={c.delta} compact />
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-gray-700">
+              Welcome, {session?.user?.name || "User"}
+            </span>
+            <button
+              onClick={() => router.push("/api/auth/signout")}
+              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            >
+              Sign Out
+            </button>
           </div>
         </div>
-        <ArrowRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
-      </div>
-    </Link>
-  );
-}
+      </header>
 
-function AgentCard({ name, running, processed, errors, icon: Icon }: {
-  name: string; running: boolean; processed: number; errors: number; icon: React.ElementType;
-}) {
-  return (
-    <div className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="flex items-center gap-2">
-          <span className={`h-2 w-2 rounded-full ${running ? "bg-emerald-400 animate-pulse" : "bg-slate-300"}`} />
-          <p className="truncate text-xs font-semibold">{name}</p>
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto px-6 py-8">
+        {/* Welcome Section */}
+        <div className="mb-8">
+          <h2 className="text-3xl font-bold text-gray-900 mb-2">
+            Welcome to TrueMatch Recruiting
+          </h2>
+          <p className="text-lg text-gray-600">
+            Find the best talent using AI-powered matching
+          </p>
         </div>
-        <p className="text-[11px] text-muted-foreground">
-          {processed} done today{errors > 0 ? ` · ` : ""}{errors > 0 && <span className="text-red-500">{errors} errors</span>}
-        </p>
-      </div>
-    </div>
-  );
-}
 
-function EventRow({ time, icon: Icon, text, color }: { time: string; icon: React.ElementType; text: string; color: string }) {
-  return (
-    <div className="flex items-start gap-3 py-2">
-      <Icon className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${color}`} />
-      <p className="flex-1 min-w-0 truncate text-xs text-foreground/90">{text}</p>
-      <span className="shrink-0 text-[10px] tabular-nums text-muted-foreground">{time}</span>
-    </div>
-  );
-}
-
-/* ── page ────────────────────────────────────────────────────────────────── */
-
-export default async function RecruiterDashboard() {
-  const [pipeline, positions] = await Promise.all([
-    api.getPipeline().catch(() => mockPipeline),
-    api.getPositions().catch(() => mockPositions),
-  ]);
-
-  const openRoles    = positions.filter((p) => p.status === "open").length;
-  const reviewNeeded = pipeline.filter((c) => c.governanceStatus === "review").length;
-  const highDelta    = pipeline.filter((c) => c.delta > 40).length;
-  const interviews   = pipeline.filter((c) => c.stage === "interview").length;
-  const workQueue    = [...pipeline].sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta)).slice(0, 8);
-
-  return (
-    <div className="space-y-6">
-      {/* header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Command Centre</h1>
-          <p className="text-sm text-muted-foreground">Your hiring pipeline at a glance</p>
+        {/* Quick Stats */}
+        <div className="grid md:grid-cols-4 gap-6 mb-8">
+          {[
+            { label: "Open Positions", value: "8", color: "bg-blue-100" },
+            { label: "Active Candidates", value: "247", color: "bg-green-100" },
+            { label: "Pending Interviews", value: "12", color: "bg-purple-100" },
+            { label: "Offers Pending", value: "3", color: "bg-orange-100" },
+          ].map((stat) => (
+            <Card key={stat.label} className={stat.color}>
+              <CardContent className="text-center">
+                <div className="text-3xl font-bold text-gray-900 mb-1">
+                  {stat.value}
+                </div>
+                <div className="text-sm text-gray-600">{stat.label}</div>
+              </CardContent>
+            </Card>
+          ))}
         </div>
-        <Link href="/recruiter/positions/new">
-          <Button size="sm"><Plus className="mr-1.5 h-4 w-4" /> New Position</Button>
-        </Link>
-      </div>
 
-      {/* KPI tiles */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {[
-          { label: "Open roles",       value: openRoles,    icon: Briefcase,     color: "text-primary" },
-          { label: "Interviews today", value: interviews,   icon: Calendar,      color: "text-blue-600" },
-          { label: "Under review",     value: reviewNeeded, icon: AlertTriangle, color: "text-amber-600" },
-          { label: "Hidden gems ",   value: highDelta,    icon: Zap,           color: "text-amber-500" },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <Card key={label}>
-            <CardContent className="flex items-center gap-4 p-4">
-              <div className={`flex h-10 w-10 items-center justify-center rounded-full bg-muted ${color}`}>
-                <Icon className="h-5 w-5" />
+        {/* Main Content Grid */}
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Open Positions */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Open Positions</CardTitle>
+                <Button className="text-sm px-3 py-1 h-auto">Post New</Button>
               </div>
-              <div>
-                <p className="text-2xl font-bold tabular-nums">{value}</p>
-                <p className="text-xs text-muted-foreground">{label}</p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  {
+                    title: "Senior Engineer",
+                    candidates: "24",
+                    status: "Active",
+                  },
+                  {
+                    title: "Product Manager",
+                    candidates: "18",
+                    status: "Active",
+                  },
+                  {
+                    title: "UX Designer",
+                    candidates: "12",
+                    status: "Active",
+                  },
+                  {
+                    title: "Data Analyst",
+                    candidates: "9",
+                    status: "Review",
+                  },
+                ].map((job, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center justify-between pb-4 border-b last:border-b-0"
+                  >
+                    <div>
+                      <h4 className="font-semibold text-gray-900">
+                        {job.title}
+                      </h4>
+                      <p className="text-sm text-gray-600">
+                        {job.candidates} candidates
+                      </p>
+                    </div>
+                    <Badge
+                      className={
+                        job.status === "Active"
+                          ? "bg-green-100 text-green-800"
+                          : "bg-yellow-100 text-yellow-800"
+                      }
+                    >
+                      {job.status}
+                    </Badge>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
-        ))}
-      </div>
 
-      {/* task strip */}
-      <div className="flex flex-wrap gap-2">
-        <TaskChip icon={FileText}     label="scorecards due"   count={2}            color="bg-red-50 border-red-200 text-red-700"      href="/recruiter/pipeline" />
-        <TaskChip icon={Calendar}     label="interviews today" count={interviews}   color="bg-blue-50 border-blue-200 text-blue-700"    href="/recruiter/pipeline" />
-        <TaskChip icon={AlertTriangle}label="approvals pending"count={1}            color="bg-amber-50 border-amber-200 text-amber-700" href="/recruiter/agents/queue" />
-        <TaskChip icon={Inbox}        label="CVs to review"    count={reviewNeeded} color="bg-purple-50 border-purple-200 text-purple-700" href="/recruiter/agents/queue" />
-      </div>
-
-      {/* three-column layout */}
-      <div className="grid gap-6 lg:grid-cols-[220px_1fr_260px]">
-
-        {/* LEFT — positions */}
-        <Card className="self-start">
-          <CardHeader className="pb-2 pt-4">
-            <CardTitle className="text-sm">Active Positions</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1 pb-4">
-            {positions.map((p, i) => {
-              const health = i === 0 ? "at-risk" : i === 2 ? "stalled" : "on-track";
-              return (
-                <Link key={p.id} href={`/recruiter/positions/${p.id}`}>
-                  <div className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-2 text-xs hover:bg-accent transition-colors">
-                    <HealthDot status={health} />
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium">{p.title}</p>
-                      <p className="text-muted-foreground">{p.candidateCount} candidates</p>
-                    </div>
+          {/* Recent Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Recent Activity</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {[
+                  {
+                    action: "Interview Scheduled",
+                    person: "Alice Johnson",
+                    time: "2 hours ago",
+                  },
+                  {
+                    action: "Application Received",
+                    person: "Bob Smith",
+                    time: "4 hours ago",
+                  },
+                  {
+                    action: "Offer Extended",
+                    person: "Carol White",
+                    time: "1 day ago",
+                  },
+                ].map((activity, i) => (
+                  <div key={i} className="pb-4 border-b last:border-b-0">
+                    <p className="font-semibold text-gray-900 text-sm">
+                      {activity.action}
+                    </p>
+                    <p className="text-sm text-gray-600">{activity.person}</p>
+                    <p className="text-xs text-gray-500">{activity.time}</p>
                   </div>
-                </Link>
-              );
-            })}
-            <Link href="/recruiter/positions">
-              <Button variant="ghost" size="sm" className="mt-1 w-full text-xs">
-                All positions <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
-            </Link>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Top Candidates */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="text-lg">Top Matched Candidates</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="border-b bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900">
+                      Name
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900">
+                      Position
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900">
+                      Match Score
+                    </th>
+                    <th className="px-4 py-3 text-left font-semibold text-gray-900">
+                      Status
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[
+                    {
+                      name: "Alice Johnson",
+                      position: "Senior Engineer",
+                      score: "94%",
+                      status: "Interviewing",
+                    },
+                    {
+                      name: "Bob Smith",
+                      position: "Product Manager",
+                      score: "89%",
+                      status: "New",
+                    },
+                    {
+                      name: "Carol White",
+                      position: "UX Designer",
+                      score: "85%",
+                      status: "New",
+                    },
+                  ].map((candidate, i) => (
+                    <tr
+                      key={i}
+                      className="border-b hover:bg-gray-50 last:border-b-0"
+                    >
+                      <td className="px-4 py-3 font-medium text-gray-900">
+                        {candidate.name}
+                      </td>
+                      <td className="px-4 py-3 text-gray-700">
+                        {candidate.position}
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-semibold text-green-600">
+                          {candidate.score}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <Badge className="bg-blue-100 text-blue-800">
+                          {candidate.status}
+                        </Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </CardContent>
         </Card>
-
-        {/* CENTRE — work queue */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold">Candidate Work Queue</h2>
-            <Link href="/recruiter/pipeline">
-              <Button variant="ghost" size="sm" className="text-xs">
-                View all <ArrowRight className="ml-1 h-3 w-3" />
-              </Button>
-            </Link>
-          </div>
-          {workQueue.length === 0 ? (
-            <div className="flex h-32 items-center justify-center rounded-lg border border-dashed text-sm text-muted-foreground">
-              All caught up — no candidates need action today.
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {workQueue.map((c) => <WorkCard key={c.id} c={c} />)}
-            </div>
-          )}
-        </div>
-
-        {/* RIGHT — agents + feed */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-2 pt-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm">Agent Status</CardTitle>
-                <Link href="/recruiter/agents">
-                  <Button variant="ghost" size="sm" className="h-6 px-2 text-[11px]">Manage</Button>
-                </Link>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-2 pb-4">
-              <AgentCard name="CV Ingestion" running processed={47} errors={0} icon={Inbox} />
-              <AgentCard name="JD Analysis"  running={false} processed={12} errors={0} icon={FileText} />
-              <div className="flex gap-2 pt-1">
-                <Link href="/recruiter/agents" className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full text-xs"><Inbox className="mr-1 h-3 w-3" /> Drop CV</Button>
-                </Link>
-                <Link href="/recruiter/agents" className="flex-1">
-                  <Button variant="outline" size="sm" className="w-full text-xs"><FileText className="mr-1 h-3 w-3" /> JD Draft</Button>
-                </Link>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="pb-2 pt-4">
-              <CardTitle className="flex items-center gap-2 text-sm">
-                <Activity className="h-3.5 w-3.5 text-emerald-500" /> Live Events
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="divide-y pb-2">
-              <EventRow time="14:32" icon={Zap}           color="text-amber-500"      text="Maya O. → AI Leader — δ+65  counter-rec" />
-              <EventRow time="14:28" icon={CheckCircle2}  color="text-emerald-500"    text="Assessment complete — M. Reezan" />
-              <EventRow time="14:25" icon={FileText}      color="text-blue-500"       text="JD 'Eco Director' analysed — 75/100" />
-              <EventRow time="14:20" icon={Inbox}         color="text-purple-500"     text="CV ingested — Sarah Chen" />
-              <EventRow time="14:15" icon={TrendingUp}    color="text-primary"        text="You advanced Priya N. → Interview" />
-              <EventRow time="14:10" icon={Clock}         color="text-muted-foreground" text="2 interviews tomorrow 10am" />
-            </CardContent>
-          </Card>
-
-          <JDSimulationWidget
-            recentSimulationCount={0}
-            avgQualityScore={0}
-            lastSimulationTitle={undefined}
-            lastSimulationScore={undefined}
-          />
-
-          <Card>
-            <CardHeader className="pb-2 pt-4">
-              <CardTitle className="text-sm">Job Sources</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 pb-4">
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Manual uploads</span>
-                <span className="font-bold">47</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">USAJOBS API</span>
-                <span className="font-bold">156</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">LinkedIn scraper</span>
-                <span className="font-bold">23</span>
-              </div>
-              <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Indeed scraper</span>
-                <span className="font-bold">89</span>
-              </div>
-              <Link href="/admin/uploads" className="block pt-2">
-                <Button variant="outline" size="sm" className="w-full text-xs">
-                  <FileText className="mr-1 h-3 w-3" /> Upload jobs
-                </Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+      </main>
     </div>
   );
 }
