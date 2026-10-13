@@ -1,11 +1,11 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '../../../../components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card';
-import { Badge } from '../../../../components/ui/badge';
+import { PageHeader } from '../../../../components/shared/PageHeader.tsx';
+import { Card, CardContent, CardHeader, CardTitle } from '../../../../components/ui/card.ts';
+import { Badge } from '../../../../components/ui/badge.tsx';
 import { Loader2, AlertTriangle, CheckCircle, TrendingUp } from 'lucide-react';
-import { adminApi } from '../../../../lib/api-admin';
+import { adminApi } from '../../../../lib/api-admin.ts';
 
 interface DiversityData {
   gender: Record<string, number>;
