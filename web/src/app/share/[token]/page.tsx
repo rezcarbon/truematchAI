@@ -4,9 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/auth-components";
-import { Button } from "../../../components/auth-components";
-import { api, type SharedResultView } from "../../../lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
+import { Button } from "@/components/auth-components";
+import { api, type SharedResultView } from "@/lib/api";
 import { TrendingUp, Sparkles, Loader2 } from "lucide-react";
 
 export default function SharedResultPage({ params }: { params: { token: string } }): React.ReactElement {

@@ -3,10 +3,10 @@
 export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/auth-components";
-import { Button } from "../../components/auth-components";
-import { Input } from "../../components/ui/input";
-import { api, type ReferralInfo } from "../../lib/api";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
+import { Button } from "@/components/auth-components";
+import { Input } from "@/components/ui/input";
+import { api, type ReferralInfo } from "@/lib/api";
 import { Gift, Copy, Check, Loader2 } from "lucide-react";
 
 export default function ReferPage(): React.ReactElement {

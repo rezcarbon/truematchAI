@@ -3,12 +3,12 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../../components/auth-components";
-import { Button } from "../../../components/auth-components";
-import { Badge } from "../../../components/ui/badge";
-import { CapabilityGap } from "../../../components/shared/CapabilityGap";
-import { LanguageBadge, languageName } from "../../../components/shared/LanguageBadge";
-import { api, type CapabilityTranslationResult } from "../../../lib/api";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
+import { Button } from "@/components/auth-components";
+import { Badge } from "@/components/ui/badge";
+import { CapabilityGap } from "@/components/shared/CapabilityGap";
+import { LanguageBadge, languageName } from "@/components/shared/LanguageBadge";
+import { api, type CapabilityTranslationResult } from "@/lib/api";
 import { Loader2, Copy, Check, Sparkles, ShieldCheck, ChevronDown, ChevronUp } from "lucide-react";
 
 const STRENGTH_VARIANT: Record<string, "success" | "secondary" | "warning"> = {

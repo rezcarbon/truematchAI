@@ -4,9 +4,9 @@ export const dynamic = 'force-dynamic';
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Card, CardContent, CardHeader, CardTitle } from "../../../components/auth-components";
-import { Button } from "../../../components/auth-components";
-import { api, type BillingSummary } from "../../../lib/api";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/auth-components";
+import { Button } from "@/components/auth-components";
+import { api, type BillingSummary } from "@/lib/api";
 import { CheckCircle2, Loader2 } from "lucide-react";
 
 export default function BillingSuccessPage(): React.ReactElement {

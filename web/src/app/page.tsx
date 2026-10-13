@@ -1,8 +1,8 @@
 'use client';
 
 import Link from "next/link";
-import { Button } from "../../../components/auth-components";
-import { Card, CardContent } from "../../../components/auth-components";
+import { Button } from "@/components/auth-components";
+import { Card, CardContent } from "@/components/auth-components";
 import { ArrowRight, GitCompareArrows, FileText, Link2, CheckCircle2, AlertCircle, BarChart3, Lock } from "lucide-react";
 
 const FeatureCard = ({ number, title, description, tag, tagColor }: {

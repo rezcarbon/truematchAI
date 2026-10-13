@@ -5,13 +5,13 @@ export const dynamic = 'force-dynamic';
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { PageHeader } from "../components/shared/PageHeader";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../components/auth-components";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs";
-import { Button } from "../components/auth-components";
-import { UploadZone } from "../components/UploadZone";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/auth-components";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Button } from "@/components/auth-components";
+import { UploadZone } from "@/components/UploadZone";
 import { AlertCircle, Loader2, FileText } from "lucide-react";
-import { api } from "../lib/api";
+import { api } from "@/lib/api";
 
 interface Resume {
   id: string;
