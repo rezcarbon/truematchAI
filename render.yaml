@@ -75,7 +75,7 @@ services:
     env: node
     plan: starter
     previewPlan: starter
-    buildCommand: "rm -rf node_modules && npm install --legacy-peer-deps && npx next build"
+    buildCommand: "cd web && rm -rf node_modules && npm install --legacy-peer-deps && npx next build"
     startCommand: "npm run start"
     rootDir: web
     region: oregon
