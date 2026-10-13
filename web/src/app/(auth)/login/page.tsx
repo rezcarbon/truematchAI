@@ -1,11 +1,8 @@
-"use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
-
-// Inline utility
+"use client";
 function cn(...classes: (string | undefined | null | boolean)[]): string {
   return classes.filter(Boolean).join(" ");
 }
@@ -190,3 +187,6 @@ export default function LoginPage() {
     </div>
   );
 }
+
+
+// Inline utility

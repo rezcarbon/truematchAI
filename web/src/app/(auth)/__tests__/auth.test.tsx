@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import React from 'react'
 
 // Import login page component - we'll test the actual component
 // For this test, we create a minimal test component since we're mocking next-auth
@@ -61,7 +62,6 @@ const LoginPageComponent = () => {
   )
 }
 
-import React from 'react'
 
 describe('Authentication - Login Page', () => {
   beforeEach(() => {

@@ -1,4 +1,13 @@
+import { NextRequest, NextResponse } from "next/server";
+import { getToken } from "next-auth/jwt";
 // BFF proxy. The browser calls /api/proxy/* and this server-side route forwards
+type Ctx = { params: { path: string[] } };
+
+export const GET = (req: NextRequest, { params }: Ctx) => forward(req, params.path);
+export const POST = (req: NextRequest, { params }: Ctx) => forward(req, params.path);
+export const PUT = (req: NextRequest, { params }: Ctx) => forward(req, params.path);
+export const PATCH = (req: NextRequest, { params }: Ctx) => forward(req, params.path);
+export const DELETE = (req: NextRequest, { params }: Ctx) => forward(req, params.path);
 // to the real backend. It injects the LOGGED-IN USER's access token (read from
 // the encrypted NextAuth JWT) so the backend enforces per-user authorization.
 // Falls back to a service token for unauthenticated/public calls.
@@ -6,8 +15,6 @@
 // IP-safety: no backend secrets, prompts, or governance policy ever reach the
 // browser bundle. This file runs only on the server.
 
-import { NextRequest, NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
 
 const BACKEND = process.env.BACKEND_API_URL || "https://api.truematch.digital/v1";
 const SERVICE_TOKEN = process.env.BACKEND_API_TOKEN;
@@ -76,10 +83,3 @@ async function forward(req: NextRequest, segments: string[]) {
   }
 }
 
-type Ctx = { params: { path: string[] } };
-
-export const GET = (req: NextRequest, { params }: Ctx) => forward(req, params.path);
-export const POST = (req: NextRequest, { params }: Ctx) => forward(req, params.path);
-export const PUT = (req: NextRequest, { params }: Ctx) => forward(req, params.path);
-export const PATCH = (req: NextRequest, { params }: Ctx) => forward(req, params.path);
-export const DELETE = (req: NextRequest, { params }: Ctx) => forward(req, params.path);

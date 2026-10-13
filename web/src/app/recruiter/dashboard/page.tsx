@@ -1,10 +1,7 @@
-"use client";
-
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-
-// Inline utility
+"use client";
 function cn(...classes: (string | undefined | null | boolean)[]): string {
   return classes.filter(Boolean).join(" ");
 }
@@ -336,3 +333,6 @@ export default function RecruiterDashboard() {
     </div>
   );
 }
+
+
+// Inline utility

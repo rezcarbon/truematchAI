@@ -1,8 +1,8 @@
-"use client";
-
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
+"use client";
+
 
 export default function SingpassCallbackPage() {
   const router = useRouter();
