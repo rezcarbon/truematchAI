@@ -3,13 +3,13 @@
 export const dynamic = 'force-dynamic';
 
 import Link from "next/link";
-import { PageHeader } from '../components/shared/AppShell";
-import { ScoreTrio } from '../components/shared/ScoreTrio";
-import { GovernanceBadge } from '../components/shared/GovernanceBadge";
-import { api } from '../lib/api";
-import { mockPipeline } from '../lib/mock";
-import { Card } from '../components/auth-components";
-import { Badge } from '../components/ui/badge";
+import { PageHeader } from '@/components/shared/AppShell";
+import { ScoreTrio } from '@/components/shared/ScoreTrio";
+import { GovernanceBadge } from '@/components/shared/GovernanceBadge";
+import { api } from '@/lib/api";
+import { mockPipeline } from '@/lib/mock";
+import { Card } from '@/components/auth-components";
+import { Badge } from '@/components/ui/badge";
 import { Search, Filter, SlidersHorizontal } from "lucide-react";
 
 const STAGE_COLORS: Record<string, string> = {

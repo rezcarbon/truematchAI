@@ -3,12 +3,12 @@
 export const dynamic = 'force-dynamic';
 
 import { useState } from 'react';
-import { PageHeader } from '../components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { AlertCircle, Loader2, Eye, EyeOff } from 'lucide-react';
-import { useToast } from '../components/providers/ToastProvider';
-import { ThemeToggle } from '../components/shared/ThemeToggle';
+import { useToast } from '@/components/providers/ToastProvider';
+import { ThemeToggle } from '@/components/shared/ThemeToggle';
 
 export default function SettingsPage() {
   const { addToast } = useToast();

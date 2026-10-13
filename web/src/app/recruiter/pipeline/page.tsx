@@ -1,20 +1,20 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '../components/shared/PageHeader';
-import { PipelineBoard } from '../components/ats/PipelineBoard';
-import { InterviewScheduler } from '../components/ats/InterviewScheduler';
-import { CandidateDetailModal } from '../components/ats/CandidateDetailModal';
-import { ScorecardForm } from '../components/ats/ScorecardForm';
-import { FilterPanel } from '../components/ats/FilterPanel';
-import { BulkActionToolbar } from '../components/ats/BulkActionToolbar';
-import { useATSPipeline } from '../hooks/useATSPipeline';
-import { useFilteredPipeline } from '../hooks/useFilteredPipeline';
-import { useBulkActions } from '../hooks/useBulkActions';
-import { useToast } from '../components/providers/ToastProvider';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { PipelineBoard } from '@/components/ats/PipelineBoard';
+import { InterviewScheduler } from '@/components/ats/InterviewScheduler';
+import { CandidateDetailModal } from '@/components/ats/CandidateDetailModal';
+import { ScorecardForm } from '@/components/ats/ScorecardForm';
+import { FilterPanel } from '@/components/ats/FilterPanel';
+import { BulkActionToolbar } from '@/components/ats/BulkActionToolbar';
+import { useATSPipeline } from '@/hooks/useATSPipeline';
+import { useFilteredPipeline } from '@/hooks/useFilteredPipeline';
+import { useBulkActions } from '@/hooks/useBulkActions';
+import { useToast } from '@/components/providers/ToastProvider';
 import { Loader2, Filter } from 'lucide-react';
-import { Button } from '../components/ui/button';
-import type { BulkActionRequest } from '../hooks/useBulkActions';
+import { Button } from '@/components/ui/button';
+import type { BulkActionRequest } from '@/hooks/useBulkActions';
 
 interface Candidate {
   id: string;

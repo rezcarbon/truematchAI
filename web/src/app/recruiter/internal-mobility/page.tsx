@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { PageHeader } from '../components/shared/AppShell";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '../components/auth-components";
-import { FileUpload } from '../components/shared/FileUpload";
-import { Button } from '../components/auth-components";
-import { LanguageBadge, languageName } from '../components/shared/LanguageBadge";
-import { TransitionPathways } from '../components/shared/TransitionPathways";
-import { api, type TransitionResult } from '../lib/api";
+import { PageHeader } from '@/components/shared/AppShell";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/auth-components";
+import { FileUpload } from '@/components/shared/FileUpload";
+import { Button } from '@/components/auth-components";
+import { LanguageBadge, languageName } from '@/components/shared/LanguageBadge";
+import { TransitionPathways } from '@/components/shared/TransitionPathways";
+import { api, type TransitionResult } from '@/lib/api";
 import { Loader2, Users } from "lucide-react";
 
 export default function InternalMobilityPage() {

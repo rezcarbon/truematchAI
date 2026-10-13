@@ -1,4 +1,4 @@
-import { JDOptimizer } from '../../components/JDOptimizer';
+import { JDOptimizer } from '@/components/JDOptimizer';
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {

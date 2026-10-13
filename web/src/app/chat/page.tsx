@@ -3,13 +3,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { PageHeader } from '../../components/shared/PageHeader';
-import { Card } from '../../components/ui/card';
-import { Button } from '../../components/ui/button';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { Loader2, Send, Plus, Trash2, Upload, CheckCircle, AlertCircle } from 'lucide-react';
-import { ActionConfirmation } from '../../components/ActionConfirmation';
-import { OnboardingFlow } from '../../components/OnboardingFlow';
-import { ChatMessageContent } from '../../components/chat/ChatMessageContent';
+import { ActionConfirmation } from '@/components/ActionConfirmation';
+import { OnboardingFlow } from '@/components/OnboardingFlow';
+import { ChatMessageContent } from '@/components/chat/ChatMessageContent';
 
 // All chat traffic goes through the BFF proxy (like the rest of the app): the
 // proxy injects the logged-in user's token server-side, so the access token

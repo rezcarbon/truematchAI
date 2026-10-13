@@ -1,10 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { PageHeader } from '../../../components/shared/PageHeader';
-import { JDSimulationResults } from '../../../components/recruiter/JDSimulationResults';
-import { Card, CardContent } from '../../../components/ui/card';
-import { Badge } from '../../../components/ui/badge';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { JDSimulationResults } from '@/components/recruiter/JDSimulationResults';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Loader2, AlertCircle } from 'lucide-react';
 
 interface JDSimulationResultData {

@@ -7,8 +7,8 @@
 export const dynamic = 'force-dynamic';
 
 import React from 'react';
-import { JobBrowser } from '../../components/job-search/JobBrowser';
-import type { Skill } from '../types/jobs';
+import { JobBrowser } from '@/components/job-search/JobBrowser';
+import type { Skill } from '@/types/jobs';
 
 export default function JobSearchPage() {
   // Mock user skills - in production, these would come from user profile

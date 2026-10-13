@@ -3,15 +3,15 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
-import { PageHeader } from '../components/shared/PageHeader';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Button } from '../components/ui/button';
-import { Badge } from '../components/ui/badge';
+import { PageHeader } from '@/components/shared/PageHeader';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import {
   AssessmentSummary,
   ActivityFeed,
   StatCards,
-} from '../components/candidate';
+} from '@/components/candidate';
 import { Loader2, AlertCircle, X, FileText, Briefcase, TrendingUp } from 'lucide-react';
 
 interface DashboardData {

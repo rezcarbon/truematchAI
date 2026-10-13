@@ -2,12 +2,12 @@
 
 export const dynamic = 'force-dynamic';
 
-import { PageHeader } from '../components/shared/AppShell";
-import { JDQualityCard } from '../components/recruiter/JDQualityCard";
-import { Card, CardContent, CardHeader, CardTitle } from '../components/auth-components";
-import { Badge } from '../components/ui/badge";
-import { api } from '../lib/api";
-import { mockPositions } from '../lib/mock";
+import { PageHeader } from '@/components/shared/AppShell";
+import { JDQualityCard } from '@/components/recruiter/JDQualityCard";
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/auth-components";
+import { Badge } from '@/components/ui/badge";
+import { api } from '@/lib/api";
+import { mockPositions } from '@/lib/mock";
 import {
   AlertTriangle, CheckCircle2, AlertCircle, TrendingDown,
   BarChart3, Zap, Filter
