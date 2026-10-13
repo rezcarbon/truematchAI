@@ -75,7 +75,7 @@ services:
     env: node
     plan: starter
     previewPlan: starter
-    buildCommand: "rm -rf node_modules && npm install && npx next build"
+    buildCommand: "rm -rf node_modules package-lock.json && npm install && npx next build"
     startCommand: "npm run start"
     rootDir: web
     region: oregon
