@@ -3,6 +3,7 @@
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import { Users, Briefcase, Clock, CheckCircle, LogOut, Plus } from "lucide-react";
 
 // Inline utility
 function cn(...classes: (string | undefined | null | boolean)[]): string {
@@ -111,20 +112,24 @@ export default function RecruiterDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+      <header className="bg-gradient-to-r from-blue-600 to-blue-800 text-white">
+        <div className="max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">TrueMatch</h1>
-            <p className="text-sm text-gray-600">Recruiter Dashboard</p>
+            <h1 className="text-3xl font-bold">TrueMatch</h1>
+            <p className="text-blue-100 text-sm mt-1">Recruiter Dashboard</p>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-700">
-              Welcome, {session?.user?.name || "User"}
-            </span>
+            <div className="text-right">
+              <p className="text-sm font-medium text-white">
+                {session?.user?.name || "Welcome"}
+              </p>
+              <p className="text-xs text-blue-100">{session?.user?.email}</p>
+            </div>
             <button
               onClick={() => router.push("/api/auth/signout")}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+              className="px-4 py-2 text-sm font-medium text-blue-700 bg-white rounded-lg hover:bg-blue-50 transition flex items-center gap-2"
             >
+              <LogOut className="w-4 h-4" />
               Sign Out
             </button>
           </div>
