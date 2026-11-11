@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getServerSession } from "next-auth/next";
+import "@/styles/globals.css";
 
 export const metadata: Metadata = {
   title: "TrueMatch - AI-Powered Job Matching",
